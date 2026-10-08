@@ -31,7 +31,7 @@ export function ArrowShape({
     arrow.fromSide,
     b,
     arrow.toSide,
-    arrow.waypoints ?? []
+    arrow.waypoints
   );
   if (pts.length < 4) return null;
   const color = isSelected ? theme.arrowSelected : theme.arrow;

@@ -3,7 +3,6 @@ import type { ArrowData, BlockData } from '../types';
 import type { Theme } from '../../theme';
 import { getAnchor } from '../utils/blocks';
 import { buildArrowPath, pathMidpoint } from './arrowPath';
-import { computeBendsForArrow } from './arrowGeometry';
 
 type Props = {
   arrow: ArrowData;
@@ -34,11 +33,11 @@ export function SelectedArrowOverlay({
     arrow.fromSide,
     b,
     arrow.toSide,
-    arrow.waypoints ?? []
+    arrow.waypoints
   );
   if (pts.length < 4) return null;
   const mid = pathMidpoint(pts);
-  const bends = computeBendsForArrow(arrow, blocks);
+  const bends = arrow.waypoints;
 
   return (
     <>

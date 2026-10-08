@@ -18,7 +18,7 @@ export type ArrowData = {
   fromSide: Side;
   toBlockId: string;
   toSide: Side;
-  waypoints?: Waypoint[];
+  waypoints: Waypoint[];
 };
 
 export type DiagramState = {

@@ -13,6 +13,7 @@ import {
 import type { Waypoint } from './Arrows/arrowPath';
 
 import { useArrows } from './Arrows/useArrows';
+import { initialWaypoints } from './Arrows/arrowGeometry';
 
 import { ArrowShape } from './Arrows/ArrowShape';
 import { SelectedArrowOverlay } from './Arrows/SelectedArrowOverlay';
@@ -60,9 +61,20 @@ export function Canvas() {
     saveThemeName(themeName);
   }, [themeName]);
 
-  const [initialState] = useState<DiagramState>(() =>
-    loadState<DiagramState>({ blocks: [], arrows: [] })
-  );
+  const [initialState] = useState<DiagramState>(() => {
+    const loaded = loadState<DiagramState>({ blocks: [], arrows: [] });
+    const migratedArrows = loaded.arrows.map((a) => {
+      if (Array.isArray(a.waypoints)) return a;
+      const from = loaded.blocks.find((b) => b.id === a.fromBlockId);
+      const to = loaded.blocks.find((b) => b.id === a.toBlockId);
+      if (!from || !to) return { ...a, waypoints: [] };
+      return {
+        ...a,
+        waypoints: initialWaypoints(from, to, a.fromSide, a.toSide),
+      };
+    });
+    return { ...loaded, arrows: migratedArrows };
+  });
   const { state, commit, undo, redo, canUndo, canRedo } =
     useHistory<DiagramState>(initialState);
   const { blocks, arrows } = state;
@@ -121,12 +133,25 @@ export function Canvas() {
       if (isLine) {
         const arrowResult = gestureToArrow(canvasPoints, boxedBlocks);
         if (arrowResult) {
+          const fromBlock = currentBlocks.find(
+            (b) => b.id === arrowResult.fromBlockId
+          );
+          const toBlock = currentBlocks.find(
+            (b) => b.id === arrowResult.toBlockId
+          );
+          if (!fromBlock || !toBlock) return;
           const newArrow: ArrowData = {
             id: crypto.randomUUID(),
             fromBlockId: arrowResult.fromBlockId,
             fromSide: arrowResult.fromSide,
             toBlockId: arrowResult.toBlockId,
             toSide: arrowResult.toSide,
+            waypoints: initialWaypoints(
+              fromBlock,
+              toBlock,
+              arrowResult.fromSide,
+              arrowResult.toSide
+            ),
           };
           commit((s) => ({ ...s, arrows: [...s.arrows, newArrow] }));
         }
@@ -298,12 +323,12 @@ export function Canvas() {
     setGhost({ x: e.clientX, y: e.clientY });
   };
 
-const handleBlockDragEnd = (id: string, x: number, y: number) => {
-  commit((s) => ({
-    ...s,
-    blocks: s.blocks.map((b) => (b.id === id ? { ...b, x, y } : b)),
-  }));
-};
+  const handleBlockDragEnd = (id: string, x: number, y: number) => {
+    commit((s) => ({
+      ...s,
+      blocks: s.blocks.map((b) => (b.id === id ? { ...b, x, y } : b)),
+    }));
+  };
 
   const handleBlockResize = useCallback(
     (id: string, w: number, h: number) => {
@@ -353,16 +378,21 @@ const handleBlockDragEnd = (id: string, x: number, y: number) => {
 
     if (target) {
       const targetSide = pickClosestSide(target, x, y);
+      const fromBlock = blocks.find((b) => b.id === blockId);
+      if (!fromBlock) {
+        setPreview(null);
+        return;
+      }
       const newArrow: ArrowData = {
         id: crypto.randomUUID(),
         fromBlockId: blockId,
         fromSide: side,
         toBlockId: target.id,
         toSide: targetSide,
+        waypoints: initialWaypoints(fromBlock, target, side, targetSide),
       };
       commit((s) => ({ ...s, arrows: [...s.arrows, newArrow] }));
     }
-
     setPreview(null);
   };
 
