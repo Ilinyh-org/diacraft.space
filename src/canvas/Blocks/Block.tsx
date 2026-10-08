@@ -39,6 +39,7 @@ type BlockProps = {
   initialRotation?: number;
   theme: Theme;
   onDragEnd?: (x: number, y: number) => void;
+  onDragMove?: (x: number, y: number) => void;
   onSelect?: () => void;
   onDelete?: () => void;
   onEdit?: () => void;
@@ -62,6 +63,7 @@ export function Block({
   initialRotation = 0,
   theme,
   onDragEnd,
+  onDragMove,
   onSelect,
   onDelete,
   onEdit,
@@ -135,6 +137,10 @@ export function Block({
 
   const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
     onDragEnd?.(e.target.x(), e.target.y());
+  };
+
+  const handleDragMove = (e: KonvaEventObject<DragEvent>) => {
+    onDragMove?.(e.target.x(), e.target.y());
   };
 
   const handleClick = (e: KonvaEventObject<MouseEvent>) => {
@@ -245,6 +251,7 @@ export function Block({
         x={x}
         y={y}
         draggable={!removing}
+        onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
         onClick={removing ? undefined : handleClick}
         onTap={removing ? undefined : handleClick}

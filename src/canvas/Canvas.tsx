@@ -75,7 +75,7 @@ export function Canvas() {
     });
     return { ...loaded, arrows: migratedArrows };
   });
-  const { state, commit, undo, redo, canUndo, canRedo } =
+  const { state, commit, commitLive, commitCheckpoint, undo, redo, canUndo, canRedo } =
     useHistory<DiagramState>(initialState);
   const { blocks, arrows } = state;
 
@@ -323,12 +323,36 @@ export function Canvas() {
     setGhost({ x: e.clientX, y: e.clientY });
   };
 
-  const handleBlockDragEnd = (id: string, x: number, y: number) => {
-    commit((s) => ({
-      ...s,
-      blocks: s.blocks.map((b) => (b.id === id ? { ...b, x, y } : b)),
-    }));
-  };
+  const blockDragBeforeRef = useRef<DiagramState | null>(null);
+
+  const handleBlockDragStart = useCallback(() => {
+    blockDragBeforeRef.current = state;
+  }, [state]);
+
+  const handleBlockDragMove = useCallback(
+    (id: string, x: number, y: number) => {
+      commitLive((s) => ({
+        ...s,
+        blocks: s.blocks.map((b) => (b.id === id ? { ...b, x, y } : b)),
+      }));
+    },
+    [commitLive]
+  );
+
+  const handleBlockDragEnd = useCallback(
+    (id: string, x: number, y: number) => {
+      // Ensure final position matches the drop point.
+      commitLive((s) => ({
+        ...s,
+        blocks: s.blocks.map((b) => (b.id === id ? { ...b, x, y } : b)),
+      }));
+      // One history entry for the whole drag.
+      const before = blockDragBeforeRef.current;
+      if (before) commitCheckpoint(before);
+      blockDragBeforeRef.current = null;
+    },
+    [commitLive, commitCheckpoint]
+  );
 
   const handleBlockResize = useCallback(
     (id: string, w: number, h: number) => {
@@ -586,6 +610,8 @@ const runExport = (
               onDelete={() => requestDelete(block.id)}
               onEdit={() => handleStartEdit(block.id)}
               onResize={(w, h) => handleBlockResize(block.id, w, h)}
+              onDragStart={handleBlockDragStart}
+              onDragMove={(x, y) => handleBlockDragMove(block.id, x, y)}
               onDragEnd={(x, y) => handleBlockDragEnd(block.id, x, y)}
               onHandleDragStart={(side, x, y) =>
                 handleHandleDragStart(block.id, side, x, y)
