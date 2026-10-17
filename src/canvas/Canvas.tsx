@@ -10,9 +10,9 @@ import {
   gestureToArrow,
   looksLikeStraightLine,
 } from '../recognition/gestureToArrow';
-import type { Waypoint } from './Arrows/arrowPath';
 
 import { useArrows } from './Arrows/useArrows';
+import { initialWaypoints } from './Arrows/arrowGeometry';
 
 import { ArrowShape } from './Arrows/ArrowShape';
 import { SelectedArrowOverlay } from './Arrows/SelectedArrowOverlay';
@@ -35,6 +35,7 @@ import {
   PALETTE,
   LABEL_BY_TYPE,
 } from './constants';
+import type { KonvaEventObject } from 'konva/lib/Node';
 import type { BlockData, ArrowData, DiagramState } from './types';
 import { getAnchor, pickClosestSide } from './utils/blocks';
 import { getContentBBox } from './utils/export';
@@ -60,10 +61,21 @@ export function Canvas() {
     saveThemeName(themeName);
   }, [themeName]);
 
-  const [initialState] = useState<DiagramState>(() =>
-    loadState<DiagramState>({ blocks: [], arrows: [] })
-  );
-  const { state, commit, undo, redo, canUndo, canRedo } =
+  const [initialState] = useState<DiagramState>(() => {
+    const loaded = loadState<DiagramState>({ blocks: [], arrows: [] });
+    const migratedArrows = loaded.arrows.map((a) => {
+      if (Array.isArray(a.waypoints)) return a;
+      const from = loaded.blocks.find((b) => b.id === a.fromBlockId);
+      const to = loaded.blocks.find((b) => b.id === a.toBlockId);
+      if (!from || !to) return { ...a, waypoints: [] };
+      return {
+        ...a,
+        waypoints: initialWaypoints(from, to, a.fromSide, a.toSide),
+      };
+    });
+    return { ...loaded, arrows: migratedArrows };
+  });
+  const { state, commit, commitLive, commitCheckpoint, undo, redo, canUndo, canRedo } =
     useHistory<DiagramState>(initialState);
   const { blocks, arrows } = state;
 
@@ -89,6 +101,7 @@ export function Canvas() {
   const blocksRef = useRef(blocks);
   const arrowsRef = useRef(arrows);
   const [ghost, setGhost] = useState<{ x: number; y: number } | null>(null);
+  const [draggingType, setDraggingType] = useState<BlockType | null>(null);
 
   useEffect(() => {
     blocksRef.current = blocks;
@@ -121,12 +134,25 @@ export function Canvas() {
       if (isLine) {
         const arrowResult = gestureToArrow(canvasPoints, boxedBlocks);
         if (arrowResult) {
+          const fromBlock = currentBlocks.find(
+            (b) => b.id === arrowResult.fromBlockId
+          );
+          const toBlock = currentBlocks.find(
+            (b) => b.id === arrowResult.toBlockId
+          );
+          if (!fromBlock || !toBlock) return;
           const newArrow: ArrowData = {
             id: crypto.randomUUID(),
             fromBlockId: arrowResult.fromBlockId,
             fromSide: arrowResult.fromSide,
             toBlockId: arrowResult.toBlockId,
             toSide: arrowResult.toSide,
+            waypoints: initialWaypoints(
+              fromBlock,
+              toBlock,
+              arrowResult.fromSide,
+              arrowResult.toSide
+            ),
           };
           commit((s) => ({ ...s, arrows: [...s.arrows, newArrow] }));
         }
@@ -257,6 +283,7 @@ export function Canvas() {
     const onUp = (e: PointerEvent) => {
       const type = dragTypeRef.current;
       dragTypeRef.current = null;
+      setDraggingType(null);
       setGhost(null);
       if (!type || !containerRef.current) return;
 
@@ -295,15 +322,40 @@ export function Canvas() {
   ) => {
     e.preventDefault();
     dragTypeRef.current = type;
+    setDraggingType(type);
     setGhost({ x: e.clientX, y: e.clientY });
   };
 
-const handleBlockDragEnd = (id: string, x: number, y: number) => {
-  commit((s) => ({
-    ...s,
-    blocks: s.blocks.map((b) => (b.id === id ? { ...b, x, y } : b)),
-  }));
-};
+  const blockDragBeforeRef = useRef<DiagramState | null>(null);
+
+  const handleBlockDragStart = useCallback(() => {
+    blockDragBeforeRef.current = state;
+  }, [state]);
+
+  const handleBlockDragMove = useCallback(
+    (id: string, x: number, y: number) => {
+      commitLive((s) => ({
+        ...s,
+        blocks: s.blocks.map((b) => (b.id === id ? { ...b, x, y } : b)),
+      }));
+    },
+    [commitLive]
+  );
+
+  const handleBlockDragEnd = useCallback(
+    (id: string, x: number, y: number) => {
+      // Ensure final position matches the drop point.
+      commitLive((s) => ({
+        ...s,
+        blocks: s.blocks.map((b) => (b.id === id ? { ...b, x, y } : b)),
+      }));
+      // One history entry for the whole drag.
+      const before = blockDragBeforeRef.current;
+      if (before) commitCheckpoint(before);
+      blockDragBeforeRef.current = null;
+    },
+    [commitLive, commitCheckpoint]
+  );
 
   const handleBlockResize = useCallback(
     (id: string, w: number, h: number) => {
@@ -317,7 +369,7 @@ const handleBlockDragEnd = (id: string, x: number, y: number) => {
     [commit]
   );
 
-  const handleStageClick = (e: any) => {
+  const handleStageClick = (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
     if (e.target === e.target.getStage()) {
       setSelectedId(null);
       setSelectedArrowId(null);
@@ -353,16 +405,21 @@ const handleBlockDragEnd = (id: string, x: number, y: number) => {
 
     if (target) {
       const targetSide = pickClosestSide(target, x, y);
+      const fromBlock = blocks.find((b) => b.id === blockId);
+      if (!fromBlock) {
+        setPreview(null);
+        return;
+      }
       const newArrow: ArrowData = {
         id: crypto.randomUUID(),
         fromBlockId: blockId,
         fromSide: side,
         toBlockId: target.id,
         toSide: targetSide,
+        waypoints: initialWaypoints(fromBlock, target, side, targetSide),
       };
       commit((s) => ({ ...s, arrows: [...s.arrows, newArrow] }));
     }
-
     setPreview(null);
   };
 
@@ -418,8 +475,8 @@ const runExport = (
   }, 150);
 };
 
-  const ghostItem = dragTypeRef.current
-    ? PALETTE.find((p) => p.type === dragTypeRef.current)
+  const ghostItem = draggingType
+    ? PALETTE.find((p) => p.type === draggingType)
     : null;
 
   const isDrawMode = mode === 'draw';
@@ -533,14 +590,12 @@ const runExport = (
           {blocks.map((block) => (
             <Block
               key={block.id}
-              id={block.id}
               x={block.x}
               y={block.y}
               width={block.width}
               height={block.height}
               label={block.label}
               type={block.type}
-              initialRotation={block.initialRotation}
               removing={fadingOut.has(block.id)}
               theme={theme}
               selected={
@@ -556,6 +611,8 @@ const runExport = (
               onDelete={() => requestDelete(block.id)}
               onEdit={() => handleStartEdit(block.id)}
               onResize={(w, h) => handleBlockResize(block.id, w, h)}
+              onDragStart={handleBlockDragStart}
+              onDragMove={(x, y) => handleBlockDragMove(block.id, x, y)}
               onDragEnd={(x, y) => handleBlockDragEnd(block.id, x, y)}
               onHandleDragStart={(side, x, y) =>
                 handleHandleDragStart(block.id, side, x, y)

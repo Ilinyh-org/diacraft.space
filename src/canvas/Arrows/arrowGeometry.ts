@@ -1,6 +1,6 @@
 import type { Side } from '../Blocks/Block';
 import { normalVector, STUB } from './arrowPath';
-import type { BlockData, ArrowData } from '../types';
+import type { BlockData } from '../types';
 import { getAnchor } from '../utils/blocks';
 
 export type Pt = { x: number; y: number };
@@ -12,7 +12,7 @@ export function orthoConnect(P: Pt, Q: Pt): Pt[] {
   return [{ x: Q.x, y: P.y }];
 }
 
-export function isHorizontalSide(side: Side): boolean {
+function isHorizontalSide(side: Side): boolean {
   return side === 'left' || side === 'right';
 }
 
@@ -39,23 +39,26 @@ export function computeElbow(P: Pt, pSide: Side, Q: Pt, qSide: Side): Pt[] {
   return [{ x: P.x, y: Q.y }];
 }
 
-export function computeElbowForArrow(
-  a: Pt,
-  aSide: Side,
-  b: Pt,
-  bSide: Side
+/**
+ * Initial orthogonal elbow waypoints for a newly created arrow.
+ * Once computed, these are the arrow's permanent starting waypoints —
+ * they are only changed by explicit user actions.
+ */
+export function initialWaypoints(
+  from: BlockData,
+  to: BlockData,
+  fromSide: Side,
+  toSide: Side
 ): Pt[] {
-  const aN = normalVector(aSide);
-  const bN = normalVector(bSide);
+  const a = getAnchor(from, fromSide);
+  const b = getAnchor(to, toSide);
+  const aN = normalVector(fromSide);
+  const bN = normalVector(toSide);
   const exit = { x: a.x + aN.x * STUB, y: a.y + aN.y * STUB };
   const entry = { x: b.x + bN.x * STUB, y: b.y + bN.y * STUB };
-  return computeElbow(exit, aSide, entry, bSide);
+  return computeElbow(exit, fromSide, entry, toSide);
 }
 
-/**
- * Build the full path with a per-point `fixed` flag and a list of indices
- * marking where the user's waypoints ended up in the path.
- */
 export function buildPathWithFixed(
   a: Pt,
   aSide: Side,
@@ -90,8 +93,7 @@ export function buildPathWithFixed(
     for (const wp of waypoints) {
       for (const m of orthoConnect(prev, wp)) push(m, false);
       waypointIndices.push(pts.length);
-      pts.push(wp);
-      fixed.push(false);
+      push(wp, false);
       prev = wp;
     }
     for (const m of orthoConnect(prev, entry)) push(m, false);
@@ -103,17 +105,4 @@ export function buildPathWithFixed(
   push(b, true);
 
   return { points: pts, fixed, waypointIndices };
-}
-
-export function computeBendsForArrow(
-  arrow: ArrowData,
-  blockList: BlockData[]
-): Pt[] {
-  if (arrow.waypoints !== undefined) return arrow.waypoints;
-  const from = blockList.find((b) => b.id === arrow.fromBlockId);
-  const to = blockList.find((b) => b.id === arrow.toBlockId);
-  if (!from || !to) return [];
-  const a = getAnchor(from, arrow.fromSide);
-  const b = getAnchor(to, arrow.toSide);
-  return computeElbowForArrow(a, arrow.fromSide, b, arrow.toSide);
 }

@@ -70,6 +70,7 @@ describe('getContentBBox', () => {
       fromSide: 'right',
       toBlockId: 'A',
       toSide: 'left',
+      waypoints: [],
     };
     const bb = getContentBBox([a], [arrow]);
     expect(bb).not.toBeNull();

@@ -1,10 +1,6 @@
-import type { BlockData, ArrowData } from '../types';
+import type { ArrowData, BlockData } from '../types';
 import { getAnchor } from '../utils/blocks';
-import {
-  buildPathWithFixed,
-  computeElbowForArrow,
-  type Pt,
-} from './arrowGeometry';
+import { buildPathWithFixed, type Pt } from './arrowGeometry';
 
 function segmentOrientation(p: Pt, q: Pt): 'H' | 'V' {
   return Math.abs(p.x - q.x) >= Math.abs(p.y - q.y) ? 'H' : 'V';
@@ -18,24 +14,22 @@ function orientSegments(pts: Pt[]): ('H' | 'V')[] {
   return out;
 }
 
-function groupThroughVertical(
+function expandVertical(
   orient: ('H' | 'V')[],
-  startIdx: number
+  start: Set<number>
 ): Set<number> {
-  const g = new Set<number>([startIdx]);
+  const g = new Set(start);
   let changed = true;
   while (changed) {
     changed = false;
     for (let i = 0; i < orient.length; i++) {
       if (orient[i] !== 'V') continue;
-      const a = i;
-      const b = i + 1;
-      if (g.has(a) && !g.has(b)) {
-        g.add(b);
+      if (g.has(i) && !g.has(i + 1)) {
+        g.add(i + 1);
         changed = true;
       }
-      if (g.has(b) && !g.has(a)) {
-        g.add(a);
+      if (g.has(i + 1) && !g.has(i)) {
+        g.add(i);
         changed = true;
       }
     }
@@ -43,24 +37,22 @@ function groupThroughVertical(
   return g;
 }
 
-function groupThroughHorizontal(
+function expandHorizontal(
   orient: ('H' | 'V')[],
-  startIdx: number
+  start: Set<number>
 ): Set<number> {
-  const g = new Set<number>([startIdx]);
+  const g = new Set(start);
   let changed = true;
   while (changed) {
     changed = false;
     for (let i = 0; i < orient.length; i++) {
       if (orient[i] !== 'H') continue;
-      const a = i;
-      const b = i + 1;
-      if (g.has(a) && !g.has(b)) {
-        g.add(b);
+      if (g.has(i) && !g.has(i + 1)) {
+        g.add(i + 1);
         changed = true;
       }
-      if (g.has(b) && !g.has(a)) {
-        g.add(a);
+      if (g.has(i + 1) && !g.has(i)) {
+        g.add(i);
         changed = true;
       }
     }
@@ -69,9 +61,11 @@ function groupThroughHorizontal(
 }
 
 /**
- * Apply a drag to the bend at `bendIndex`, keeping the path orthogonal.
- * Only the *original* waypoint positions are returned — auto-inserted
- * corners are never promoted to waypoints.
+ * Move the waypoint at `bendIndex` by (dx, dy).
+ * Waypoints transitively connected along the perpendicular axis move too,
+ * preserving orthogonality without creating new bends.
+ * Returns the new waypoint list (same length as input), or null if the
+ * drag can't be applied (both axes locked).
  */
 export function applyBendDrag(
   from: BlockData,
@@ -81,29 +75,27 @@ export function applyBendDrag(
   dx: number,
   dy: number
 ): Pt[] | null {
+  if (arrow.waypoints.length === 0) return null;
+  if (bendIndex < 0 || bendIndex >= arrow.waypoints.length) return null;
+
   const a = getAnchor(from, arrow.fromSide);
   const b = getAnchor(to, arrow.toSide);
-  const waypoints =
-    arrow.waypoints ??
-    computeElbowForArrow(a, arrow.fromSide, b, arrow.toSide);
-
-  if (waypoints.length === 0) return null;
-  if (bendIndex < 0 || bendIndex >= waypoints.length) return null;
-
   const { points, fixed, waypointIndices } = buildPathWithFixed(
     a,
     arrow.fromSide,
     b,
     arrow.toSide,
-    waypoints
+    arrow.waypoints
   );
 
-  if (waypointIndices.length !== waypoints.length) return null;
+  if (waypointIndices.length !== arrow.waypoints.length) return null;
 
   const pathIdx = waypointIndices[bendIndex];
   const orient = orientSegments(points);
-  const xGroup = groupThroughVertical(orient, pathIdx);
-  const yGroup = groupThroughHorizontal(orient, pathIdx);
+
+  const xGroup = expandVertical(orient, new Set([pathIdx]));
+  const yGroup = expandHorizontal(orient, new Set([pathIdx]));
+
   const xBlocked = Array.from(xGroup).some((i) => fixed[i]);
   const yBlocked = Array.from(yGroup).some((i) => fixed[i]);
 
