@@ -10,7 +10,6 @@ import {
   gestureToArrow,
   looksLikeStraightLine,
 } from '../recognition/gestureToArrow';
-import type { Waypoint } from './Arrows/arrowPath';
 
 import { useArrows } from './Arrows/useArrows';
 import { initialWaypoints } from './Arrows/arrowGeometry';
@@ -36,6 +35,7 @@ import {
   PALETTE,
   LABEL_BY_TYPE,
 } from './constants';
+import type { KonvaEventObject } from 'konva/lib/Node';
 import type { BlockData, ArrowData, DiagramState } from './types';
 import { getAnchor, pickClosestSide } from './utils/blocks';
 import { getContentBBox } from './utils/export';
@@ -101,6 +101,7 @@ export function Canvas() {
   const blocksRef = useRef(blocks);
   const arrowsRef = useRef(arrows);
   const [ghost, setGhost] = useState<{ x: number; y: number } | null>(null);
+  const [draggingType, setDraggingType] = useState<BlockType | null>(null);
 
   useEffect(() => {
     blocksRef.current = blocks;
@@ -282,6 +283,7 @@ export function Canvas() {
     const onUp = (e: PointerEvent) => {
       const type = dragTypeRef.current;
       dragTypeRef.current = null;
+      setDraggingType(null);
       setGhost(null);
       if (!type || !containerRef.current) return;
 
@@ -320,6 +322,7 @@ export function Canvas() {
   ) => {
     e.preventDefault();
     dragTypeRef.current = type;
+    setDraggingType(type);
     setGhost({ x: e.clientX, y: e.clientY });
   };
 
@@ -366,7 +369,7 @@ export function Canvas() {
     [commit]
   );
 
-  const handleStageClick = (e: any) => {
+  const handleStageClick = (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
     if (e.target === e.target.getStage()) {
       setSelectedId(null);
       setSelectedArrowId(null);
@@ -472,8 +475,8 @@ const runExport = (
   }, 150);
 };
 
-  const ghostItem = dragTypeRef.current
-    ? PALETTE.find((p) => p.type === dragTypeRef.current)
+  const ghostItem = draggingType
+    ? PALETTE.find((p) => p.type === draggingType)
     : null;
 
   const isDrawMode = mode === 'draw';
@@ -587,14 +590,12 @@ const runExport = (
           {blocks.map((block) => (
             <Block
               key={block.id}
-              id={block.id}
               x={block.x}
               y={block.y}
               width={block.width}
               height={block.height}
               label={block.label}
               type={block.type}
-              initialRotation={block.initialRotation}
               removing={fadingOut.has(block.id)}
               theme={theme}
               selected={

@@ -14,7 +14,6 @@ export function useGestureDraw(
 
   useEffect(() => {
     if (!active) {
-      setPoints([]);
       pointsRef.current = [];
       drawingRef.current = false;
       return;
@@ -65,5 +64,5 @@ export function useGestureDraw(
     };
   }, [active, containerRef, onComplete]);
 
-  return points;
+  return active ? points : [];
 }

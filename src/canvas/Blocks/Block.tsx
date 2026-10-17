@@ -27,7 +27,6 @@ const HANDLE_RADIUS = 6;
 const RESIZE_HANDLE_SIZE = 16;
 
 type BlockProps = {
-  id: string;
   x: number;
   y: number;
   width?: number;
@@ -36,7 +35,6 @@ type BlockProps = {
   type?: BlockType;
   selected?: boolean;
   removing?: boolean;
-  initialRotation?: number;
   theme: Theme;
   onDragEnd?: (x: number, y: number) => void;
   onDragMove?: (x: number, y: number) => void;
@@ -51,7 +49,6 @@ type BlockProps = {
 };
 
 export function Block({
-  id,
   x,
   y,
   width = 120,
@@ -60,7 +57,6 @@ export function Block({
   type = 'action',
   selected = false,
   removing = false,
-  initialRotation = 0,
   theme,
   onDragEnd,
   onDragMove,
@@ -77,11 +73,14 @@ export function Block({
   const spawnDoneRef = useRef(false);
   const removeStartedRef = useRef(false);
 
+  const [prevSize, setPrevSize] = useState({ w: width, h: height });
   const [liveSize, setLiveSize] = useState({ w: width, h: height });
 
-  useEffect(() => {
+  // Adjust state during render if props change (recommended React pattern).
+  if (width !== prevSize.w || height !== prevSize.h) {
+    setPrevSize({ w: width, h: height });
     setLiveSize({ w: width, h: height });
-  }, [width, height]);
+  }
 
   const w = liveSize.w;
   const h = liveSize.h;
