@@ -36,6 +36,7 @@ type BlockProps = {
   selected?: boolean;
   removing?: boolean;
   theme: Theme;
+  onDragStart?: () => void;
   onDragEnd?: (x: number, y: number) => void;
   onDragMove?: (x: number, y: number) => void;
   onSelect?: () => void;
@@ -58,6 +59,7 @@ export function Block({
   selected = false,
   removing = false,
   theme,
+  onDragStart,
   onDragEnd,
   onDragMove,
   onSelect,
@@ -76,7 +78,6 @@ export function Block({
   const [prevSize, setPrevSize] = useState({ w: width, h: height });
   const [liveSize, setLiveSize] = useState({ w: width, h: height });
 
-  // Adjust state during render if props change (recommended React pattern).
   if (width !== prevSize.w || height !== prevSize.h) {
     setPrevSize({ w: width, h: height });
     setLiveSize({ w: width, h: height });
@@ -142,7 +143,7 @@ export function Block({
     onDragMove?.(e.target.x(), e.target.y());
   };
 
-  const handleClick = (e: KonvaEventObject<MouseEvent>) => {
+  const handleClick = (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
     e.cancelBubble = true;
     onSelect?.();
   };
@@ -250,6 +251,7 @@ export function Block({
         x={x}
         y={y}
         draggable={!removing}
+        onDragStart={onDragStart}
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
         onClick={removing ? undefined : handleClick}
