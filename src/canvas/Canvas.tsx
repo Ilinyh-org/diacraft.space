@@ -51,6 +51,7 @@ import { getContentBBox } from './utils/export';
 import { Grid } from './Grid';
 import { Palette } from './ui/Palette';
 import { ExportPanel } from './ui/ExportPanel';
+import { FeedbackPanel } from './ui/FeedbackPanel';
 import { BlockEditInput } from './ui/BlockEditInput';
 import {
   AlgorithmPanel,
@@ -853,6 +854,8 @@ const runExport = (
       />
 
       <GamePanel theme={theme} />
+
+      <FeedbackPanel theme={theme} />
 
       {ghost && ghostItem && (
         <div
