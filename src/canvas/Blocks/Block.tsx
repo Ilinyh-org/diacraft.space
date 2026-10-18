@@ -16,6 +16,7 @@ export type BlockType =
   | 'condition'
   | 'io'
   | 'forloop'
+  | 'function'
   | 'start'
   | 'link';
 
@@ -211,6 +212,30 @@ export function Block({
             stroke={stroke}
             strokeWidth={strokeWidth}
           />
+        );
+
+      case 'function':
+        return (
+          <Group>
+            <Rect
+              width={w}
+              height={h}
+              fill={fill}
+              stroke={stroke}
+              strokeWidth={strokeWidth}
+              cornerRadius={6}
+            />
+            <Line
+              points={[w * 0.15, 0, w * 0.15, h]}
+              stroke={stroke}
+              strokeWidth={strokeWidth}
+            />
+            <Line
+              points={[w * 0.85, 0, w * 0.85, h]}
+              stroke={stroke}
+              strokeWidth={strokeWidth}
+            />
+          </Group>
         );
 
       case 'start':

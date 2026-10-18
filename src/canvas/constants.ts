@@ -12,6 +12,7 @@ export const PALETTE: { type: BlockType; label: string }[] = [
   { type: 'condition', label: 'Condition' },
   { type: 'io', label: 'I/O' },
   { type: 'forloop', label: 'For-loop' },
+  { type: 'function', label: 'Function' },
   { type: 'link', label: 'Link' },
 ];
 
@@ -21,5 +22,6 @@ export const LABEL_BY_TYPE: Record<BlockType, string> = {
   condition: 'Condition',
   io: 'I/O',
   forloop: 'For-loop',
+  function: 'Function',
   link: 'Link',
 };
