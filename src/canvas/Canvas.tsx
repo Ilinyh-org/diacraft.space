@@ -125,13 +125,15 @@ export function Canvas() {
   }, [arrows]);
 
   const handleGestureComplete = useCallback(
-    (points: Point[]) => {
+    (strokes: Point[][]) => {
       const stageX = stageRef.current?.x() ?? 0;
       const stageY = stageRef.current?.y() ?? 0;
-      const canvasPoints = points.map((p) => ({
-        x: p.x - stageX,
-        y: p.y - stageY,
-      }));
+      const canvasStrokes = strokes.map((stroke) =>
+        stroke.map((p) => ({
+          x: p.x - stageX,
+          y: p.y - stageY,
+        }))
+      );
 
       const currentBlocks = blocksRef.current;
       const boxedBlocks = currentBlocks.map((b) => ({
@@ -142,10 +144,11 @@ export function Canvas() {
         height: b.height,
       }));
 
-      const isLine = looksLikeStraightLine(canvasPoints);
+      const isLine =
+        canvasStrokes.length === 1 && looksLikeStraightLine(canvasStrokes[0]);
 
       if (isLine) {
-        const arrowResult = gestureToArrow(canvasPoints, boxedBlocks);
+        const arrowResult = gestureToArrow(canvasStrokes[0], boxedBlocks);
         if (arrowResult) {
           const fromBlock = currentBlocks.find(
             (b) => b.id === arrowResult.fromBlockId
@@ -172,7 +175,7 @@ export function Canvas() {
         return;
       }
 
-      const result = gestureToBlock([canvasPoints]);
+      const result = gestureToBlock(canvasStrokes);
       if (!result) return;
 
       const newBlock: BlockData = {
