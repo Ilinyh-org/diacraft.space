@@ -58,6 +58,7 @@ import {
   MAX_SPEED,
 } from './ui/AlgorithmPanel';
 import { planAnimation } from './animation/planAnimation';
+import { GamePanel } from '../game/GamePanel';
 import type { AnimStep } from './animation/planAnimation';
 import { useKeyboard } from './hooks/useKeyboard';
 
@@ -850,6 +851,8 @@ const runExport = (
           )
         }
       />
+
+      <GamePanel theme={theme} />
 
       {ghost && ghostItem && (
         <div
