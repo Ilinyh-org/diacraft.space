@@ -9,6 +9,7 @@ type Props = {
   blocks: BlockData[];
   theme: Theme;
   isSelected: boolean;
+  isHighlighted?: boolean;
   listening: boolean;
   onClick: () => void;
 };
@@ -18,6 +19,7 @@ export function ArrowShape({
   blocks,
   theme,
   isSelected,
+  isHighlighted = false,
   listening,
   onClick,
 }: Props) {
@@ -34,13 +36,17 @@ export function ArrowShape({
     arrow.waypoints
   );
   if (pts.length < 4) return null;
-  const color = isSelected ? theme.arrowSelected : theme.arrow;
+  const color = isHighlighted
+    ? theme.runHighlight
+    : isSelected
+      ? theme.arrowSelected
+      : theme.arrow;
   return (
     <Arrow
       points={pts}
       stroke={color}
       fill={color}
-      strokeWidth={isSelected ? 3 : 2}
+      strokeWidth={isHighlighted || isSelected ? 3 : 2}
       pointerLength={10}
       pointerWidth={10}
       hitStrokeWidth={20}

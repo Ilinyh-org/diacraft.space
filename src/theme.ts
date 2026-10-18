@@ -10,6 +10,7 @@ export type Theme = {
   selection: string;
   arrow: string;
   arrowSelected: string;
+  runHighlight: string;
   panelBg: string;
   panelShadow: string;
   buttonBg: string;
@@ -35,6 +36,7 @@ export const lightTheme: Theme = {
   selection: '#2f80ed',
   arrow: '#333333',
   arrowSelected: '#2f80ed',
+  runHighlight: '#27ae60',
   panelBg: '#ffffff',
   panelShadow: 'rgba(0,0,0,0.1)',
   buttonBg: '#f5f5f5',
@@ -60,6 +62,7 @@ export const darkTheme: Theme = {
   selection: '#4a9eff',
   arrow: '#999999',
   arrowSelected: '#4a9eff',
+  runHighlight: '#2ecc71',
   panelBg: '#252525',
   panelShadow: 'rgba(0,0,0,0.5)',
   buttonBg: '#333333',

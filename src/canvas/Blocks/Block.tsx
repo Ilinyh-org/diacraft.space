@@ -35,6 +35,7 @@ type BlockProps = {
   label?: string;
   type?: BlockType;
   selected?: boolean;
+  highlighted?: boolean;
   removing?: boolean;
   theme: Theme;
   onDragStart?: () => void;
@@ -58,6 +59,7 @@ export function Block({
   label = 'Action',
   type = 'action',
   selected = false,
+  highlighted = false,
   removing = false,
   theme,
   onDragStart,
@@ -132,8 +134,12 @@ export function Block({
     }
   }, [removing, onRemoved]);
 
-  const stroke = selected ? theme.selection : theme.blockStroke;
-  const strokeWidth = selected ? 3 : 2;
+  const stroke = highlighted
+    ? theme.runHighlight
+    : selected
+      ? theme.selection
+      : theme.blockStroke;
+  const strokeWidth = highlighted || selected ? 3 : 2;
   const fill = theme.blockFill;
 
   const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {

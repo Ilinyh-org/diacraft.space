@@ -52,6 +52,13 @@ import { Grid } from './Grid';
 import { Palette } from './ui/Palette';
 import { ExportPanel } from './ui/ExportPanel';
 import { BlockEditInput } from './ui/BlockEditInput';
+import {
+  AlgorithmPanel,
+  MIN_SPEED,
+  MAX_SPEED,
+} from './ui/AlgorithmPanel';
+import { planAnimation } from './animation/planAnimation';
+import type { AnimStep } from './animation/planAnimation';
 import { useKeyboard } from './hooks/useKeyboard';
 
 type Mode = 'select' | 'draw';
@@ -99,6 +106,11 @@ export function Canvas() {
   const [editValue, setEditValue] = useState('');
   const [mode, setMode] = useState<Mode>('select');
   const [exportMode, setExportMode] = useState<ExportMode>(null);
+  const [animRunning, setAnimRunning] = useState(false);
+  const [animSpeed, setAnimSpeed] = useState(3);
+  const [activeBlockIds, setActiveBlockIds] = useState<Set<string>>(new Set());
+  const [activeArrowIds, setActiveArrowIds] = useState<Set<string>>(new Set());
+  const animTimerRef = useRef<number | null>(null);
   const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
   const [preview, setPreview] = useState<{
     fromBlockId: string;
@@ -216,6 +228,73 @@ export function Canvas() {
       editInputRef.current.select();
     }
   }, [editingId]);
+
+  const stopAnimation = useCallback(() => {
+    if (animTimerRef.current !== null) {
+      window.clearTimeout(animTimerRef.current);
+      animTimerRef.current = null;
+    }
+    setAnimRunning(false);
+    setActiveBlockIds(new Set());
+    setActiveArrowIds(new Set());
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (animTimerRef.current !== null) {
+        window.clearTimeout(animTimerRef.current);
+      }
+    };
+  }, []);
+
+  const runAnimation = useCallback(() => {
+    if (animTimerRef.current !== null) {
+      window.clearTimeout(animTimerRef.current);
+      animTimerRef.current = null;
+    }
+    const steps: AnimStep[] = planAnimation(
+      blocksRef.current,
+      arrowsRef.current
+    );
+    if (steps.length === 0) return;
+
+    setAnimRunning(true);
+    setSelectedId(null);
+    setSelectedArrowId(null);
+    setActiveBlockIds(new Set());
+    setActiveArrowIds(new Set());
+
+    const stepDelay = Math.max(60, Math.round(600 / animSpeed));
+    const runStep = (index: number, blocksOn: Set<string>, arrowsOn: Set<string>) => {
+      if (index >= steps.length) {
+        animTimerRef.current = window.setTimeout(() => {
+          animTimerRef.current = null;
+          setAnimRunning(false);
+          setActiveBlockIds(new Set());
+          setActiveArrowIds(new Set());
+        }, stepDelay);
+        return;
+      }
+      const step = steps[index];
+      if (step.kind === 'block') {
+        blocksOn = new Set(blocksOn);
+        blocksOn.add(step.id);
+        setActiveBlockIds(blocksOn);
+      } else {
+        arrowsOn = new Set(arrowsOn);
+        arrowsOn.add(step.id);
+        setActiveArrowIds(arrowsOn);
+      }
+      animTimerRef.current = window.setTimeout(
+        () => runStep(index + 1, blocksOn, arrowsOn),
+        stepDelay
+      );
+    };
+    animTimerRef.current = window.setTimeout(
+      () => runStep(0, new Set(), new Set()),
+      stepDelay
+    );
+  }, [animSpeed]);
 
   const requestDelete = useCallback((id: string) => {
     setFadingOut((prev) => {
@@ -565,6 +644,7 @@ const runExport = (
               blocks={blocks}
               theme={theme}
               isSelected={selectedArrowId === arrow.id}
+              isHighlighted={animRunning && activeArrowIds.has(arrow.id)}
               listening={!isExporting}
               onClick={() => {
                 setSelectedArrowId(arrow.id);
@@ -603,6 +683,7 @@ const runExport = (
               label={block.label}
               type={block.type}
               removing={fadingOut.has(block.id)}
+              highlighted={animRunning && activeBlockIds.has(block.id)}
               theme={theme}
               selected={
                 selectedId === block.id &&
@@ -748,12 +829,26 @@ const runExport = (
         }}
         onClear={() => {
           if (window.confirm('Clear the whole diagram?')) {
+            stopAnimation();
             commit(() => ({ blocks: [], arrows: [] }));
             setSelectedId(null);
             setSelectedArrowId(null);
             setEditingId(null);
           }
         }}
+      />
+
+      <AlgorithmPanel
+        theme={theme}
+        running={animRunning}
+        speed={animSpeed}
+        onRun={runAnimation}
+        onStop={stopAnimation}
+        onSpeedChange={(s) =>
+          setAnimSpeed(
+            Math.min(MAX_SPEED, Math.max(MIN_SPEED, Math.round(s)))
+          )
+        }
       />
 
       {ghost && ghostItem && (
