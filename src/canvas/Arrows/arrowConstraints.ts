@@ -62,16 +62,25 @@ function expandHorizontal(
 }
 
 /**
- * After a block move, a stored waypoint can end up behind the arrow's exit
- * or entry stub, producing a redundant double-back bend. If the current
- * path doubles back, reset the arrow's waypoints to a clean elbow for the
- * new geometry. Returns null when the existing waypoints are still fine.
+ * After a block move, stored waypoints are absolute and can end up behind
+ * the arrow's exit or entry stub, producing redundant bends.
+ *
+ * - Arrows the user never shaped (`waypointsCustomized` falsy) always
+ *   re-route to the clean elbow for the new geometry — moving a block can
+ *   never introduce stray bends on them.
+ * - Customized arrows only reset when the current path truly doubles back
+ *   on itself; the user's bends are otherwise preserved.
+ *
+ * Returns null when the existing waypoints are still fine.
  */
 export function refreshWaypointsAfterBlockMove(
   from: BlockData,
   to: BlockData,
   arrow: ArrowData
 ): Pt[] | null {
+  if (!arrow.waypointsCustomized) {
+    return initialWaypoints(from, to, arrow.fromSide, arrow.toSide);
+  }
   const a = getAnchor(from, arrow.fromSide);
   const b = getAnchor(to, arrow.toSide);
   const flat = buildArrowPath(a, arrow.fromSide, b, arrow.toSide, arrow.waypoints);

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { initialWaypoints } from '../arrowGeometry';
-import { applyBendDrag } from '../arrowConstraints';
+import { applyBendDrag, refreshWaypointsAfterBlockMove } from '../arrowConstraints';
 import type { BlockData, ArrowData } from '../../types';
 
 function makeBlock(
@@ -146,3 +146,42 @@ describe('applyBendDrag', () => {
     expect(applyBendDrag(A, B, arrow, 0, 10, 10)).toBeNull();
   });
 });
+
+describe('refreshWaypointsAfterBlockMove', () => {
+  it('non-customized arrow always re-routes to a clean elbow', () => {
+    const A = makeBlock('A', 0, 0);
+    const B = makeBlock('B', 400, 200);
+    const arrow = makeArrow('A', 'B', 'right', 'left', A, B);
+
+    const B2 = makeBlock('B', 400, 600);
+    const wps = refreshWaypointsAfterBlockMove(A, B2, arrow);
+    expect(wps).toEqual(initialWaypoints(A, B2, 'right', 'left'));
+  });
+
+  it('customized arrow keeps its bends unless the path doubles back', () => {
+    const A = makeBlock('A', 0, 0);
+    const B = makeBlock('B', 400, 200);
+    const arrow: ArrowData = {
+      ...makeArrow('A', 'B', 'right', 'left', A, B),
+      waypointsCustomized: true,
+    };
+    const B2 = makeBlock('B', 450, 250);
+    // Mild move: no double-back, so customized bends are preserved.
+    expect(refreshWaypointsAfterBlockMove(A, B2, arrow)).toBeNull();
+
+    // Waypoint behind the exit stub forces a double-back → reset.
+    const bad: ArrowData = {
+      id: 'a2',
+      fromBlockId: 'A',
+      fromSide: 'bottom',
+      toSide: 'top',
+      toBlockId: 'B',
+      waypoints: [{ x: A.x + A.width / 2, y: A.y + 40 }],
+      waypointsCustomized: true,
+    };
+    const wps = refreshWaypointsAfterBlockMove(A, B, bad);
+    expect(wps).not.toBeNull();
+    expect(wps!.length).toBeLessThanOrEqual(2);
+  });
+});
+

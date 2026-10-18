@@ -55,10 +55,36 @@ describe('hasDoubleBack', () => {
 });
 
 describe('refreshWaypointsAfterBlockMove (issue #12)', () => {
-  it('keeps waypoints when the path is still clean', () => {
+  it('recomputes a clean elbow for a non-customized arrow', () => {
     const A = makeBlock('A', 0, 0);
     const B = makeBlock('B', 400, 200);
     const arrow = makeArrow(A, B, 'right', 'left');
+
+    // Move B far down; the stale waypoints must be replaced by a fresh
+    // elbow for the new geometry.
+    const B_moved = makeBlock('B', 400, 600);
+    const wps = refreshWaypointsAfterBlockMove(A, B_moved, arrow);
+    expect(wps).not.toBeNull();
+    expect(wps).toEqual(initialWaypoints(A, B_moved, 'right', 'left'));
+
+    const flat = buildArrowPath(
+      anchor(A, 'right'),
+      arrow.fromSide,
+      anchor(B_moved, 'left'),
+      arrow.toSide,
+      wps as Point2D[]
+    );
+    expect(hasDoubleBack(flat)).toBe(false);
+    expect(extractBends(flat).length).toBe(2);
+  });
+
+  it('keeps waypoints of a customized arrow when the path is still clean', () => {
+    const A = makeBlock('A', 0, 0);
+    const B = makeBlock('B', 400, 200);
+    const arrow: ArrowData = {
+      ...makeArrow(A, B, 'right', 'left'),
+      waypointsCustomized: true,
+    };
     expect(refreshWaypointsAfterBlockMove(A, B, arrow)).toBeNull();
   });
 
