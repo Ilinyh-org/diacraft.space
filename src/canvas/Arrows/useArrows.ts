@@ -11,7 +11,11 @@ export function useArrows(commit: CommitFn) {
         ...s,
         arrows: s.arrows.map((a) =>
           a.id === arrowId
-            ? { ...a, waypoints: [...a.waypoints, { x, y }] }
+            ? {
+                ...a,
+                waypoints: [...a.waypoints, { x, y }],
+                waypointsCustomized: true,
+              }
             : a
         ),
       }));
@@ -39,7 +43,7 @@ export function useArrows(commit: CommitFn) {
         return {
           ...s,
           arrows: s.arrows.map((a) =>
-            a.id === arrowId ? { ...a, waypoints: newWaypoints } : a
+            a.id === arrowId ? { ...a, waypoints: newWaypoints, waypointsCustomized: true } : a
           ),
         };
       });
@@ -56,6 +60,7 @@ export function useArrows(commit: CommitFn) {
             ? {
                 ...a,
                 waypoints: a.waypoints.filter((_, i) => i !== idx),
+                waypointsCustomized: true,
               }
             : a
         ),

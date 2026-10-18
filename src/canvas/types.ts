@@ -19,6 +19,12 @@ export type ArrowData = {
   toBlockId: string;
   toSide: Side;
   waypoints: Waypoint[];
+  /**
+   * True once the user explicitly shaped the arrow (added/dragged/deleted a
+   * bend). Non-customized arrows always re-route to a clean elbow when a
+   * block moves; customized arrows only reset on a true double-back.
+   */
+  waypointsCustomized?: boolean;
 };
 
 export type DiagramState = {
