@@ -309,6 +309,9 @@ export function Block({
             onDragEnd={(e) => {
               const abs = e.target.getAbsolutePosition();
               onHandleDragEnd?.(abs.x, abs.y);
+              // Reset the node to its anchor so an unconnected drop
+              // does not leave the handle dot stranded on the canvas.
+              e.target.position({ x: x + hx, y: y + hy });
             }}
           />
         ))}
