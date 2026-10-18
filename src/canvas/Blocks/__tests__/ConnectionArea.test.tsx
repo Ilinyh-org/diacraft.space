@@ -62,7 +62,7 @@ describe('ConnectionArea', () => {
     const el = getByTestId('connection-area-circle');
     expect(el.dataset.x).toBe('120');
     expect(el.dataset.y).toBe('80');
-    expect(el.dataset.radius).toBe('18');
+    expect(el.dataset.radius).toBe('19.8');
     expect(JSON.parse(el.dataset.dash ?? '')).toEqual([6, 6]);
   });
 

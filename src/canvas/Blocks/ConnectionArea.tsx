@@ -7,6 +7,12 @@ import type { Theme } from '../../theme';
 export const CONNECTION_AREA_RADIUS = 18;
 
 /**
+ * Hit radius of the rendered area: 10% larger than the drawn marker.
+ * Dropping the connection handle inside this circle attaches the arrow.
+ */
+export const CONNECTION_AREA_HIT_RADIUS = CONNECTION_AREA_RADIUS * 1.1;
+
+/**
  * Animated connection area indicator shown at a block side anchor while
  * another block's connection handle is being dragged nearby.
  *
@@ -60,7 +66,7 @@ export function ConnectionArea({
       ref={ref}
       x={x}
       y={y}
-      radius={CONNECTION_AREA_RADIUS}
+      radius={CONNECTION_AREA_HIT_RADIUS}
       stroke={theme.selection}
       strokeWidth={2}
       dash={[6, 6]}

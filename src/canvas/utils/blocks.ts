@@ -32,3 +32,31 @@ export function pickClosestSide(
   }
   return dy > 0 ? 'bottom' : 'top';
 }
+
+/**
+ * Find the block a connection drop at (x, y) should attach to.
+ *
+ * A drop inside a block's bounds, or inside the hit radius of any of its
+ * side anchors (the visible connection area circles), attaches the arrow.
+ * Blocks whose id is `excludeId` (the source block) are skipped.
+ */
+export function findDropTarget(
+  blocks: BlockData[],
+  excludeId: string,
+  x: number,
+  y: number,
+  hitRadius: number
+): BlockData | undefined {
+  return blocks.find((b) => {
+    if (b.id === excludeId) return false;
+    if (x >= b.x && x <= b.x + b.width && y >= b.y && y <= b.y + b.height) {
+      return true;
+    }
+    return SIDES.some((side) => {
+      const anchor = getAnchor(b, side);
+      return Math.hypot(x - anchor.x, y - anchor.y) <= hitRadius;
+    });
+  });
+}
+
+const SIDES: Side[] = ['top', 'right', 'bottom', 'left'];

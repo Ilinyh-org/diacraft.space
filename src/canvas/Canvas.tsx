@@ -3,7 +3,10 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Konva from 'konva';
 import { Block } from './Blocks/Block';
 import type { BlockType, Side } from './Blocks/Block';
-import { ConnectionArea } from './Blocks/ConnectionArea';
+import {
+  ConnectionArea,
+  CONNECTION_AREA_HIT_RADIUS,
+} from './Blocks/ConnectionArea';
 import { useGestureDraw } from './Gestures/useGestureDraw';
 import type { Point } from './Gestures/useGestureDraw';
 import { gestureToBlock } from '../recognition/gestureToBlock';
@@ -43,7 +46,7 @@ import {
 } from './constants';
 import type { KonvaEventObject } from 'konva/lib/Node';
 import type { BlockData, ArrowData, DiagramState } from './types';
-import { getAnchor, pickClosestSide } from './utils/blocks';
+import { findDropTarget, getAnchor, pickClosestSide } from './utils/blocks';
 import { getContentBBox } from './utils/export';
 import { Grid } from './Grid';
 import { Palette } from './ui/Palette';
@@ -415,15 +418,13 @@ export function Canvas() {
     if (!preview) return;
     const side = preview.fromSide;
 
-    const target = blocks.find((b) => {
-      if (b.id === blockId) return false;
-      return (
-        x >= b.x &&
-        x <= b.x + b.width &&
-        y >= b.y &&
-        y <= b.y + b.height
-      );
-    });
+    const target = findDropTarget(
+      blocks,
+      blockId,
+      x,
+      y,
+      CONNECTION_AREA_HIT_RADIUS
+    );
 
     if (target) {
       const targetSide = pickClosestSide(target, x, y);
@@ -589,6 +590,44 @@ const runExport = (
               );
             })()}
 
+          {blocks.map((block) => (
+            <Block
+              key={block.id}
+              x={block.x}
+              y={block.y}
+              width={block.width}
+              height={block.height}
+              label={block.label}
+              type={block.type}
+              removing={fadingOut.has(block.id)}
+              theme={theme}
+              selected={
+                selectedId === block.id &&
+                !isDrawMode &&
+                !isExporting &&
+                editingId !== block.id
+              }
+              onSelect={() => {
+                setSelectedId(block.id);
+                setSelectedArrowId(null);
+              }}
+              onDelete={() => requestDelete(block.id)}
+              onEdit={() => handleStartEdit(block.id)}
+              onResize={(w, h) => handleBlockResize(block.id, w, h)}
+              onDragStart={handleBlockDragStart}
+              onDragMove={(x, y) => handleBlockDragMove(block.id, x, y)}
+              onDragEnd={(x, y) => handleBlockDragEnd(block.id, x, y)}
+              onHandleDragStart={(side, x, y) =>
+                handleHandleDragStart(block.id, side, x, y)
+              }
+              onHandleDragMove={handleHandleDragMove}
+              onHandleDragEnd={(x, y) => handleHandleDragEnd(block.id, x, y)}
+              onRemoved={() => handleBlockRemoved(block.id)}
+            />
+          ))}
+
+          {/* Connection areas render in front of the blocks so the animated
+              dashed circles stay visible over block edges. */}
           {preview &&
             !isExporting &&
             blocks
@@ -632,42 +671,6 @@ const runExport = (
                 />
               );
             })()}
-
-          {blocks.map((block) => (
-            <Block
-              key={block.id}
-              x={block.x}
-              y={block.y}
-              width={block.width}
-              height={block.height}
-              label={block.label}
-              type={block.type}
-              removing={fadingOut.has(block.id)}
-              theme={theme}
-              selected={
-                selectedId === block.id &&
-                !isDrawMode &&
-                !isExporting &&
-                editingId !== block.id
-              }
-              onSelect={() => {
-                setSelectedId(block.id);
-                setSelectedArrowId(null);
-              }}
-              onDelete={() => requestDelete(block.id)}
-              onEdit={() => handleStartEdit(block.id)}
-              onResize={(w, h) => handleBlockResize(block.id, w, h)}
-              onDragStart={handleBlockDragStart}
-              onDragMove={(x, y) => handleBlockDragMove(block.id, x, y)}
-              onDragEnd={(x, y) => handleBlockDragEnd(block.id, x, y)}
-              onHandleDragStart={(side, x, y) =>
-                handleHandleDragStart(block.id, side, x, y)
-              }
-              onHandleDragMove={handleHandleDragMove}
-              onHandleDragEnd={(x, y) => handleHandleDragEnd(block.id, x, y)}
-              onRemoved={() => handleBlockRemoved(block.id)}
-            />
-          ))}
 
           {isDrawMode && trail.length > 1 && (
             <Line
