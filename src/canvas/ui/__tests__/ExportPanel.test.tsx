@@ -9,6 +9,8 @@ function setup() {
     onExportPng: vi.fn(),
     onExportJpeg: vi.fn(),
     onExportSvg: vi.fn(),
+    onExportJson: vi.fn(),
+    onImportJson: vi.fn(),
     onClear: vi.fn(),
   };
   render(<ExportPanel {...props} />);
@@ -18,7 +20,7 @@ function setup() {
 describe('ExportPanel', () => {
   it('renders export and clear buttons', () => {
     setup();
-    for (const label of ['PNG', 'JPEG', 'SVG', 'Clear']) {
+    for (const label of ['PNG', 'JPEG', 'SVG', 'JSON', 'Import JSON', 'Clear']) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
   });
@@ -28,9 +30,12 @@ describe('ExportPanel', () => {
     fireEvent.click(screen.getByText('PNG'));
     fireEvent.click(screen.getByText('JPEG'));
     fireEvent.click(screen.getByText('SVG'));
+    fireEvent.click(screen.getByText('JSON'));
     expect(props.onExportPng).toHaveBeenCalledTimes(1);
     expect(props.onExportJpeg).toHaveBeenCalledTimes(1);
     expect(props.onExportSvg).toHaveBeenCalledTimes(1);
+    expect(props.onExportJson).toHaveBeenCalledTimes(1);
+    expect(props.onImportJson).not.toHaveBeenCalled();
     expect(props.onClear).not.toHaveBeenCalled();
   });
 
