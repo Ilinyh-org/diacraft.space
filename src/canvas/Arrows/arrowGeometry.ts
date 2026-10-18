@@ -1,5 +1,5 @@
 import type { Side } from '../Blocks/Block';
-import { normalVector, STUB } from './arrowPath';
+import { normalVector, STUB, smartConnect } from './arrowPath';
 import type { BlockData } from '../types';
 import { getAnchor } from '../utils/blocks';
 
@@ -90,13 +90,15 @@ export function buildPathWithFixed(
 
   if (waypoints.length > 0) {
     let prev = exit;
+    let incoming: Pt | null = a;
     for (const wp of waypoints) {
-      for (const m of orthoConnect(prev, wp)) push(m, false);
+      for (const m of smartConnect(prev, incoming, wp)) push(m, false);
       waypointIndices.push(pts.length);
       push(wp, false);
+      incoming = prev;
       prev = wp;
     }
-    for (const m of orthoConnect(prev, entry)) push(m, false);
+    for (const m of smartConnect(prev, incoming, entry)) push(m, false);
   } else {
     for (const m of computeElbow(exit, aSide, entry, bSide)) push(m, false);
   }

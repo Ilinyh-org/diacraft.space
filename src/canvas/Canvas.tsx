@@ -13,6 +13,7 @@ import {
 
 import { useArrows } from './Arrows/useArrows';
 import { initialWaypoints } from './Arrows/arrowGeometry';
+import { refreshWaypointsAfterBlockMove } from './Arrows/arrowConstraints';
 
 import { ArrowShape } from './Arrows/ArrowShape';
 import { SelectedArrowOverlay } from './Arrows/SelectedArrowOverlay';
@@ -332,12 +333,27 @@ export function Canvas() {
     blockDragBeforeRef.current = state;
   }, [state]);
 
+  const moveBlockAndRefreshArrows = (
+    s: DiagramState,
+    id: string,
+    x: number,
+    y: number
+  ): DiagramState => {
+    const blocks = s.blocks.map((b) => (b.id === id ? { ...b, x, y } : b));
+    const arrows = s.arrows.map((ar) => {
+      if (ar.fromBlockId !== id && ar.toBlockId !== id) return ar;
+      const from = blocks.find((b) => b.id === ar.fromBlockId);
+      const to = blocks.find((b) => b.id === ar.toBlockId);
+      if (!from || !to) return ar;
+      const wps = refreshWaypointsAfterBlockMove(from, to, ar);
+      return wps ? { ...ar, waypoints: wps } : ar;
+    });
+    return { ...s, blocks, arrows };
+  };
+
   const handleBlockDragMove = useCallback(
     (id: string, x: number, y: number) => {
-      commitLive((s) => ({
-        ...s,
-        blocks: s.blocks.map((b) => (b.id === id ? { ...b, x, y } : b)),
-      }));
+      commitLive((s) => moveBlockAndRefreshArrows(s, id, x, y));
     },
     [commitLive]
   );
@@ -345,10 +361,7 @@ export function Canvas() {
   const handleBlockDragEnd = useCallback(
     (id: string, x: number, y: number) => {
       // Ensure final position matches the drop point.
-      commitLive((s) => ({
-        ...s,
-        blocks: s.blocks.map((b) => (b.id === id ? { ...b, x, y } : b)),
-      }));
+      commitLive((s) => moveBlockAndRefreshArrows(s, id, x, y));
       // One history entry for the whole drag.
       const before = blockDragBeforeRef.current;
       if (before) commitCheckpoint(before);

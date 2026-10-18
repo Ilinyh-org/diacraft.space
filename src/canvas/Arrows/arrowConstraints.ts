@@ -1,6 +1,7 @@
 import type { ArrowData, BlockData } from '../types';
 import { getAnchor } from '../utils/blocks';
-import { buildPathWithFixed, type Pt } from './arrowGeometry';
+import { buildPathWithFixed, initialWaypoints, type Pt } from './arrowGeometry';
+import { buildArrowPath, hasDoubleBack } from './arrowPath';
 
 function segmentOrientation(p: Pt, q: Pt): 'H' | 'V' {
   return Math.abs(p.x - q.x) >= Math.abs(p.y - q.y) ? 'H' : 'V';
@@ -58,6 +59,24 @@ function expandHorizontal(
     }
   }
   return g;
+}
+
+/**
+ * After a block move, a stored waypoint can end up behind the arrow's exit
+ * or entry stub, producing a redundant double-back bend. If the current
+ * path doubles back, reset the arrow's waypoints to a clean elbow for the
+ * new geometry. Returns null when the existing waypoints are still fine.
+ */
+export function refreshWaypointsAfterBlockMove(
+  from: BlockData,
+  to: BlockData,
+  arrow: ArrowData
+): Pt[] | null {
+  const a = getAnchor(from, arrow.fromSide);
+  const b = getAnchor(to, arrow.toSide);
+  const flat = buildArrowPath(a, arrow.fromSide, b, arrow.toSide, arrow.waypoints);
+  if (!hasDoubleBack(flat)) return null;
+  return initialWaypoints(from, to, arrow.fromSide, arrow.toSide);
 }
 
 /**
