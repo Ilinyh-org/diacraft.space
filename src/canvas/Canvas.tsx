@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Konva from 'konva';
 import { Block } from './Blocks/Block';
 import type { BlockType, Side } from './Blocks/Block';
+import { ConnectionArea } from './Blocks/ConnectionArea';
 import { useGestureDraw } from './Gestures/useGestureDraw';
 import type { Point } from './Gestures/useGestureDraw';
 import { gestureToBlock } from '../recognition/gestureToBlock';
@@ -51,6 +52,10 @@ import { BlockEditInput } from './ui/BlockEditInput';
 import { useKeyboard } from './hooks/useKeyboard';
 
 type Mode = 'select' | 'draw';
+
+const CONNECTION_SIDES: Side[] = ['top', 'right', 'bottom', 'left'];
+/** Distance from the dragged handle within which a connection area shows. */
+const CONNECTION_AREA_NEAR_RADIUS = 60;
 type ExportMode = null | 'transparent' | 'white';
 
 export function Canvas() {
@@ -583,6 +588,30 @@ const runExport = (
                 />
               );
             })()}
+
+          {preview &&
+            !isExporting &&
+            blocks
+              .filter((b) => b.id !== preview.fromBlockId)
+              .flatMap((block) =>
+                CONNECTION_SIDES.map((side) => {
+                  const anchor = getAnchor(block, side);
+                  const near =
+                    Math.hypot(
+                      preview.x - anchor.x,
+                      preview.y - anchor.y
+                    ) <= CONNECTION_AREA_NEAR_RADIUS;
+                  return (
+                    <ConnectionArea
+                      key={`${block.id}:${side}`}
+                      x={anchor.x}
+                      y={anchor.y}
+                      theme={theme}
+                      visible={near}
+                    />
+                  );
+                }),
+              )}
 
           {preview &&
             !isExporting &&
