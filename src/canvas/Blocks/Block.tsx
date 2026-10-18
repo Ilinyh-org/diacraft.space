@@ -148,6 +148,11 @@ export function Block({
     onSelect?.();
   };
 
+  const handleLabelDblClick = (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
+    e.cancelBubble = true;
+    onEdit?.();
+  };
+
   const renderShape = () => {
     switch (type) {
       case 'action':
@@ -273,7 +278,9 @@ export function Block({
             verticalAlign="middle"
             fontSize={14}
             fill={theme.blockText}
-            listening={false}
+            listening={!removing}
+            onDblClick={handleLabelDblClick}
+            onDblTap={handleLabelDblClick}
           />
         </Group>
       </Group>
