@@ -30,3 +30,16 @@ If you are developing a production application, we recommend enabling type-aware
 ```
 
 See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+
+## Testing
+
+Tests use [Vitest](https://vitest.dev/) with jsdom and React Testing Library.
+
+```bash
+npm test        # run all tests once
+npm run test:watch  # run tests in watch mode
+```
+
+Test files are co-located with the code they cover in `__tests__` directories.
+Core UI coverage includes the palette, export panel, draggable panels, block
+rename input, keyboard shortcuts, and state persistence.
