@@ -44,6 +44,39 @@ function orthoConnect(P: Point2D, Q: Point2D): Point2D[] {
   return [{ x: Q.x, y: P.y }];
 }
 
+/**
+ * Orthogonal L-connector from `prev` to `target` that avoids doubling back:
+ * when the default horizontal-first elbow ({target.x, prev.y}) would send the
+ * segment opposite to the direction of the incoming segment, it connects
+ * vertical-first instead (or vice versa). This prevents redundant
+ * zig-zag bends when a block is moved past a stored waypoint.
+ */
+export function smartConnect(
+  prev: Point2D,
+  incoming: Point2D | null,
+  target: Point2D
+): Point2D[] {
+  const horizontalFirst = orthoConnect(prev, target);
+  if (horizontalFirst.length === 0) return [];
+  if (!incoming) return horizontalFirst;
+
+  const incomingHorizontal = Math.abs(incoming.y - prev.y) < 0.5;
+  if (incomingHorizontal) {
+    const inDir = Math.sign(prev.x - incoming.x);
+    const outDir = Math.sign(target.x - prev.x);
+    if (inDir !== 0 && outDir !== 0 && inDir !== outDir) {
+      return [{ x: prev.x, y: target.y }];
+    }
+  } else {
+    const inDir = Math.sign(prev.y - incoming.y);
+    const outDir = Math.sign(target.y - prev.y);
+    if (inDir !== 0 && outDir !== 0 && inDir !== outDir) {
+      return horizontalFirst;
+    }
+  }
+  return horizontalFirst;
+}
+
 function computeElbow(
   P: Point2D,
   pSide: Side,
@@ -72,6 +105,25 @@ function computeElbow(
   return [{ x: P.x, y: Q.y }];
 }
 
+/**
+ * True when the polyline contains two consecutive segments that are
+ * antiparallel (the path visibly doubles back on itself).
+ */
+export function hasDoubleBack(flatPoints: number[]): boolean {
+  const pts: Point2D[] = [];
+  for (let i = 0; i < flatPoints.length; i += 2) {
+    pts.push({ x: flatPoints[i], y: flatPoints[i + 1] });
+  }
+  for (let i = 2; i < pts.length; i++) {
+    const dx1 = pts[i - 1].x - pts[i - 2].x;
+    const dy1 = pts[i - 1].y - pts[i - 2].y;
+    const dx2 = pts[i].x - pts[i - 1].x;
+    const dy2 = pts[i].y - pts[i - 1].y;
+    if (dx1 * dx2 + dy1 * dy2 < -1) return true;
+  }
+  return false;
+}
+
 export function buildArrowPath(
   a: Point2D,
   aSide: Side,
@@ -87,13 +139,17 @@ export function buildArrowPath(
   const pts: Point2D[] = [a, exit];
 
   if (waypoints.length > 0) {
+    let prev = exit;
+    let incoming: Point2D | null = a;
     for (const wp of waypoints) {
-      const prev = pts[pts.length - 1];
-      pts.push(...orthoConnect(prev, wp));
+      for (const m of smartConnect(prev, incoming, wp)) {
+        pts.push(m);
+      }
+      incoming = prev;
+      prev = wp;
       pts.push(wp);
     }
-    const prev = pts[pts.length - 1];
-    pts.push(...orthoConnect(prev, entry));
+    for (const m of smartConnect(prev, incoming, entry)) pts.push(m);
   } else {
     pts.push(...computeElbow(exit, aSide, entry, bSide));
   }
