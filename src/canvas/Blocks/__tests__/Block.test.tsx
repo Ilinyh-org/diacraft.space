@@ -40,6 +40,36 @@ const theme = {
   editButton: '#0f0',
 } as unknown as Theme;
 
+describe('Block handle drag reset', () => {
+  it('resets the handle node position when a drag ends without connecting', () => {
+    const onHandleDragEnd = vi.fn();
+    const { getAllByTestId } = render(
+      <Block
+        x={100}
+        y={50}
+        width={120}
+        height={60}
+        selected
+        theme={theme}
+        onHandleDragEnd={onHandleDragEnd}
+      />,
+    );
+    const circles = getAllByTestId('circle');
+    // First circle is the top-side handle.
+    const topHandle = circles[0];
+    expect(topHandle).toBeTruthy();
+    // Simulate Konva node leaving the anchor position during the drag.
+    const position = vi.fn();
+    const getAbsolutePosition = vi.fn(() => ({ x: 300, y: 200 }));
+    fireEvent.dragEnd(topHandle, {
+      target: { position, getAbsolutePosition },
+    });
+    expect(onHandleDragEnd).toHaveBeenCalledWith(300, 200);
+    // Anchor for the top side: (x + w/2, y) = (160, 50).
+    expect(position).toHaveBeenCalledWith({ x: 160, y: 50 });
+  });
+});
+
 describe('Block label rename', () => {
   it('calls onEdit on double-click of the block label text', () => {
     const onEdit = vi.fn();
