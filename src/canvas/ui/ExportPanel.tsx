@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { useRef } from 'react';
 import { DraggablePanel } from '../../ui/DraggablePanel';
 import type { Theme } from '../../theme';
 
@@ -7,6 +8,8 @@ type ExportPanelProps = {
   onExportPng: () => void;
   onExportJpeg: () => void;
   onExportSvg: () => void;
+  onExportJson: () => void;
+  onImportJson: (file: File) => void;
   onClear: () => void;
 };
 
@@ -15,8 +18,11 @@ export function ExportPanel({
   onExportPng,
   onExportJpeg,
   onExportSvg,
+  onExportJson,
+  onImportJson,
   onClear,
 }: ExportPanelProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const buttonStyle: CSSProperties = {
     padding: '6px 10px',
     border: `1px solid ${theme.buttonBorder}`,
@@ -55,6 +61,26 @@ export function ExportPanel({
       <button onClick={onExportSvg} style={buttonStyle}>
         SVG
       </button>
+      <button onClick={onExportJson} style={buttonStyle}>
+        JSON
+      </button>
+
+      <div style={{ height: 1, background: theme.divider, margin: '4px 0' }} />
+
+      <button onClick={() => fileInputRef.current?.click()} style={buttonStyle}>
+        Import JSON
+      </button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/json,.json"
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onImportJson(file);
+          e.target.value = '';
+        }}
+      />
 
       <div style={{ height: 1, background: theme.divider, margin: '4px 0' }} />
 

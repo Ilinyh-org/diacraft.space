@@ -19,6 +19,10 @@ import { ArrowShape } from './Arrows/ArrowShape';
 import { SelectedArrowOverlay } from './Arrows/SelectedArrowOverlay';
 
 import { exportPng, exportJpeg, exportSvg } from '../export/exportImage';
+import {
+  downloadDiagramJson,
+  parseDiagram,
+} from '../export/diagramJson';
 
 
 import { useHistory } from '../state/useHistory';
@@ -687,6 +691,26 @@ const runExport = (
         onExportPng={() => runExport(exportPng, 'transparent')}
         onExportJpeg={() => runExport(exportJpeg, 'white')}
         onExportSvg={() => runExport(exportSvg, 'transparent')}
+        onExportJson={() => downloadDiagramJson(state)}
+        onImportJson={(file) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const imported = parseDiagram(String(reader.result));
+              commit(() => imported);
+              setSelectedId(null);
+              setSelectedArrowId(null);
+              setEditingId(null);
+            } catch (err) {
+              window.alert(
+                `Import failed: ${
+                  err instanceof Error ? err.message : 'unknown error'
+                }`
+              );
+            }
+          };
+          reader.readAsText(file);
+        }}
         onClear={() => {
           if (window.confirm('Clear the whole diagram?')) {
             commit(() => ({ blocks: [], arrows: [] }));
