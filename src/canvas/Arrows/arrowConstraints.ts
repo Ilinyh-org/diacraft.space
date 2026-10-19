@@ -89,6 +89,44 @@ export function refreshWaypointsAfterBlockMove(
 }
 
 /**
+ * True when the bend at `bendIndex` cannot move on either axis because both
+ * drag groups hit a fixed (anchor) point. Such a bend must stay in place
+ * when the user tries to drag it.
+ */
+export function isBendFullyConstrained(
+  from: BlockData,
+  to: BlockData,
+  arrow: ArrowData,
+  bendIndex: number
+): boolean {
+  if (arrow.waypoints.length === 0) return true;
+  if (bendIndex < 0 || bendIndex >= arrow.waypoints.length) return true;
+
+  const a = getAnchor(from, arrow.fromSide);
+  const b = getAnchor(to, arrow.toSide);
+  const { points, fixed, waypointIndices } = buildPathWithFixed(
+    a,
+    arrow.fromSide,
+    b,
+    arrow.toSide,
+    arrow.waypoints
+  );
+
+  if (waypointIndices.length !== arrow.waypoints.length) return true;
+
+  const pathIdx = waypointIndices[bendIndex];
+  const orient = orientSegments(points);
+
+  const xGroup = expandVertical(orient, new Set([pathIdx]));
+  const yGroup = expandHorizontal(orient, new Set([pathIdx]));
+
+  const xBlocked = Array.from(xGroup).some((i) => fixed[i]);
+  const yBlocked = Array.from(yGroup).some((i) => fixed[i]);
+
+  return xBlocked && yBlocked;
+}
+
+/**
  * Move the waypoint at `bendIndex` by (dx, dy).
  * Waypoints transitively connected along the perpendicular axis move too,
  * preserving orthogonality without creating new bends.

@@ -3,6 +3,7 @@ import type { ArrowData, BlockData } from '../types';
 import type { Theme } from '../../theme';
 import { getAnchor } from '../utils/blocks';
 import { buildArrowPath, pathMidpoint } from './arrowPath';
+import { isBendFullyConstrained } from './arrowConstraints';
 
 type Props = {
   arrow: ArrowData;
@@ -111,6 +112,11 @@ export function SelectedArrowOverlay({
           x={bend.x}
           y={bend.y}
           draggable
+          dragBoundFunc={
+            from && to && isBendFullyConstrained(from, to, arrow, idx)
+              ? () => ({ x: bend.x, y: bend.y })
+              : undefined
+          }
           onDragStart={(e) => {
             e.cancelBubble = true;
           }}
