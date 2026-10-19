@@ -7,7 +7,7 @@ export const EXPORT_PADDING = 20;
 export const GRID_EXTENT = 5000;
 
 export const PALETTE: { type: BlockType; label: string }[] = [
-  { type: 'start', label: 'Start' },
+  { type: 'start', label: 'Start/End' },
   { type: 'action', label: 'Action' },
   { type: 'condition', label: 'Condition' },
   { type: 'io', label: 'I/O' },
