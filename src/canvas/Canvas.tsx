@@ -111,6 +111,11 @@ export function Canvas() {
   const [animRunning, setAnimRunning] = useState(false);
   const [animSpeed, setAnimSpeed] = useState(3);
   const [gameRunSignal, setGameRunSignal] = useState(0);
+  const [gameBlockSignal, setGameBlockSignal] = useState<{
+    seq: number;
+    blockId: string;
+  } | null>(null);
+  const gameBlockSeq = useRef(0);
   const [activeBlockIds, setActiveBlockIds] = useState<Set<string>>(new Set());
   const [activeArrowIds, setActiveArrowIds] = useState<Set<string>>(new Set());
   const animTimerRef = useRef<number | null>(null);
@@ -283,6 +288,8 @@ export function Canvas() {
         blocksOn = new Set(blocksOn);
         blocksOn.add(step.id);
         setActiveBlockIds(blocksOn);
+        gameBlockSeq.current += 1;
+        setGameBlockSignal({ seq: gameBlockSeq.current, blockId: step.id });
       } else {
         arrowsOn = new Set(arrowsOn);
         arrowsOn.add(step.id);
@@ -862,6 +869,7 @@ const runExport = (
         blocks={blocks}
         arrows={arrows}
         runSignal={gameRunSignal}
+        blockSignal={gameBlockSignal}
         onRunDiagram={runAnimation}
       />
 

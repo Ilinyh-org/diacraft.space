@@ -6,7 +6,8 @@ import type { ArrowData, BlockData } from '../canvas/types';
 import { LEVELS } from './levels';
 import { runProgram, wallAhead } from './types';
 import type { Frame } from './types';
-import { compileFlowchart } from './flowchart';
+import { compileFlowchart, isEndBlock, statementForBlock } from './flowchart';
+import { stepStatement } from './types';
 
 const STEP_MS = 350;
 
@@ -20,8 +21,10 @@ type Props = {
   theme: Theme;
   blocks: BlockData[];
   arrows: ArrowData[];
-  /** Incremented by the algorithm panel's Run button to also run the game. */
+  /** Incremented by the algorithm panel's Run button to arm the game. */
   runSignal?: number;
+  /** Set by the diagram animation each time a block activates (issue #40). */
+  blockSignal?: { seq: number; blockId: string } | null;
   /** Starts the canvas diagram animation (issue #33); called on button Run only. */
   onRunDiagram?: () => void;
 };
@@ -31,6 +34,7 @@ export function GamePanel({
   blocks,
   arrows,
   runSignal = 0,
+  blockSignal = null,
   onRunDiagram,
 }: Props) {
   const [levelIndex, setLevelIndex] = useState(0);
@@ -38,6 +42,10 @@ export function GamePanel({
   const [frameIndex, setFrameIndex] = useState(0);
   const [status, setStatus] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(true);
+  const [highlighted, setHighlighted] = useState(false);
+  const lastSignalSeq = useRef(0);
+  const syncState = useRef<{ frames: Frame[]; crashed: boolean } | null>(null);
+  const highlightTimer = useRef<number | null>(null);
 
   const level = LEVELS[levelIndex];
 
@@ -55,6 +63,13 @@ export function GamePanel({
     setFrames(null);
     setFrameIndex(0);
     setStatus(null);
+    setHighlighted(false);
+    syncState.current = null;
+    lastSignalSeq.current = 0;
+    if (highlightTimer.current !== null) {
+      window.clearTimeout(highlightTimer.current);
+      highlightTimer.current = null;
+    }
   }, []);
 
   const pickLevel = useCallback(
@@ -75,36 +90,100 @@ export function GamePanel({
     (fromButton: boolean) => {
       if (fromButton) onRunDiagram?.();
       if (!compiled.ok) {
-      setFrames(null);
+        setFrames(null);
+        setFrameIndex(0);
+        setStatus(`✖ ${compiled.errors.join(' ')}`);
+        return;
+      }
+      const result = runProgram(level, compiled.program);
+      setFrames(result.frames);
       setFrameIndex(0);
-      setStatus(`✖ ${compiled.errors.join(' ')}`);
-      return;
-    }
-    const result = runProgram(level, compiled.program);
-    setFrames(result.frames);
-    setFrameIndex(0);
-    setStatus(
-      result.status === 'win'
-        ? '✔ Level complete!'
-        : result.status === 'crash'
-          ? '✖ The robot crashed into a wall.'
-          : result.status === 'timeout'
-            ? '✖ Program ran too long.'
-            : '✖ The robot stopped short of the flag.',
-    );
+      setStatus(
+        result.status === 'win'
+          ? '✔ Level complete!'
+          : result.status === 'crash'
+            ? '✖ The robot crashed into a wall.'
+            : result.status === 'timeout'
+              ? '✖ Program ran too long.'
+              : '✖ The robot stopped short of the flag.',
+      );
     },
     [compiled, level, onRunDiagram],
   );
 
-  const runRef = useRef(run);
-  useEffect(() => {
-    runRef.current = run;
-  }, [run]);
+  // The game panel's own ▶ Run button runs the whole program immediately.
+  // The algorithm panel's Run button arms the game; the robot then moves in
+  // sync with the diagram animation, one statement per activated block (#40).
+  const armSync = useCallback(() => {
+    reset();
+    if (!compiled.ok) {
+      setStatus(`✖ ${compiled.errors.join(' ')}`);
+      return;
+    }
+    syncState.current = { frames: [{ ...level.start }], crashed: false };
+    setFrames(syncState.current.frames);
+    setFrameIndex(0);
+  }, [compiled, level, reset]);
 
-  // The algorithm panel's Run button also runs the game (issue #30).
+  const armSyncRef = useRef(armSync);
   useEffect(() => {
-    if (runSignal > 0) runRef.current(false);
+    armSyncRef.current = armSync;
+  }, [armSync]);
+
+  useEffect(() => {
+    if (runSignal > 0) armSyncRef.current();
   }, [runSignal]);
+
+  // Each activated action block advances the robot by one statement (#40).
+  useEffect(() => {
+    const sync = syncState.current;
+    if (!blockSignal || blockSignal.seq <= lastSignalSeq.current || !sync) return;
+    lastSignalSeq.current = blockSignal.seq;
+    if (sync.crashed) return;
+
+    const block = blocks.find((b) => b.id === blockSignal.blockId);
+    if (!block) return;
+
+    if (isEndBlock(block)) {
+      const frame = sync.frames[sync.frames.length - 1];
+      const won =
+        !sync.crashed &&
+        frame.x === level.goal.x &&
+        frame.y === level.goal.y;
+      setStatus(
+        won ? '✔ Level complete!' : '✖ The robot stopped short of the flag.',
+      );
+      if (won) {
+        setHighlighted(true);
+        highlightTimer.current = window.setTimeout(() => {
+          highlightTimer.current = null;
+          setHighlighted(false);
+        }, 3000);
+      }
+      return;
+    }
+
+    const stmt = statementForBlock(block);
+    if (!stmt) return;
+    const frame = sync.frames[sync.frames.length - 1];
+    const next = stepStatement(level, frame, stmt);
+    if (next.crashed) {
+      sync.crashed = true;
+      setStatus('✖ The robot crashed into a wall.');
+      return;
+    }
+    sync.frames = [...sync.frames, next.frame];
+    setFrames(sync.frames);
+    setFrameIndex(sync.frames.length - 1);
+  }, [blockSignal, blocks, level]);
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimer.current !== null) {
+        window.clearTimeout(highlightTimer.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!frames || frameIndex >= frames.length - 1) return;
@@ -170,6 +249,11 @@ export function GamePanel({
           fontFamily: 'inherit',
           color: theme.buttonText,
           userSelect: 'none',
+          border: highlighted
+            ? `2px solid ${theme.runHighlight}`
+            : '2px solid transparent',
+          borderRadius: 4,
+          boxSizing: 'border-box',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

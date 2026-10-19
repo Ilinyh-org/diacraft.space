@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { GamePanel } from '../GamePanel';
 import { lightTheme } from '../../theme';
 import type { BlockData, ArrowData } from '../../canvas/types';
@@ -10,6 +10,8 @@ beforeEach(() => {
 });
 
 let nextId = 0;
+
+const lastSeqRef = { value: 1 };
 
 function block(overrides: Partial<BlockData> = {}): BlockData {
   nextId += 1;
@@ -137,18 +139,95 @@ describe('GamePanel', () => {
       />,
     );
     expect(onRunDiagram).not.toHaveBeenCalled();
-    expect(screen.getByRole('status').textContent).toContain('Level complete');
+    // The game is armed but not finished: it now advances in sync with the
+    // diagram animation instead of running the whole program at once.
+    expect(screen.getByRole('status').textContent).not.toContain(
+      'Level complete',
+    );
   });
 
-  it('runs the game when the run signal changes', () => {
+  it('advances the robot one statement per activated block and wins at End (#40)', () => {
     const { blocks, arrows } = makeFlowchart(['move', 'move', 'move']);
     const { rerender } = render(
-      <GamePanel theme={lightTheme} blocks={blocks} arrows={arrows} />,
-    );
-    rerender(
       <GamePanel theme={lightTheme} blocks={blocks} arrows={arrows} runSignal={1} />,
     );
+    const robotBefore = screen.getByTestId('game-robot');
+    const leftBefore = (robotBefore as HTMLElement).style.left;
+    for (const id of blocks.filter((b) => b.type !== 'start').map((b) => b.id)) {
+      rerender(
+        <GamePanel
+          theme={lightTheme}
+          blocks={blocks}
+          arrows={arrows}
+          runSignal={1}
+          blockSignal={{ seq: lastSeqRef.value, blockId: id }}
+        />,
+      );
+      lastSeqRef.value += 1;
+    }
     expect(screen.getByRole('status').textContent).toContain('Level complete');
+    const robotAfter = screen.getByTestId('game-robot');
+    expect((robotAfter as HTMLElement).style.left).not.toBe(leftBefore);
+  });
+
+  it('highlights the game panel when the algorithm finishes successfully (#40)', () => {
+    vi.useFakeTimers();
+    try {
+      const { blocks, arrows } = makeFlowchart(['move', 'move', 'move']);
+      const { rerender } = render(
+        <GamePanel theme={lightTheme} blocks={blocks} arrows={arrows} runSignal={1} />,
+      );
+      let seq = 0;
+      for (const id of blocks.filter((b) => b.type !== 'start').map((b) => b.id)) {
+        seq += 1;
+        rerender(
+          <GamePanel
+            theme={lightTheme}
+            blocks={blocks}
+            arrows={arrows}
+            runSignal={1}
+            blockSignal={{ seq, blockId: id }}
+          />,
+        );
+      }
+      const panel = screen.getByTestId('game-panel') as HTMLElement;
+      expect(panel.style.border).toContain('rgb(39, 174, 96)');
+      act(() => {
+        vi.advanceTimersByTime(3100);
+      });
+      expect((screen.getByTestId('game-panel') as HTMLElement).style.border).toContain(
+        '2px solid transparent',
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('reports a crash when a synchronized move hits a wall (#40)', () => {
+    const { blocks, arrows } = makeFlowchart([
+      'move',
+      'move',
+      'move',
+      'move',
+      'move',
+    ]);
+    const { rerender } = render(
+      <GamePanel theme={lightTheme} blocks={blocks} arrows={arrows} runSignal={1} />,
+    );
+    let seq = 0;
+    for (const id of blocks.filter((b) => b.type !== 'start').map((b) => b.id)) {
+      seq += 1;
+      rerender(
+        <GamePanel
+          theme={lightTheme}
+          blocks={blocks}
+          arrows={arrows}
+          runSignal={1}
+          blockSignal={{ seq, blockId: id }}
+        />,
+      );
+    }
+    expect(screen.getByRole('status').textContent).toContain('crashed');
   });
 
   it('switches levels from the menu', () => {
