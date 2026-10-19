@@ -21,6 +21,16 @@ const ACTION_BY_LABEL: Record<string, Statement> = {
 export const isEndBlock = (block: BlockData): boolean =>
   block.label.trim().toLowerCase() === 'end';
 
+/**
+ * Maps an activated diagram block to the game statement it triggers
+ * (issue #40). Start and End blocks trigger nothing; unknown action labels
+ * return null.
+ */
+export function statementForBlock(block: BlockData): Statement | null {
+  if (block.type === 'start' || isEndBlock(block)) return null;
+  return ACTION_BY_LABEL[block.label.trim().toLowerCase()] ?? null;
+}
+
 export function compileFlowchart(
   blocks: BlockData[],
   arrows: ArrowData[],

@@ -62,6 +62,36 @@ export function wallAhead(level: Level, frame: Frame): boolean {
 }
 
 /**
+ * Applies a single statement to a frame without touching the run history
+ * (issue #40). Used to synchronize the built-in game with the diagram
+ * animation: one activated block advances the robot by one statement.
+ * Movement into a wall reports `crashed` and leaves the frame unchanged.
+ */
+export function stepStatement(
+  level: Level,
+  frame: Frame,
+  stmt: Statement,
+): { frame: Frame; crashed: boolean } {
+  switch (stmt.kind) {
+    case 'move': {
+      const d = DELTA[frame.dir];
+      const nx = frame.x + d.x;
+      const ny = frame.y + d.y;
+      if (isWallAt(level, nx, ny)) {
+        return { frame, crashed: true };
+      }
+      return { frame: { x: nx, y: ny, dir: frame.dir }, crashed: false };
+    }
+    case 'turnLeft':
+      return { frame: { ...frame, dir: ((frame.dir + 3) % 4) as Dir }, crashed: false };
+    case 'turnRight':
+      return { frame: { ...frame, dir: ((frame.dir + 1) % 4) as Dir }, crashed: false };
+    default:
+      return { frame, crashed: false };
+  }
+}
+
+/**
  * Interprets the program against a level. Returns the full frame history so the
  * UI can animate the run. Bumping into a wall ends the run immediately.
  */
