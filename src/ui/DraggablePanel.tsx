@@ -2,6 +2,55 @@ import { useState, useRef } from 'react';
 import type { ReactNode, CSSProperties } from 'react';
 import type { Theme } from '../theme';
 
+type Rect = {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+};
+
+/** Shared class so panels can detect each other for collision. */
+export const PANEL_CLASS = 'draggable-panel';
+
+function clampToWindow(
+  pos: { x: number; y: number },
+  panelWidth: number,
+  panelHeight: number
+): { x: number; y: number } {
+  const maxX = Math.max(0, window.innerWidth - panelWidth);
+  const maxY = Math.max(0, window.innerHeight - panelHeight);
+  return {
+    x: Math.max(0, Math.min(maxX, pos.x)),
+    y: Math.max(0, Math.min(maxY, pos.y)),
+  };
+}
+
+/** Push a rect out of any overlapping obstacle rect along the least-penetration axis. */
+function resolveOverlap(rect: Rect, obstacle: Rect) {
+  const overlapX =
+    Math.min(rect.right, obstacle.right) -
+    Math.max(rect.left, obstacle.left);
+  const overlapY =
+    Math.min(rect.bottom, obstacle.bottom) -
+    Math.max(rect.top, obstacle.top);
+  if (overlapX <= 0 || overlapY <= 0) return;
+  if (overlapX < overlapY) {
+    const push =
+      (rect.left + rect.right) / 2 < (obstacle.left + obstacle.right) / 2
+        ? -overlapX
+        : overlapX;
+    rect.left += push;
+    rect.right += push;
+  } else {
+    const push =
+      (rect.top + rect.bottom) / 2 < (obstacle.top + obstacle.bottom) / 2
+        ? -overlapY
+        : overlapY;
+    rect.top += push;
+    rect.bottom += push;
+  }
+}
+
 type Props = {
   theme: Theme;
   initialPosition: { x: number; y: number };
@@ -38,12 +87,42 @@ export function DraggablePanel({ theme, initialPosition, children }: Props) {
     const panelEl = panelRef.current;
     const panelWidth = panelEl?.offsetWidth ?? 0;
     const panelHeight = panelEl?.offsetHeight ?? 0;
-    const maxX = Math.max(0, window.innerWidth - panelWidth);
-    const maxY = Math.max(0, window.innerHeight - panelHeight);
-    setPos({
-      x: Math.max(0, Math.min(maxX, dragRef.current.panelX + dx)),
-      y: Math.max(0, Math.min(maxY, dragRef.current.panelY + dy)),
-    });
+    let next = clampToWindow(
+      {
+        x: dragRef.current.panelX + dx,
+        y: dragRef.current.panelY + dy,
+      },
+      panelWidth,
+      panelHeight
+    );
+
+    if (panelEl && panelWidth > 0 && panelHeight > 0) {
+      const rect: Rect = {
+        left: next.x,
+        top: next.y,
+        right: next.x + panelWidth,
+        bottom: next.y + panelHeight,
+      };
+      const others = Array.from(
+        document.querySelectorAll<HTMLElement>(`.${PANEL_CLASS}`)
+      ).filter((el) => el !== panelEl);
+      for (const other of others) {
+        const or = other.getBoundingClientRect();
+        if (or.width <= 0 || or.height <= 0) continue;
+        resolveOverlap(rect, {
+          left: or.left,
+          top: or.top,
+          right: or.right,
+          bottom: or.bottom,
+        });
+      }
+      next = clampToWindow(
+        { x: rect.left, y: rect.top },
+        panelWidth,
+        panelHeight
+      );
+    }
+    setPos(next);
   };
 
   const onHandlePointerUp = (e: React.PointerEvent) => {
@@ -86,7 +165,7 @@ export function DraggablePanel({ theme, initialPosition, children }: Props) {
   };
 
   return (
-    <div ref={panelRef} style={style}>
+    <div ref={panelRef} className={PANEL_CLASS} style={style}>
       <div
         style={handleStyle}
         onPointerDown={onHandlePointerDown}
