@@ -110,6 +110,7 @@ export function Canvas() {
   const [exportMode, setExportMode] = useState<ExportMode>(null);
   const [animRunning, setAnimRunning] = useState(false);
   const [animSpeed, setAnimSpeed] = useState(3);
+  const [gameRunSignal, setGameRunSignal] = useState(0);
   const [activeBlockIds, setActiveBlockIds] = useState<Set<string>>(new Set());
   const [activeArrowIds, setActiveArrowIds] = useState<Set<string>>(new Set());
   const animTimerRef = useRef<number | null>(null);
@@ -844,7 +845,10 @@ const runExport = (
         theme={theme}
         running={animRunning}
         speed={animSpeed}
-        onRun={runAnimation}
+        onRun={() => {
+          runAnimation();
+          setGameRunSignal((s) => s + 1);
+        }}
         onStop={stopAnimation}
         onSpeedChange={(s) =>
           setAnimSpeed(
@@ -853,7 +857,12 @@ const runExport = (
         }
       />
 
-      <GamePanel theme={theme} />
+      <GamePanel
+        theme={theme}
+        blocks={blocks}
+        arrows={arrows}
+        runSignal={gameRunSignal}
+      />
 
       <FeedbackPanel theme={theme} />
 

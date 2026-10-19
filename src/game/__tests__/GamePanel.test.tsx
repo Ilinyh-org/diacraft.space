@@ -2,60 +2,120 @@ import { describe, expect, it, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { GamePanel } from '../GamePanel';
 import { lightTheme } from '../../theme';
+import type { BlockData, ArrowData } from '../../canvas/types';
 
 beforeEach(() => {
   cleanup();
   window.localStorage.clear();
 });
 
+let nextId = 0;
+
+function block(overrides: Partial<BlockData> = {}): BlockData {
+  nextId += 1;
+  return {
+    id: `b${nextId}`,
+    x: 0,
+    y: 0,
+    width: 120,
+    height: 60,
+    label: 'Action',
+    type: 'action',
+    ...overrides,
+  };
+}
+
+function arrow(fromBlockId: string, toBlockId: string): ArrowData {
+  nextId += 1;
+  return {
+    id: `a${nextId}`,
+    fromBlockId,
+    fromSide: 'bottom',
+    toBlockId,
+    toSide: 'top',
+    waypoints: [],
+  };
+}
+
+function makeFlowchart(labels: string[]) {
+  const start = block({ type: 'start', label: 'Start' });
+  const blocks = [start];
+  const arrows: ArrowData[] = [];
+  for (const label of labels) {
+    const b = block({ label });
+    blocks.push(b);
+    arrows.push(arrow(blocks[blocks.length - 2].id, b.id));
+  }
+  const end = block({ label: 'End' });
+  arrows.push(arrow(blocks[blocks.length - 1].id, end.id));
+  blocks.push(end);
+  return { blocks, arrows };
+}
+
 describe('GamePanel', () => {
-  it('renders the level board and command buttons of the first level', () => {
-    render(<GamePanel theme={lightTheme} />);
+  it('renders the level board of the first level', () => {
+    const { blocks, arrows } = makeFlowchart(['move']);
+    render(<GamePanel theme={lightTheme} blocks={blocks} arrows={arrows} />);
     expect(screen.getByTestId('game-panel')).toBeDefined();
     expect(screen.getByText('First steps')).toBeDefined();
-    expect(screen.getByRole('button', { name: '+ Move' })).toBeDefined();
     expect(screen.getByTestId('game-robot')).toBeDefined();
   });
 
-  it('limits commands to the ones the level allows', () => {
-    render(<GamePanel theme={lightTheme} />);
-    expect(screen.queryByRole('button', { name: '+ Repeat…' })).toBeNull();
+  it('shows the compiled program from the canvas flowchart', () => {
+    const { blocks, arrows } = makeFlowchart(['move', 'move', 'move']);
+    render(<GamePanel theme={lightTheme} blocks={blocks} arrows={arrows} />);
+    expect(screen.getByTestId('flowchart-program').textContent).toContain(
+      'Move',
+    );
+    expect(screen.getByText('Commands: 3')).toBeDefined();
   });
 
-  it('adds commands and wins the first level', () => {
-    render(<GamePanel theme={lightTheme} />);
-    const move = screen.getByRole('button', { name: '+ Move' });
-    fireEvent.click(move);
-    fireEvent.click(move);
-    fireEvent.click(move);
-    expect(screen.getByText('Commands: 3')).toBeDefined();
+  it('wins the first level from the canvas flowchart', () => {
+    const { blocks, arrows } = makeFlowchart(['move', 'move', 'move']);
+    render(<GamePanel theme={lightTheme} blocks={blocks} arrows={arrows} />);
     fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
     expect(screen.getByRole('status').textContent).toContain('Level complete');
   });
 
-  it('reports a crash when the robot walks into a wall', () => {
-    render(<GamePanel theme={lightTheme} />);
-    const move = screen.getByRole('button', { name: '+ Move' });
-    for (let i = 0; i < 5; i += 1) fireEvent.click(move);
+  it('reports a crash when the flowchart moves the robot into a wall', () => {
+    const { blocks, arrows } = makeFlowchart([
+      'move',
+      'move',
+      'move',
+      'move',
+      'move',
+    ]);
+    render(<GamePanel theme={lightTheme} blocks={blocks} arrows={arrows} />);
     fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
     expect(screen.getByRole('status').textContent).toContain('crashed');
   });
 
-  it('removes a command from the program', () => {
-    render(<GamePanel theme={lightTheme} />);
-    const move = screen.getByRole('button', { name: '+ Move' });
-    fireEvent.click(move);
-    fireEvent.click(screen.getByLabelText('Remove command 0'));
-    expect(screen.getByText('Commands: 0')).toBeDefined();
+  it('shows flowchart validation errors and refuses to run', () => {
+    const start = block({ type: 'start', label: 'Start' });
+    render(<GamePanel theme={lightTheme} blocks={[start]} arrows={[]} />);
+    expect(screen.getByTestId('flowchart-errors').textContent).toContain(
+      'End block',
+    );
+    fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
+    expect(screen.getByRole('status').textContent).toContain('✖');
   });
 
-  it('switches levels from the menu and resets the program', () => {
-    render(<GamePanel theme={lightTheme} />);
-    fireEvent.click(screen.getByRole('button', { name: '+ Move' }));
+  it('runs the game when the run signal changes', () => {
+    const { blocks, arrows } = makeFlowchart(['move', 'move', 'move']);
+    const { rerender } = render(
+      <GamePanel theme={lightTheme} blocks={blocks} arrows={arrows} />,
+    );
+    rerender(
+      <GamePanel theme={lightTheme} blocks={blocks} arrows={arrows} runSignal={1} />,
+    );
+    expect(screen.getByRole('status').textContent).toContain('Level complete');
+  });
+
+  it('switches levels from the menu', () => {
+    const { blocks, arrows } = makeFlowchart(['move']);
+    render(<GamePanel theme={lightTheme} blocks={blocks} arrows={arrows} />);
     fireEvent.click(screen.getByRole('button', { name: /The corner/ }));
     expect(screen.getByText('The corner')).toBeDefined();
-    expect(screen.getByText('Commands: 0')).toBeDefined();
-    expect(screen.getByRole('button', { name: '+ ⟲ Left' })).toBeDefined();
-    expect(screen.queryByRole('button', { name: '+ If wall ahead…' })).toBeNull();
+    expect(screen.getByRole('button', { name: '▶ Run' })).toBeDefined();
   });
 });
