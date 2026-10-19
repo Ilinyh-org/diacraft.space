@@ -22,9 +22,17 @@ type Props = {
   arrows: ArrowData[];
   /** Incremented by the algorithm panel's Run button to also run the game. */
   runSignal?: number;
+  /** Starts the canvas diagram animation (issue #33); called on button Run only. */
+  onRunDiagram?: () => void;
 };
 
-export function GamePanel({ theme, blocks, arrows, runSignal = 0 }: Props) {
+export function GamePanel({
+  theme,
+  blocks,
+  arrows,
+  runSignal = 0,
+  onRunDiagram,
+}: Props) {
   const [levelIndex, setLevelIndex] = useState(0);
   const [frames, setFrames] = useState<Frame[] | null>(null);
   const [frameIndex, setFrameIndex] = useState(0);
@@ -63,8 +71,10 @@ export function GamePanel({ theme, blocks, arrows, runSignal = 0 }: Props) {
     [blocks, arrows],
   );
 
-  const run = useCallback(() => {
-    if (!compiled.ok) {
+  const run = useCallback(
+    (fromButton: boolean) => {
+      if (fromButton) onRunDiagram?.();
+      if (!compiled.ok) {
       setFrames(null);
       setFrameIndex(0);
       setStatus(`✖ ${compiled.errors.join(' ')}`);
@@ -82,7 +92,9 @@ export function GamePanel({ theme, blocks, arrows, runSignal = 0 }: Props) {
             ? '✖ Program ran too long.'
             : '✖ The robot stopped short of the flag.',
     );
-  }, [compiled, level]);
+    },
+    [compiled, level, onRunDiagram],
+  );
 
   const runRef = useRef(run);
   useEffect(() => {
@@ -91,7 +103,7 @@ export function GamePanel({ theme, blocks, arrows, runSignal = 0 }: Props) {
 
   // The algorithm panel's Run button also runs the game (issue #30).
   useEffect(() => {
-    if (runSignal > 0) runRef.current();
+    if (runSignal > 0) runRef.current(false);
   }, [runSignal]);
 
   useEffect(() => {
@@ -243,7 +255,11 @@ export function GamePanel({ theme, blocks, arrows, runSignal = 0 }: Props) {
         )}
 
         <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-          <button type="button" onClick={run} style={buttonStyle}>
+          <button
+            type="button"
+            onClick={() => run(true)}
+            style={buttonStyle}
+          >
             ▶ Run
           </button>
         </div>
