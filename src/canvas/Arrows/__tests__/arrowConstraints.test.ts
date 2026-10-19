@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { initialWaypoints } from '../arrowGeometry';
-import { applyBendDrag, refreshWaypointsAfterBlockMove } from '../arrowConstraints';
+import { applyBendDrag, isBendFullyConstrained, refreshWaypointsAfterBlockMove } from '../arrowConstraints';
 import type { BlockData, ArrowData } from '../../types';
 
 function makeBlock(
@@ -144,6 +144,43 @@ describe('applyBendDrag', () => {
       waypoints: [],
     };
     expect(applyBendDrag(A, B, arrow, 0, 10, 10)).toBeNull();
+  });
+
+  it('applyBendDrag returns null exactly when isBendFullyConstrained', () => {
+    const A = makeBlock('A', 0, 0);
+    const B = makeBlock('B', 400, 200);
+    for (let fs = 0; fs < 4; fs++) {
+      for (let ts = 0; ts < 4; ts++) {
+        const sides = ['top', 'right', 'bottom', 'left'] as const;
+        const arrow = makeArrow('A', 'B', sides[fs], sides[ts], A, B);
+        if (arrow.waypoints.length === 0) continue;
+        for (let i = 0; i < arrow.waypoints.length; i++) {
+          const locked = isBendFullyConstrained(A, B, arrow, i);
+          const rejected =
+            applyBendDrag(A, B, arrow, i, 25, -15) === null;
+          expect(locked).toBe(rejected);
+        }
+      }
+    }
+  });
+});
+
+describe('isBendFullyConstrained', () => {
+  it('straight default elbow bends are free to move', () => {
+    const A = makeBlock('A', 0, 0);
+    const B = makeBlock('B', 400, 200);
+    const arrow = makeArrow('A', 'B', 'right', 'left', A, B);
+    expect(arrow.waypoints.length).toBeGreaterThan(0);
+    for (let i = 0; i < arrow.waypoints.length; i++) {
+      expect(isBendFullyConstrained(A, B, arrow, i)).toBe(false);
+    }
+  });
+
+  it('out-of-range index counts as fully constrained', () => {
+    const A = makeBlock('A', 0, 0);
+    const B = makeBlock('B', 400, 200);
+    const arrow = makeArrow('A', 'B', 'right', 'left', A, B);
+    expect(isBendFullyConstrained(A, B, arrow, 99)).toBe(true);
   });
 });
 
