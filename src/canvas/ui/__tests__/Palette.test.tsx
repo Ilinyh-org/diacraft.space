@@ -28,7 +28,7 @@ describe('Palette', () => {
     expect(screen.getByText('Select ✋')).toBeInTheDocument();
     expect(screen.getByText('↶ Undo')).toBeInTheDocument();
     expect(screen.getByText('↷ Redo')).toBeInTheDocument();
-    for (const label of ['Start', 'Action', 'Condition', 'I/O', 'For-loop', 'Link']) {
+    for (const label of ['Start/End', 'Action', 'Condition', 'I/O', 'For-loop', 'Link']) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
   });
