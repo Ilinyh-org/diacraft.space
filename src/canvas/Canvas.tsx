@@ -50,6 +50,12 @@ import { findDropTarget, getAnchor, pickClosestSide } from './utils/blocks';
 import { getContentBBox } from './utils/export';
 import { Grid } from './Grid';
 import { Palette } from './ui/Palette';
+import {
+  MainMenu,
+  INITIAL_MENU_VISIBILITY,
+  type MenuId,
+  type MenuVisibility,
+} from './ui/MainMenu';
 import { ExportPanel } from './ui/ExportPanel';
 import { FeedbackPanel } from './ui/FeedbackPanel';
 import { BlockEditInput } from './ui/BlockEditInput';
@@ -101,6 +107,10 @@ export function Canvas() {
     useHistory<DiagramState>(initialState);
   const { blocks, arrows } = state;
 
+  const [menus, setMenus] = useState<MenuVisibility>(INITIAL_MENU_VISIBILITY);
+  const toggleMenu = useCallback((id: MenuId) => {
+    setMenus((m) => ({ ...m, [id]: !m[id] }));
+  }, []);
   const [fadingOut, setFadingOut] = useState<Set<string>>(new Set());
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedArrowId, setSelectedArrowId] = useState<string | null>(null);
@@ -797,7 +807,14 @@ const runExport = (
         />
       )}
 
-      <Palette
+      <MainMenu
+        theme={theme}
+        visibility={menus}
+        onToggle={toggleMenu}
+      />
+
+      {menus.palette && (
+        <Palette
         theme={theme}
         themeName={themeName}
         isDrawMode={isDrawMode}
@@ -810,9 +827,11 @@ const runExport = (
         onUndo={undo}
         onRedo={redo}
         onPalettePointerDown={handlePalettePointerDown}
-      />
+        />
+      )}
 
-      <ExportPanel
+      {menus.export && (
+        <ExportPanel
         theme={theme}
         onExportPng={() => runExport(exportPng, 'transparent')}
         onExportJpeg={() => runExport(exportJpeg, 'white')}
@@ -846,34 +865,39 @@ const runExport = (
             setEditingId(null);
           }
         }}
-      />
+        />
+      )}
 
-      <AlgorithmPanel
-        theme={theme}
-        running={animRunning}
-        speed={animSpeed}
-        onRun={() => {
-          runAnimation();
-          setGameRunSignal((s) => s + 1);
-        }}
-        onStop={stopAnimation}
-        onSpeedChange={(s) =>
-          setAnimSpeed(
-            Math.min(MAX_SPEED, Math.max(MIN_SPEED, Math.round(s)))
-          )
-        }
-      />
+      {menus.algorithm && (
+        <AlgorithmPanel
+          theme={theme}
+          running={animRunning}
+          speed={animSpeed}
+          onRun={() => {
+            runAnimation();
+            setGameRunSignal((s) => s + 1);
+          }}
+          onStop={stopAnimation}
+          onSpeedChange={(s) =>
+            setAnimSpeed(
+              Math.min(MAX_SPEED, Math.max(MIN_SPEED, Math.round(s)))
+            )
+          }
+        />
+      )}
 
-      <GamePanel
-        theme={theme}
-        blocks={blocks}
-        arrows={arrows}
-        runSignal={gameRunSignal}
-        blockSignal={gameBlockSignal}
-        onRunDiagram={runAnimation}
-      />
+      {menus.game && (
+        <GamePanel
+          theme={theme}
+          blocks={blocks}
+          arrows={arrows}
+          runSignal={gameRunSignal}
+          blockSignal={gameBlockSignal}
+          onRunDiagram={runAnimation}
+        />
+      )}
 
-      <FeedbackPanel theme={theme} />
+      {menus.feedback && <FeedbackPanel theme={theme} />}
 
       {ghost && ghostItem && (
         <div

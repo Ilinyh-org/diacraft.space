@@ -1,8 +1,8 @@
-import type { CSSProperties } from 'react';
-import { DraggablePanel } from '../../ui/DraggablePanel';
-import type { Theme, ThemeName } from '../../theme';
-import { PALETTE } from '../constants';
-import type { BlockType } from '../Blocks/Block';
+import type { CSSProperties } from "react";
+import { DraggablePanel } from "../../ui/DraggablePanel";
+import type { Theme, ThemeName } from "../../theme";
+import { PALETTE } from "../constants";
+import type { BlockType } from "../Blocks/Block";
 
 type PaletteProps = {
   theme: Theme;
@@ -30,47 +30,48 @@ export function Palette({
   onPalettePointerDown,
 }: PaletteProps) {
   const smallButton = (enabled: boolean): CSSProperties => ({
-    padding: '6px 8px',
+    padding: "6px 8px",
     border: `1px solid ${theme.buttonBorder}`,
     borderRadius: 4,
     background: enabled ? theme.buttonBg : theme.buttonBgDisabled,
     color: enabled ? theme.buttonText : theme.buttonTextDisabled,
-    cursor: enabled ? 'pointer' : 'default',
+    cursor: enabled ? "pointer" : "default",
     fontSize: 13,
-    textAlign: 'center',
+    textAlign: "center",
   });
 
   const paletteItemStyle: CSSProperties = {
-    padding: '6px 10px',
+    padding: "6px 10px",
     border: `1px solid ${theme.buttonBorder}`,
     borderRadius: 4,
     background: theme.buttonBg,
     color: theme.buttonText,
-    cursor: 'grab',
+    cursor: "grab",
     fontSize: 13,
-    textAlign: 'center',
+    textAlign: "center",
   };
 
   return (
-    <DraggablePanel theme={theme} initialPosition={{ x: 10, y: 10 }}>
+    // Positioned below the always-visible main menu (issue #31).
+    <DraggablePanel theme={theme} initialPosition={{ x: 10, y: 230 }}>
       <div
         onPointerDown={(e) => {
           e.preventDefault();
           onToggleTheme();
         }}
         style={{
-          padding: '6px 10px',
+          padding: "6px 10px",
           border: `1px solid ${theme.buttonBorder}`,
           borderRadius: 4,
           background: theme.buttonBg,
           color: theme.buttonText,
-          cursor: 'pointer',
+          cursor: "pointer",
           fontSize: 13,
-          textAlign: 'center',
+          textAlign: "center",
           fontWeight: 600,
         }}
       >
-        {themeName === 'dark' ? '☀️ Light' : '🌙 Dark'}
+        {themeName === "dark" ? "☀️ Light" : "🌙 Dark"}
       </div>
 
       <div
@@ -79,21 +80,21 @@ export function Palette({
           onToggleMode();
         }}
         style={{
-          padding: '6px 10px',
+          padding: "6px 10px",
           border: `1px solid ${theme.buttonBorder}`,
           borderRadius: 4,
           background: isDrawMode ? theme.selection : theme.buttonBg,
-          color: isDrawMode ? '#ffffff' : theme.buttonText,
-          cursor: 'pointer',
+          color: isDrawMode ? "#ffffff" : theme.buttonText,
+          cursor: "pointer",
           fontSize: 13,
-          textAlign: 'center',
+          textAlign: "center",
           fontWeight: 600,
         }}
       >
-        {isDrawMode ? 'Draw ✏️' : 'Select ✋'}
+        {isDrawMode ? "Draw ✏️" : "Select ✋"}
       </div>
 
-      <div style={{ display: 'flex', gap: 4 }}>
+      <div style={{ display: "flex", gap: 4 }}>
         <div
           onPointerDown={(e) => {
             e.preventDefault();
@@ -120,7 +121,7 @@ export function Palette({
             style={{
               height: 1,
               background: theme.divider,
-              margin: '4px 0',
+              margin: "4px 0",
             }}
           />
           {PALETTE.map((item) => (
