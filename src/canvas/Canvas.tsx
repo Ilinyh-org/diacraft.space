@@ -862,6 +862,7 @@ const runExport = (
         blocks={blocks}
         arrows={arrows}
         runSignal={gameRunSignal}
+        onRunDiagram={runAnimation}
       />
 
       <FeedbackPanel theme={theme} />

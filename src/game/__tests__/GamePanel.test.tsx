@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { GamePanel } from '../GamePanel';
 import { lightTheme } from '../../theme';
@@ -98,6 +98,46 @@ describe('GamePanel', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
     expect(screen.getByRole('status').textContent).toContain('✖');
+  });
+
+  it('starts the diagram animation when Run is clicked from the button', () => {
+    const { blocks, arrows } = makeFlowchart(['move', 'move', 'move']);
+    const onRunDiagram = vi.fn();
+    render(
+      <GamePanel
+        theme={lightTheme}
+        blocks={blocks}
+        arrows={arrows}
+        onRunDiagram={onRunDiagram}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
+    expect(onRunDiagram).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('status').textContent).toContain('Level complete');
+  });
+
+  it('does not trigger the diagram animation on a run signal', () => {
+    const { blocks, arrows } = makeFlowchart(['move', 'move', 'move']);
+    const onRunDiagram = vi.fn();
+    const { rerender } = render(
+      <GamePanel
+        theme={lightTheme}
+        blocks={blocks}
+        arrows={arrows}
+        onRunDiagram={onRunDiagram}
+      />,
+    );
+    rerender(
+      <GamePanel
+        theme={lightTheme}
+        blocks={blocks}
+        arrows={arrows}
+        runSignal={1}
+        onRunDiagram={onRunDiagram}
+      />,
+    );
+    expect(onRunDiagram).not.toHaveBeenCalled();
+    expect(screen.getByRole('status').textContent).toContain('Level complete');
   });
 
   it('runs the game when the run signal changes', () => {
