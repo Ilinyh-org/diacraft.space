@@ -75,6 +75,10 @@ import {
 } from './utils/clipboard';
 import { ContextMenu } from './ui/ContextMenu';
 import type { ContextMenuItem } from './ui/ContextMenu';
+import {
+  toggleBlockSelection,
+  contextMenuSelection,
+} from './utils/selection';
 
 type Mode = 'select' | 'draw';
 
@@ -174,16 +178,15 @@ export function Canvas() {
     setSelectedIds([]);
   }, []);
 
-  const selectBlock = useCallback((id: string, multi: boolean) => {
-    setSelectedId(id);
-    setSelectedArrowId(null);
-    setSelectedIds((prev) => {
-      if (!multi) return [id];
-      return prev.includes(id)
-        ? prev.filter((b) => b !== id)
-        : [...prev, id];
-    });
-  }, []);
+  const selectBlock = useCallback(
+    (id: string, multi: boolean) => {
+      setSelectedArrowId(null);
+      const next = toggleBlockSelection(selectedIds, selectedId, id, multi);
+      setSelectedIds(next.selectedIds);
+      setSelectedId(next.selectedId);
+    },
+    [selectedIds, selectedId]
+  );
 
   /** Currently copied/cuttable selection ids (primary + ctrl-selected). */
   const currentSelectionIds = useCallback(() => {
@@ -259,13 +262,12 @@ export function Canvas() {
 
   const handleBlockContextMenu = useCallback(
     (blockId: string, clientX: number, clientY: number) => {
-      setSelectedId(blockId);
-      setSelectedIds((prev) =>
-        prev.includes(blockId) ? prev : [...prev, blockId]
-      );
+      const next = contextMenuSelection(selectedIds, selectedId, blockId);
+      setSelectedIds(next.selectedIds);
+      setSelectedId(next.selectedId);
       setContextMenu({ x: clientX, y: clientY, blockId });
     },
-    []
+    [selectedIds, selectedId]
   );
 
   const contextMenuItems: ContextMenuItem[] = contextMenu?.blockId
