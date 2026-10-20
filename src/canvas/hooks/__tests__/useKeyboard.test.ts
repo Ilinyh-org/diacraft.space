@@ -21,6 +21,9 @@ function setup(overrides: Partial<Parameters<typeof useKeyboard>[0]> = {}) {
     onRedo: vi.fn(),
     onDeleteBlock: vi.fn(),
     onDeleteArrow: vi.fn(),
+    onCopy: vi.fn(),
+    onCut: vi.fn(),
+    onPaste: vi.fn(),
     ...overrides,
   };
   renderHook(() => useKeyboard(options));
@@ -95,6 +98,38 @@ describe('useKeyboard', () => {
     expect(o.onDeleteBlock).not.toHaveBeenCalled();
   });
 
+  it('copies with ctrl+c', () => {
+    const o = setup();
+    press('c', { ctrlKey: true });
+    expect(o.onCopy).toHaveBeenCalledTimes(1);
+  });
+
+  it('copies with meta+c (macOS)', () => {
+    const o = setup();
+    press('c', { metaKey: true });
+    expect(o.onCopy).toHaveBeenCalledTimes(1);
+  });
+
+  it('cuts with ctrl+x', () => {
+    const o = setup();
+    press('x', { ctrlKey: true });
+    expect(o.onCut).toHaveBeenCalledTimes(1);
+  });
+
+  it('pastes with ctrl+v', () => {
+    const o = setup();
+    press('v', { ctrlKey: true });
+    expect(o.onPaste).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores copy/paste shortcuts while editing', () => {
+    const o = setup({ editingId: 'b1' });
+    press('c', { ctrlKey: true });
+    press('v', { ctrlKey: true });
+    expect(o.onCopy).not.toHaveBeenCalled();
+    expect(o.onPaste).not.toHaveBeenCalled();
+  });
+
   it('stops listening after unmount', () => {
     const onUndo = vi.fn();
     const { unmount } = renderHook(() =>
@@ -108,6 +143,9 @@ describe('useKeyboard', () => {
         onRedo: vi.fn(),
         onDeleteBlock: vi.fn(),
         onDeleteArrow: vi.fn(),
+        onCopy: vi.fn(),
+        onCut: vi.fn(),
+        onPaste: vi.fn(),
       }),
     );
     unmount();

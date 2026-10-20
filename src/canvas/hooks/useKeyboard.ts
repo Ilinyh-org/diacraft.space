@@ -10,6 +10,9 @@ type Options = {
   onRedo: () => void;
   onDeleteBlock: (id: string) => void;
   onDeleteArrow: (id: string) => void;
+  onCopy: () => void;
+  onCut: () => void;
+  onPaste: () => void;
 };
 
 export function useKeyboard({
@@ -22,6 +25,9 @@ export function useKeyboard({
   onRedo,
   onDeleteBlock,
   onDeleteArrow,
+  onCopy,
+  onCut,
+  onPaste,
 }: Options) {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -36,12 +42,27 @@ export function useKeyboard({
         return;
       }
 
-      const isUndo =
-        (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey;
+      const mod = e.ctrlKey || e.metaKey;
+      const key = e.key.toLowerCase();
+      if (mod && key === 'c') {
+        e.preventDefault();
+        onCopy();
+        return;
+      }
+      if (mod && key === 'x') {
+        e.preventDefault();
+        onCut();
+        return;
+      }
+      if (mod && key === 'v') {
+        e.preventDefault();
+        onPaste();
+        return;
+      }
+
+      const isUndo = mod && key === 'z' && !e.shiftKey;
       const isRedo =
-        (e.ctrlKey || e.metaKey) &&
-        (e.key.toLowerCase() === 'y' ||
-          (e.key.toLowerCase() === 'z' && e.shiftKey));
+        mod && (key === 'y' || (key === 'z' && e.shiftKey));
 
       if (isUndo) {
         e.preventDefault();
@@ -78,5 +99,8 @@ export function useKeyboard({
     onRedo,
     onDeleteBlock,
     onDeleteArrow,
+    onCopy,
+    onCut,
+    onPaste,
   ]);
 }

@@ -41,13 +41,14 @@ type BlockProps = {
   onDragStart?: () => void;
   onDragEnd?: (x: number, y: number) => void;
   onDragMove?: (x: number, y: number) => void;
-  onSelect?: () => void;
+  onSelect?: (multi: boolean) => void;
   onDelete?: () => void;
   onEdit?: () => void;
   onResize?: (w: number, h: number) => void;
   onHandleDragStart?: (side: Side, x: number, y: number) => void;
   onHandleDragMove?: (x: number, y: number) => void;
   onHandleDragEnd?: (x: number, y: number) => void;
+  onContextMenu?: (clientX: number, clientY: number) => void;
   onRemoved?: () => void;
 };
 
@@ -72,6 +73,7 @@ export function Block({
   onHandleDragStart,
   onHandleDragMove,
   onHandleDragEnd,
+  onContextMenu,
   onRemoved,
 }: BlockProps) {
   const contentRef = useRef<Konva.Group>(null);
@@ -152,7 +154,9 @@ export function Block({
 
   const handleClick = (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
     e.cancelBubble = true;
-    onSelect?.();
+    const evt = e.evt as MouseEvent | undefined;
+    const multi = !!(evt && (evt.ctrlKey || evt.metaKey));
+    onSelect?.(multi);
   };
 
   const handleLabelDblClick = (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
@@ -292,6 +296,15 @@ export function Block({
         onDragEnd={handleDragEnd}
         onClick={removing ? undefined : handleClick}
         onTap={removing ? undefined : handleClick}
+        onContextMenu={
+          removing
+            ? undefined
+            : (e) => {
+                e.cancelBubble = true;
+                e.evt.preventDefault();
+                onContextMenu?.(e.evt.clientX, e.evt.clientY);
+              }
+        }
       >
         <Group
           ref={contentRef}

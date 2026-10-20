@@ -68,6 +68,17 @@ import { planAnimation } from './animation/planAnimation';
 import { GamePanel } from '../game/GamePanel';
 import type { AnimStep } from './animation/planAnimation';
 import { useKeyboard } from './hooks/useKeyboard';
+import {
+  copySelection,
+  pasteClipboard,
+  type Clipboard,
+} from './utils/clipboard';
+import { ContextMenu } from './ui/ContextMenu';
+import type { ContextMenuItem } from './ui/ContextMenu';
+import {
+  toggleBlockSelection,
+  contextMenuSelection,
+} from './utils/selection';
 
 type Mode = 'select' | 'draw';
 
@@ -113,6 +124,7 @@ export function Canvas() {
   }, []);
   const [fadingOut, setFadingOut] = useState<Set<string>>(new Set());
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedArrowId, setSelectedArrowId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -136,6 +148,13 @@ export function Canvas() {
     x: number;
     y: number;
   } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    blockId: string | null;
+  } | null>(null);
+  const clipboardRef = useRef<Clipboard>({ blocks: [], arrows: [] });
+  const [hasClipboard, setHasClipboard] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
@@ -153,6 +172,124 @@ export function Canvas() {
   useEffect(() => {
     arrowsRef.current = arrows;
   }, [arrows]);
+
+  const clearSelection = useCallback(() => {
+    setSelectedId(null);
+    setSelectedIds([]);
+  }, []);
+
+  const selectBlock = useCallback(
+    (id: string, multi: boolean) => {
+      setSelectedArrowId(null);
+      const next = toggleBlockSelection(selectedIds, selectedId, id, multi);
+      setSelectedIds(next.selectedIds);
+      setSelectedId(next.selectedId);
+    },
+    [selectedIds, selectedId]
+  );
+
+  /** Currently copied/cuttable selection ids (primary + ctrl-selected). */
+  const currentSelectionIds = useCallback(() => {
+    const ids = selectedIds.length > 0 ? selectedIds : selectedId ? [selectedId] : [];
+    return ids.filter((id) => blocksRef.current.some((b) => b.id === id));
+  }, [selectedIds, selectedId]);
+
+  const handleCopy = useCallback(() => {
+    const ids = currentSelectionIds();
+    if (ids.length === 0) return;
+    clipboardRef.current = copySelection(
+      blocksRef.current,
+      arrowsRef.current,
+      ids
+    );
+    if (clipboardRef.current.blocks.length > 0) setHasClipboard(true);
+  }, [currentSelectionIds]);
+
+  const handleCut = useCallback(() => {
+    const ids = currentSelectionIds();
+    if (ids.length === 0) return;
+    clipboardRef.current = copySelection(
+      blocksRef.current,
+      arrowsRef.current,
+      ids
+    );
+    if (clipboardRef.current.blocks.length > 0) setHasClipboard(true);
+    const removed = new Set(ids);
+    commit((s) => ({
+      blocks: s.blocks.filter((b) => !removed.has(b.id)),
+      arrows: s.arrows.filter(
+        (a) => !removed.has(a.fromBlockId) && !removed.has(a.toBlockId)
+      ),
+    }));
+    clearSelection();
+  }, [currentSelectionIds, commit, clearSelection]);
+
+  const handlePaste = useCallback(
+    (cursor?: { x: number; y: number }) => {
+      if (clipboardRef.current.blocks.length === 0) return;
+      let center: { x: number; y: number } | undefined;
+      if (cursor && containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        center = {
+          x: cursor.x - rect.left - (stageRef.current?.x() ?? 0),
+          y: cursor.y - rect.top - (stageRef.current?.y() ?? 0),
+        };
+      }
+      const pasted = pasteClipboard(clipboardRef.current, center);
+      commit((s) => ({
+        ...s,
+        blocks: [...s.blocks, ...pasted.blocks],
+        arrows: [...s.arrows, ...pasted.arrows],
+      }));
+      setSelectedIds(pasted.blocks.map((b) => b.id));
+      setSelectedId(pasted.blocks[pasted.blocks.length - 1]?.id ?? null);
+    },
+    [commit]
+  );
+
+  const handleStageContextMenu = useCallback(
+    (e: KonvaEventObject<PointerEvent>) => {
+      if (e.target !== e.target.getStage()) return;
+      e.evt.preventDefault();
+      setContextMenu({
+        x: e.evt.clientX,
+        y: e.evt.clientY,
+        blockId: null,
+      });
+    },
+    []
+  );
+
+  const handleBlockContextMenu = useCallback(
+    (blockId: string, clientX: number, clientY: number) => {
+      const next = contextMenuSelection(selectedIds, selectedId, blockId);
+      setSelectedIds(next.selectedIds);
+      setSelectedId(next.selectedId);
+      setContextMenu({ x: clientX, y: clientY, blockId });
+    },
+    [selectedIds, selectedId]
+  );
+
+  const contextMenuItems: ContextMenuItem[] = contextMenu?.blockId
+    ? [
+        { label: 'Cut', onSelect: handleCut },
+        { label: 'Copy', onSelect: handleCopy },
+      ]
+    : [
+        {
+          label: 'Copy',
+          disabled: selectedIds.length === 0,
+          onSelect: handleCopy,
+        },
+        {
+          label: 'Paste',
+          disabled: !hasClipboard,
+          onSelect: () =>
+            handlePaste(
+              contextMenu ? { x: contextMenu.x, y: contextMenu.y } : undefined
+            ),
+        },
+      ];
 
   const handleGestureComplete = useCallback(
     (strokes: Point[][]) => {
@@ -278,6 +415,7 @@ export function Canvas() {
 
     setAnimRunning(true);
     setSelectedId(null);
+    setSelectedIds([]);
     setSelectedArrowId(null);
     setActiveBlockIds(new Set());
     setActiveArrowIds(new Set());
@@ -323,6 +461,7 @@ export function Canvas() {
       return next;
     });
     setSelectedId(null);
+    setSelectedIds((prev) => prev.filter((b) => b !== id));
   }, []);
 
   const requestDeleteArrow = useCallback(
@@ -387,6 +526,9 @@ export function Canvas() {
     onRedo: redo,
     onDeleteBlock: requestDelete,
     onDeleteArrow: requestDeleteArrow,
+    onCopy: handleCopy,
+    onCut: handleCut,
+    onPaste: () => handlePaste(),
   });
 
   useEffect(() => {
@@ -498,8 +640,7 @@ export function Canvas() {
 
   const handleStageClick = (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
     if (e.target === e.target.getStage()) {
-      setSelectedId(null);
-      setSelectedArrowId(null);
+      clearSelection();
     }
   };
 
@@ -557,6 +698,7 @@ const runExport = (
 ) => {
   setSelectedId(null);
   setSelectedArrowId(null);
+  setSelectedIds([]);
   setExportMode(bg);
 
   setTimeout(async () => {
@@ -642,6 +784,7 @@ const runExport = (
         }}
         onMouseDown={isDrawMode ? undefined : handleStageClick}
         onTouchStart={isDrawMode ? undefined : handleStageClick}
+        onContextMenu={isDrawMode ? undefined : handleStageContextMenu}
       >
         <Layer listening={!isDrawMode && !editingId}>
           {exportMode !== 'transparent' && (
@@ -669,6 +812,7 @@ const runExport = (
               onClick={() => {
                 setSelectedArrowId(arrow.id);
                 setSelectedId(null);
+                setSelectedIds([]);
               }}
             />
           ))}
@@ -706,15 +850,12 @@ const runExport = (
               highlighted={animRunning && activeBlockIds.has(block.id)}
               theme={theme}
               selected={
-                selectedId === block.id &&
+                (selectedIds.includes(block.id) || selectedId === block.id) &&
                 !isDrawMode &&
                 !isExporting &&
                 editingId !== block.id
               }
-              onSelect={() => {
-                setSelectedId(block.id);
-                setSelectedArrowId(null);
-              }}
+              onSelect={(multi) => selectBlock(block.id, multi)}
               onDelete={() => requestDelete(block.id)}
               onEdit={() => handleStartEdit(block.id)}
               onResize={(w, h) => handleBlockResize(block.id, w, h)}
@@ -726,6 +867,7 @@ const runExport = (
               }
               onHandleDragMove={handleHandleDragMove}
               onHandleDragEnd={(x, y) => handleHandleDragEnd(block.id, x, y)}
+              onContextMenu={(cx, cy) => handleBlockContextMenu(block.id, cx, cy)}
               onRemoved={() => handleBlockRemoved(block.id)}
             />
           ))}
@@ -844,6 +986,7 @@ const runExport = (
               const imported = parseDiagram(String(reader.result));
               commit(() => imported);
               setSelectedId(null);
+              setSelectedIds([]);
               setSelectedArrowId(null);
               setEditingId(null);
             } catch (err) {
@@ -861,6 +1004,7 @@ const runExport = (
             stopAnimation();
             commit(() => ({ blocks: [], arrows: [] }));
             setSelectedId(null);
+            setSelectedIds([]);
             setSelectedArrowId(null);
             setEditingId(null);
           }
@@ -898,6 +1042,16 @@ const runExport = (
       )}
 
       {menus.feedback && <FeedbackPanel theme={theme} />}
+
+      {contextMenu && !isExporting && (
+        <ContextMenu
+          theme={theme}
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={contextMenuItems}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
 
       {ghost && ghostItem && (
         <div
