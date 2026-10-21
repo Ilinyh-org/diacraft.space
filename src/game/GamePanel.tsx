@@ -11,11 +11,9 @@ import { stepStatement } from './types';
 
 const STEP_MS = 350;
 
-const COMMAND_NAME: Record<string, string> = {
-  move: 'Move',
-  turnLeft: 'Turn Left',
-  turnRight: 'Turn Right',
-};
+const BUILD_HINT =
+  'Build the program on the canvas: Start block, action blocks renamed ' +
+  'to Move / Turn left / Turn right, then an End block, connected with arrows.';
 
 type Props = {
   theme: Theme;
@@ -43,6 +41,7 @@ export function GamePanel({
   const [status, setStatus] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(true);
   const [highlighted, setHighlighted] = useState(false);
+  const [hasRun, setHasRun] = useState(false);
   const lastSignalSeq = useRef(0);
   const syncState = useRef<{ frames: Frame[]; crashed: boolean } | null>(null);
   const highlightTimer = useRef<number | null>(null);
@@ -64,6 +63,7 @@ export function GamePanel({
     setFrameIndex(0);
     setStatus(null);
     setHighlighted(false);
+    setHasRun(false);
     syncState.current = null;
     lastSignalSeq.current = 0;
     if (highlightTimer.current !== null) {
@@ -88,6 +88,7 @@ export function GamePanel({
 
   const run = useCallback(
     (fromButton: boolean) => {
+      setHasRun(true);
       if (fromButton) onRunDiagram?.();
       if (!compiled.ok) {
         setFrames(null);
@@ -232,10 +233,6 @@ export function GamePanel({
 
   const arrowByDir = ['▲', '▶', '▼', '◀'][current.dir];
 
-  const programSummary = compiled.ok
-    ? compiled.program.map((s) => COMMAND_NAME[s.kind]).join(' → ') || '(empty program)'
-    : null;
-
   return (
     <DraggablePanel
       theme={theme}
@@ -248,7 +245,7 @@ export function GamePanel({
           padding: 10,
           fontFamily: 'inherit',
           color: theme.buttonText,
-          userSelect: 'none',
+          userSelect: 'text',
           border: highlighted
             ? `2px solid ${theme.runHighlight}`
             : '2px solid transparent',
@@ -321,16 +318,13 @@ export function GamePanel({
 
         <div style={{ height: 1, background: theme.divider, margin: '6px 0' }} />
 
-        <div style={{ fontSize: 10, color: theme.buttonTextDisabled, marginBottom: 4 }}>
-          Build the program on the canvas: Start block, action blocks renamed
-          to Move / Left / Right, then an End block, connected with arrows.
-        </div>
-
-        {compiled.ok ? (
-          <div data-testid="flowchart-program" style={{ fontSize: 11 }}>
-            Program: {programSummary}
+        {hasRun && (
+          <div style={{ fontSize: 10, color: theme.buttonTextDisabled, marginBottom: 4 }}>
+            {BUILD_HINT}
           </div>
-        ) : (
+        )}
+
+        {!compiled.ok && (
           <div data-testid="flowchart-errors" style={{ fontSize: 11, color: theme.deleteButton }}>
             {compiled.errors.map((e, i) => (
               <div key={i}>✖ {e}</div>
@@ -354,9 +348,6 @@ export function GamePanel({
               Next level →
             </button>
           )}
-        </div>
-        <div style={{ fontSize: 10, color: theme.buttonTextDisabled, marginTop: 2 }}>
-          Commands: {compiled.ok ? compiled.program.length : 0}
         </div>
       </div>
     </DraggablePanel>

@@ -72,7 +72,7 @@ export function compileFlowchart(
       const stmt = ACTION_BY_LABEL[current.label.trim().toLowerCase()];
       if (!stmt) {
         errors.push(
-          `Unknown action "${current.label}". Rename the block to Move, Left or Right.`,
+          `Unknown action "${current.label}". Rename the block to Move, Turn left or Turn right.`,
         );
         break;
       }
