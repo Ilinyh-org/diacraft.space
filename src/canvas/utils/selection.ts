@@ -26,16 +26,3 @@ export function toggleBlockSelection(
   }
   return { selectedIds: [...prevIds, id], selectedId: id };
 }
-
-/**
- * Selection after right-clicking a block: keep an existing multi-selection
- * that already contains the block, otherwise select just that block.
- */
-export function contextMenuSelection(
-  prevIds: string[],
-  prevId: string | null,
-  id: string
-): SelectionState {
-  if (prevIds.includes(id)) return { selectedIds: prevIds, selectedId: prevId };
-  return { selectedIds: [id], selectedId: id };
-}

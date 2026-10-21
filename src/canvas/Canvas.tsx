@@ -77,7 +77,6 @@ import { ContextMenu } from './ui/ContextMenu';
 import type { ContextMenuItem } from './ui/ContextMenu';
 import {
   toggleBlockSelection,
-  contextMenuSelection,
 } from './utils/selection';
 
 type Mode = 'select' | 'draw';
@@ -262,12 +261,11 @@ export function Canvas() {
 
   const handleBlockContextMenu = useCallback(
     (blockId: string, clientX: number, clientY: number) => {
-      const next = contextMenuSelection(selectedIds, selectedId, blockId);
-      setSelectedIds(next.selectedIds);
-      setSelectedId(next.selectedId);
+      // Right-click must not change the selection (issue #42); it only opens
+      // the context menu. Cut/Copy operate on the current selection.
       setContextMenu({ x: clientX, y: clientY, blockId });
     },
-    [selectedIds, selectedId]
+    []
   );
 
   const contextMenuItems: ContextMenuItem[] = contextMenu?.blockId
@@ -639,6 +637,12 @@ export function Canvas() {
   );
 
   const handleStageClick = (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
+    // Right-click must not change the selection (issue #42).
+    if (
+      "button" in e.evt &&
+      (e.evt as MouseEvent).button === 2
+    )
+      return;
     if (e.target === e.target.getStage()) {
       clearSelection();
     }

@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { render, fireEvent, screen, within } from '@testing-library/react';
 import { Canvas } from '../Canvas';
+import { pasteClipboard } from '../utils/clipboard';
 
 /**
  * Integration tests for the copy/cut/paste + selection + context-menu
@@ -226,6 +227,73 @@ describe('Canvas copy/cut/paste (issue #42)', () => {
     const menu = screen.getByTestId('context-menu');
     expect(within(menu).getByText('Copy')).toBeTruthy();
     expect(within(menu).getByText('Paste')).toBeTruthy();
+  });
+
+  it('right-clicking an unselected block does not change the selection', () => {
+    renderCanvas();
+    // Nothing is selected; right-click must not select the clicked block.
+    fireEvent.contextMenu(blockNode('Alpha'), { clientX: 30, clientY: 40 });
+
+    const menu = screen.getByTestId('context-menu');
+    fireEvent.click(within(menu).getByText('Copy'));
+    key('ctrl+v');
+
+    // Clipboard was empty (no selection), so nothing was pasted.
+    expect(screen.getAllByText('Alpha')).toHaveLength(1);
+    expect(screen.getAllByText('Beta')).toHaveLength(1);
+  });
+
+  it('right-clicking empty canvas keeps an existing multi-selection', () => {
+    renderCanvas();
+    fireEvent.click(blockNode('Alpha'));
+    fireEvent.click(blockNode('Beta'), { ctrlKey: true });
+
+    fireEvent.contextMenu(screen.getByTestId('stage'), {
+      clientX: 400,
+      clientY: 300,
+    });
+    fireEvent.click(
+      within(screen.getByTestId('context-menu')).getByText('Copy'),
+    );
+    key('ctrl+v');
+
+    expect(screen.getAllByText('Alpha')).toHaveLength(2);
+    expect(screen.getAllByText('Beta')).toHaveLength(2);
+  });
+
+  it('paste at the cursor centers one block exactly on the cursor position', () => {
+    const alpha = {
+      id: 'a',
+      type: 'action' as const,
+      x: 495,
+      y: 414,
+      width: 120,
+      height: 60,
+      label: 'Alpha',
+    };
+    const cursor = { x: 555, y: 444 };
+    const pasted = pasteClipboard(
+      { blocks: [alpha], arrows: [] },
+      cursor,
+    );
+    expect(pasted.blocks).toHaveLength(1);
+    expect(pasted.blocks[0].x + pasted.blocks[0].width / 2).toBe(cursor.x);
+    expect(pasted.blocks[0].y + pasted.blocks[0].height / 2).toBe(cursor.y);
+  });
+
+  it('paste at the cursor centers the multi-selection bbox on the cursor position', () => {
+    const blocks: import('../types').BlockData[] = [
+      { id: 'a', type: 'action' as const, x: 0, y: 0, width: 120, height: 60, label: 'A' },
+      { id: 'b', type: 'action', x: 220, y: 100, width: 120, height: 60, label: 'B' },
+    ];
+    const cursor = { x: 500, y: 500 };
+    const pasted = pasteClipboard({ blocks, arrows: [] }, cursor);
+    const minX = Math.min(...pasted.blocks.map((b) => b.x));
+    const minY = Math.min(...pasted.blocks.map((b) => b.y));
+    const maxX = Math.max(...pasted.blocks.map((b) => b.x + b.width));
+    const maxY = Math.max(...pasted.blocks.map((b) => b.y + b.height));
+    expect((minX + maxX) / 2).toBe(cursor.x);
+    expect((minY + maxY) / 2).toBe(cursor.y);
   });
 
   it('canvas context menu Paste inserts clipboard content', () => {
