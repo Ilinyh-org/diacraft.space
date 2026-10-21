@@ -17,11 +17,14 @@ function setup() {
 }
 
 describe('ExportPanel', () => {
-  it('renders export buttons (Clear moved to the palette, issue #45)', () => {
+  it('renders export and import sections (issue #63)', () => {
     setup();
-    for (const label of ['PNG', 'JPEG', 'SVG', 'JSON', 'Import JSON']) {
-      expect(screen.getByText(label)).toBeInTheDocument();
-    }
+    expect(screen.getByText('Export/Import')).toBeInTheDocument();
+    expect(screen.getByText('Export')).toBeInTheDocument();
+    expect(screen.getByText('Import')).toBeInTheDocument();
+    // both export and import JSON buttons are labeled "JSON"
+    expect(screen.getAllByText('JSON')).toHaveLength(2);
+    expect(screen.queryByText('Import JSON')).not.toBeInTheDocument();
     expect(screen.queryByText('Clear')).not.toBeInTheDocument();
   });
 
@@ -30,7 +33,8 @@ describe('ExportPanel', () => {
     fireEvent.click(screen.getByText('PNG'));
     fireEvent.click(screen.getByText('JPEG'));
     fireEvent.click(screen.getByText('SVG'));
-    fireEvent.click(screen.getByText('JSON'));
+    fireEvent.click(screen.getAllByText('JSON')[0]);
+    fireEvent.click(screen.getByText('Import'));
     expect(props.onExportPng).toHaveBeenCalledTimes(1);
     expect(props.onExportJpeg).toHaveBeenCalledTimes(1);
     expect(props.onExportSvg).toHaveBeenCalledTimes(1);
