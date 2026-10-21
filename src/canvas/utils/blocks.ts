@@ -5,7 +5,22 @@ export function getAnchor(
   block: BlockData,
   side: Side
 ): { x: number; y: number } {
-  const { x, y, width: w, height: h } = block;
+  const { x, y, width: w, height: h, type } = block;
+  // The io (parallelogram) block's slanted edges do not touch the bounding
+  // box sides, so side anchors must sit on the actual shape edges (issue #59):
+  // shape points are [0.2w,0],[w,0],[0.8w,h],[0,h].
+  if (type === 'io') {
+    switch (side) {
+      case 'top':
+        return { x: x + w * 0.6, y };
+      case 'bottom':
+        return { x: x + w * 0.4, y: y + h };
+      case 'left':
+        return { x: x + w * 0.1, y: y + h / 2 };
+      case 'right':
+        return { x: x + w * 0.9, y: y + h / 2 };
+    }
+  }
   switch (side) {
     case 'top':
       return { x: x + w / 2, y };
