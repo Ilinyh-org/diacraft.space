@@ -7,6 +7,8 @@ const WEB3FORMS_ACCESS_KEY = '58d46050-932f-49ac-bfdc-b07822fe6adc';
 
 type FeedbackStatus = 'idle' | 'sending' | 'success' | 'error';
 
+const FEEDBACK_PANEL_WIDTH = 220;
+
 export function FeedbackPanel({ theme }: { theme: Theme }) {
   const [status, setStatus] = useState<FeedbackStatus>('idle');
 
@@ -60,9 +62,10 @@ export function FeedbackPanel({ theme }: { theme: Theme }) {
     <DraggablePanel
       theme={theme}
       initialPosition={{
-        x: Math.max(10, window.innerWidth - 90),
+        x: Math.max(10, window.innerWidth - FEEDBACK_PANEL_WIDTH - 10),
         y: window.innerHeight - 150,
       }}
+      width={FEEDBACK_PANEL_WIDTH}
     >
       <div>
         <div

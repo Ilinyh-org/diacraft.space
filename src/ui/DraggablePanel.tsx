@@ -54,10 +54,11 @@ function resolveOverlap(rect: Rect, obstacle: Rect) {
 type Props = {
   theme: Theme;
   initialPosition: { x: number; y: number };
+  width?: number;
   children: ReactNode;
 };
 
-export function DraggablePanel({ theme, initialPosition, children }: Props) {
+export function DraggablePanel({ theme, initialPosition, width, children }: Props) {
   const [pos, setPos] = useState(initialPosition);
   const [dragging, setDragging] = useState(false);
   const dragRef = useRef<{
@@ -140,6 +141,8 @@ export function DraggablePanel({ theme, initialPosition, children }: Props) {
     position: 'absolute',
     left: pos.x,
     top: pos.y,
+    width,
+    maxWidth: 'calc(100vw - 16px)',
     background: theme.panelBg,
     borderRadius: 6,
     boxShadow: dragging

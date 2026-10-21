@@ -8,6 +8,21 @@ describe('FeedbackPanel', () => {
     vi.restoreAllMocks();
   });
 
+  it('renders with a fixed width that fits the screen and starts fully on-screen', () => {
+    render(<FeedbackPanel theme={lightTheme} />);
+    const panel = document.querySelector('.draggable-panel') as HTMLElement;
+    expect(panel).not.toBeNull();
+    // Panel has an explicit width and never exceeds the viewport.
+    expect(panel.style.width).not.toBe('');
+    expect(panel.style.maxWidth).toBe('calc(100vw - 16px)');
+    // Initial position must keep the whole panel visible.
+    const left = parseInt(panel.style.left, 10);
+    expect(left).toBeGreaterThanOrEqual(10);
+    expect(left + parseInt(panel.style.width, 10)).toBeLessThanOrEqual(
+      window.innerWidth
+    );
+  });
+
   it('always shows the form immediately (no compressed view)', () => {
     render(<FeedbackPanel theme={lightTheme} />);
     expect(screen.getByTestId('feedback-form')).toBeInTheDocument();
