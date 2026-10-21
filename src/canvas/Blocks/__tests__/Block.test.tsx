@@ -61,12 +61,40 @@ describe('Block handle drag reset', () => {
     // Simulate Konva node leaving the anchor position during the drag.
     const position = vi.fn();
     const getAbsolutePosition = vi.fn(() => ({ x: 300, y: 200 }));
+    const getStage = vi.fn(() => ({ x: () => 0, y: () => 0 }));
     fireEvent.dragEnd(topHandle, {
-      target: { position, getAbsolutePosition },
+      target: { position, getAbsolutePosition, getStage },
     });
     expect(onHandleDragEnd).toHaveBeenCalledWith(300, 200);
     // Anchor for the top side: (x + w/2, y) = (160, 50).
     expect(position).toHaveBeenCalledWith({ x: 160, y: 50 });
+  });
+
+  it('reports drag positions in world coordinates when the stage is panned', () => {
+    const onHandleDragEnd = vi.fn();
+    const { getAllByTestId } = render(
+      <Block
+        x={100}
+        y={50}
+        width={120}
+        height={60}
+        selected
+        theme={theme}
+        onHandleDragEnd={onHandleDragEnd}
+      />,
+    );
+    const topHandle = getAllByTestId('circle')[0];
+    const position = vi.fn();
+    // The handle sits at screen (565, 380) while the stage is panned by
+    // (265, 330): the world point must be (300, 50).
+    fireEvent.dragEnd(topHandle, {
+      target: {
+        position,
+        getAbsolutePosition: () => ({ x: 565, y: 380 }),
+        getStage: () => ({ x: () => 265, y: () => 330 }),
+      },
+    });
+    expect(onHandleDragEnd).toHaveBeenCalledWith(300, 50);
   });
 });
 
