@@ -19,8 +19,8 @@ function setup() {
 describe('ExportPanel', () => {
   it('renders export and import sections (issue #63)', () => {
     setup();
-    expect(screen.getByText('Export/Import')).toBeInTheDocument();
     expect(screen.getByText('Export')).toBeInTheDocument();
+    expect(screen.queryByText('Export/Import')).not.toBeInTheDocument();
     expect(screen.getByText('Import')).toBeInTheDocument();
     // both export and import JSON buttons are labeled "JSON"
     expect(screen.getAllByText('JSON')).toHaveLength(2);

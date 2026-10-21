@@ -48,16 +48,6 @@ export function ExportPanel({
           marginBottom: 2,
         }}
       >
-        Export/Import
-      </div>
-      <div
-        style={{
-          fontSize: 11,
-          textAlign: 'center',
-          color: theme.buttonTextDisabled,
-          marginBottom: 2,
-        }}
-      >
         Export
       </div>
       <button onClick={onExportPng} style={buttonStyle}>
