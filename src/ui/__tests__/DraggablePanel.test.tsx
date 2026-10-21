@@ -1,7 +1,91 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { DraggablePanel } from '../DraggablePanel';
+import { DraggablePanel, moveWithCollision } from '../DraggablePanel';
 import { lightTheme } from '../../theme';
+
+const rect = (left: number, top: number, w: number, h: number) => ({
+  left,
+  top,
+  right: left + w,
+  bottom: top + h,
+});
+
+describe('moveWithCollision', () => {
+  const win = { width: 800, height: 600 };
+  const size = { width: 100, height: 50 };
+
+  it('allows free movement when there are no obstacles', () => {
+    expect(
+      moveWithCollision({ x: 0, y: 0 }, { x: 200, y: 150 }, size, [], win),
+    ).toEqual({ x: 200, y: 150 });
+  });
+
+  it('blocks movement into an obstacle and stops exactly at its boundary', () => {
+    const obstacles = [rect(50, 100, 200, 100)];
+    expect(
+      moveWithCollision({ x: 60, y: 0 }, { x: 60, y: 120 }, size, obstacles, win),
+    ).toEqual({ x: 60, y: 50 });
+  });
+
+  it('stops at the obstacle boundary on a diagonal move, keeping horizontal movement', () => {
+    const obstacles = [rect(150, 100, 200, 200)];
+    // Full move overlaps; the panel stops just above the obstacle's top edge.
+    expect(
+      moveWithCollision({ x: 100, y: 0 }, { x: 160, y: 120 }, size, obstacles, win),
+    ).toEqual({ x: 160, y: 50 });
+  });
+
+  it('slides horizontally and stops at the obstacle edge when moving right into it', () => {
+    const obstacles = [rect(250, 0, 200, 200)];
+    expect(
+      moveWithCollision({ x: 100, y: 100 }, { x: 300, y: 150 }, size, obstacles, win),
+    ).toEqual({ x: 150, y: 150 });
+  });
+
+  it('stops at the obstacle boundary when moving straight into it', () => {
+    const obstacles = [rect(250, 0, 200, 200)];
+    expect(
+      moveWithCollision({ x: 100, y: 0 }, { x: 300, y: 0 }, size, obstacles, win),
+    ).toEqual({ x: 150, y: 0 });
+  });
+
+  it('window clamping never pushes the panel into an obstacle at the edge', () => {
+    const smallWin = { width: 500, height: 500 };
+    const obstacles = [rect(420, 100, 200, 100)];
+    const result = moveWithCollision(
+      { x: 300, y: 0 },
+      { x: 460, y: 120 },
+      size,
+      obstacles,
+      smallWin,
+    );
+    const overlaps =
+      result.x < obstacles[0].right &&
+      result.x + size.width > obstacles[0].left &&
+      result.y < obstacles[0].bottom &&
+      result.y + size.height > obstacles[0].top;
+    expect(overlaps).toBe(false);
+  });
+
+  it('returns the previous position when fully boxed in', () => {
+    const obstacles = [
+      rect(100, 50, 100, 50),
+      rect(100, 150, 100, 50),
+      rect(0, 100, 100, 50),
+      rect(200, 100, 100, 50),
+    ];
+    expect(
+      moveWithCollision({ x: 100, y: 100 }, { x: 140, y: 120 }, size, obstacles, win),
+    ).toEqual({ x: 100, y: 100 });
+  });
+
+  it('resolves against multiple obstacles in one move', () => {
+    const obstacles = [rect(150, 100, 200, 200), rect(150, 300, 200, 200)];
+    expect(
+      moveWithCollision({ x: 100, y: 0 }, { x: 160, y: 250 }, size, obstacles, win),
+    ).toEqual({ x: 160, y: 50 });
+  });
+});
 
 describe('DraggablePanel', () => {
   it('renders children at the initial position', () => {
