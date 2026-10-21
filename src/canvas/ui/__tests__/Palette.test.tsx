@@ -6,11 +6,9 @@ import { lightTheme } from '../../../theme';
 function setup(overrides: Partial<Parameters<typeof Palette>[0]> = {}) {
   const props = {
     theme: lightTheme,
-    themeName: 'light' as const,
     isDrawMode: false,
     canUndo: true,
     canRedo: true,
-    onToggleTheme: vi.fn(),
     onToggleMode: vi.fn(),
     onUndo: vi.fn(),
     onRedo: vi.fn(),
@@ -25,19 +23,12 @@ function setup(overrides: Partial<Parameters<typeof Palette>[0]> = {}) {
 describe('Palette', () => {
   it('renders palette items and control buttons', () => {
     setup();
-    expect(screen.getByText(/🌙 Dark/)).toBeInTheDocument();
     expect(screen.getByText('Select ✋')).toBeInTheDocument();
     expect(screen.getByText('↶ Undo')).toBeInTheDocument();
     expect(screen.getByText('↷ Redo')).toBeInTheDocument();
     for (const label of ['Start/End', 'Action', 'Condition', 'I/O', 'For-loop', 'Link']) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
-  });
-
-  it('toggles the theme', () => {
-    const props = setup();
-    fireEvent.pointerDown(screen.getByText(/🌙 Dark/));
-    expect(props.onToggleTheme).toHaveBeenCalledTimes(1);
   });
 
   it('toggles draw mode', () => {

@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { DraggablePanel } from "../../ui/DraggablePanel";
-import type { Theme } from "../../theme";
+import type { Theme, ThemeName } from "../../theme";
 import { LANGUAGES, t, type LanguageCode } from "./i18n";
 
 export type MenuId = "palette" | "export" | "algorithm" | "game" | "feedback";
@@ -24,6 +24,8 @@ type MainMenuProps = {
   onToggle: (id: MenuId) => void;
   language: LanguageCode;
   onLanguageChange: (lang: LanguageCode) => void;
+  themeName: ThemeName;
+  onToggleTheme: () => void;
 };
 
 export function MainMenu({
@@ -32,6 +34,8 @@ export function MainMenu({
   onToggle,
   language,
   onLanguageChange,
+  themeName,
+  onToggleTheme,
 }: MainMenuProps) {
   const buttonStyle = (active: boolean): CSSProperties => ({
     padding: "6px 10px",
@@ -60,6 +64,16 @@ export function MainMenu({
         data-testid="main-menu"
         style={{ display: "flex", flexDirection: "column", gap: 4 }}
       >
+        <div
+          data-testid="main-menu-theme"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            onToggleTheme();
+          }}
+          style={{ ...buttonStyle(false), fontWeight: 600 }}
+        >
+          {themeName === "dark" ? "☀️ Light" : "🌙 Dark"}
+        </div>
         <div
           data-testid="main-menu-language-row"
           style={{ display: "flex", alignItems: "center", gap: 6 }}

@@ -1,16 +1,14 @@
 import type { CSSProperties } from "react";
 import { DraggablePanel } from "../../ui/DraggablePanel";
-import type { Theme, ThemeName } from "../../theme";
+import type { Theme } from "../../theme";
 import { PALETTE } from "../constants";
 import type { BlockType } from "../Blocks/Block";
 
 type PaletteProps = {
   theme: Theme;
-  themeName: ThemeName;
   isDrawMode: boolean;
   canUndo: boolean;
   canRedo: boolean;
-  onToggleTheme: () => void;
   onToggleMode: () => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -20,11 +18,9 @@ type PaletteProps = {
 
 export function Palette({
   theme,
-  themeName,
   isDrawMode,
   canUndo,
   canRedo,
-  onToggleTheme,
   onToggleMode,
   onUndo,
   onRedo,
@@ -57,26 +53,6 @@ export function Palette({
   return (
     // Positioned below the always-visible main menu (issue #31).
     <DraggablePanel theme={theme} initialPosition={{ x: 10, y: 230 }}>
-      <div
-        onPointerDown={(e) => {
-          e.preventDefault();
-          onToggleTheme();
-        }}
-        style={{
-          padding: "6px 10px",
-          border: `1px solid ${theme.buttonBorder}`,
-          borderRadius: 4,
-          background: theme.buttonBg,
-          color: theme.buttonText,
-          cursor: "pointer",
-          fontSize: 13,
-          textAlign: "center",
-          fontWeight: 600,
-        }}
-      >
-        {themeName === "dark" ? "☀️ Light" : "🌙 Dark"}
-      </div>
-
       <div
         onPointerDown={(e) => {
           e.preventDefault();
