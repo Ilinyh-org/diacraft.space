@@ -40,6 +40,7 @@ export function Palette({
     cursor: enabled ? "pointer" : "default",
     fontSize: 13,
     textAlign: "center",
+    whiteSpace: "nowrap",
   });
 
   const paletteItemStyle: CSSProperties = {
