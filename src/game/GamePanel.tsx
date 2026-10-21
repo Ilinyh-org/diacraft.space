@@ -9,13 +9,14 @@ import { runProgram, wallAhead } from './types';
 import type { Frame } from './types';
 import { compileFlowchart, isEndBlock, statementForBlock } from './flowchart';
 import { stepStatement } from './types';
+import { t, type LanguageCode, type TranslationKey } from '../canvas/ui/i18n';
 
-const BUILD_HINT =
-  'Build the program on the canvas: Start block, action blocks renamed ' +
-  'to Move / Turn left / Turn right, then an End block, connected with arrows.';
+const levelKey = (id: string, part: 'title' | 'description'): TranslationKey =>
+  `game.level.${id}.${part}` as TranslationKey;
 
 type Props = {
   theme: Theme;
+  language: LanguageCode;
   blocks: BlockData[];
   arrows: ArrowData[];
   /** Incremented by the algorithm panel's Run button to arm the game. */
@@ -30,6 +31,7 @@ type Props = {
 
 export function GamePanel({
   theme,
+  language,
   blocks,
   arrows,
   runSignal = 0,
@@ -84,8 +86,8 @@ export function GamePanel({
   );
 
   const compiled = useMemo(
-    () => compileFlowchart(blocks, arrows),
-    [blocks, arrows],
+    () => compileFlowchart(blocks, arrows, language),
+    [blocks, arrows, language],
   );
 
   const run = useCallback(
@@ -103,15 +105,15 @@ export function GamePanel({
       setFrameIndex(0);
       setStatus(
         result.status === 'win'
-          ? '✔ Level complete!'
+          ? t(language, 'game.win')
           : result.status === 'crash'
-            ? '✖ The robot crashed into a wall.'
+            ? t(language, 'game.crash')
             : result.status === 'timeout'
-              ? '✖ Program ran too long.'
-              : '✖ The robot stopped short of the flag.',
+              ? t(language, 'game.timeout')
+              : t(language, 'game.tooShort'),
       );
     },
-    [compiled, level, onRunDiagram],
+    [compiled, level, onRunDiagram, language],
   );
 
   // The game panel's own ▶ Run button runs the whole program immediately.
@@ -154,7 +156,9 @@ export function GamePanel({
         frame.x === level.goal.x &&
         frame.y === level.goal.y;
       setStatus(
-        won ? '✔ Level complete!' : '✖ The robot stopped short of the flag.',
+        won
+          ? t(language, 'game.win')
+          : t(language, 'game.tooShort'),
       );
       if (won) {
         setHighlighted(true);
@@ -172,13 +176,13 @@ export function GamePanel({
     const next = stepStatement(level, frame, stmt);
     if (next.crashed) {
       sync.crashed = true;
-      setStatus('✖ The robot crashed into a wall.');
+      setStatus(t(language, 'game.crash'));
       return;
     }
     sync.frames = [...sync.frames, next.frame];
     setFrames(sync.frames);
     setFrameIndex(sync.frames.length - 1);
-  }, [blockSignal, blocks, level, speed]);
+  }, [blockSignal, blocks, level, speed, language]);
 
   useEffect(() => {
     return () => {
@@ -256,9 +260,9 @@ export function GamePanel({
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <strong style={{ fontSize: 13 }}>Algorithm Game</strong>
+          <strong style={{ fontSize: 13 }}>{t(language, 'game.title')}</strong>
           <button type="button" onClick={() => setMenuOpen((o) => !o)} style={buttonStyle}>
-            Levels
+            {t(language, 'game.levels')}
           </button>
         </div>
 
@@ -271,7 +275,7 @@ export function GamePanel({
                 onClick={() => pickLevel(i)}
                 style={{ ...buttonStyle, display: 'block', width: '100%', textAlign: 'left', marginBottom: 4 }}
               >
-                {i + 1}. {l.title} — {l.concept}
+                {i + 1}. {t(language, levelKey(l.id, 'title'))} — {t(language, levelKey(l.id, 'description'))}
               </button>
             ))}
           </div>
@@ -280,7 +284,7 @@ export function GamePanel({
         <div style={{ height: 1, background: theme.divider, margin: '6px 0' }} />
 
         <div style={{ fontSize: 11, marginBottom: 4 }}>
-          <strong>{level.title}</strong> · {level.description}
+          <strong>{t(language, levelKey(level.id, 'title'))}</strong> · {t(language, levelKey(level.id, 'description'))}
         </div>
 
         <div
@@ -314,7 +318,7 @@ export function GamePanel({
         </div>
         {wallAhead(level, current) && (
           <div style={{ fontSize: 10, color: theme.deleteButton, marginTop: 2 }}>
-            Wall directly ahead!
+            {t(language, 'game.wallAhead')}
           </div>
         )}
 
@@ -322,7 +326,7 @@ export function GamePanel({
 
         {hasRun && (
           <div style={{ fontSize: 10, color: theme.buttonTextDisabled, marginBottom: 4 }}>
-            {BUILD_HINT}
+            {t(language, 'game.buildHint')}
           </div>
         )}
 
@@ -340,14 +344,14 @@ export function GamePanel({
             onClick={() => run(true)}
             style={buttonStyle}
           >
-            ▶ Run
+            {t(language, 'game.run')}
           </button>
         </div>
 
         <div style={{ fontSize: 11, marginTop: 6, minHeight: 16 }} role="status">
           {status} {solved && levelIndex < LEVELS.length - 1 && (
             <button type="button" onClick={() => pickLevel(levelIndex + 1)} style={{ ...buttonStyle, marginLeft: 6 }}>
-              Next level →
+              {t(language, 'game.nextLevel')}
             </button>
           )}
         </div>

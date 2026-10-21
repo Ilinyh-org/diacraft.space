@@ -1,5 +1,6 @@
 import type { ArrowData, BlockData } from '../canvas/types';
 import type { Statement } from './types';
+import { t, type LanguageCode } from '../canvas/ui/i18n';
 
 /**
  * Compiles the flowchart on the canvas (see issue #30) into the program the
@@ -34,10 +35,11 @@ export function statementForBlock(block: BlockData): Statement | null {
 export function compileFlowchart(
   blocks: BlockData[],
   arrows: ArrowData[],
+  language: LanguageCode = 'en',
 ): FlowchartResult {
   const start = blocks.find((b) => b.type === 'start');
   if (!start) {
-    return { ok: false, errors: ['Add a Start block to the canvas.'] };
+    return { ok: false, errors: [t(language, 'flow.noStart')] };
   }
 
   const errors: string[] = [];
@@ -50,29 +52,29 @@ export function compileFlowchart(
   while (current && !isEndBlock(current)) {
     const outs = outgoing(current.id);
     if (outs.length === 0) {
-      errors.push('The flowchart must reach an End block.');
+      errors.push(t(language, 'flow.mustReachEnd'));
       break;
     }
     if (outs.length > 1) {
       errors.push(
-        `Block "${current.label}" has more than one outgoing arrow.`,
+        t(language, 'flow.multipleOutgoing', { label: current.label }),
       );
       break;
     }
     const next = blocks.find((b) => b.id === outs[0].toBlockId);
     if (!next) {
-      errors.push('An arrow points to a missing block.');
+      errors.push(t(language, 'flow.arrowMissing'));
       break;
     }
     if (visited.has(next.id)) {
-      errors.push('The flowchart must not contain loops.');
+      errors.push(t(language, 'flow.noLoops'));
       break;
     }
     if (current.id !== start.id) {
       const stmt = ACTION_BY_LABEL[current.label.trim().toLowerCase()];
       if (!stmt) {
         errors.push(
-          `Unknown action "${current.label}". Rename the block to Move, Turn left or Turn right.`,
+          t(language, 'flow.unknownAction', { label: current.label }),
         );
         break;
       }
@@ -83,13 +85,15 @@ export function compileFlowchart(
   }
 
   if (errors.length === 0 && !(current && isEndBlock(current))) {
-    errors.push('The flowchart must reach an End block.');
+    errors.push(t(language, 'flow.mustReachEnd'));
   }
 
   if (errors.length === 0) {
     for (const block of blocks) {
       if (!visited.has(block.id)) {
-        errors.push(`Block "${block.label}" is not part of the flowchart.`);
+        errors.push(
+          t(language, 'flow.notPartOfFlowchart', { label: block.label }),
+        );
       }
     }
   }

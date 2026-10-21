@@ -2,9 +2,11 @@ import type { CSSProperties } from 'react';
 import { useRef } from 'react';
 import { DraggablePanel } from '../../ui/DraggablePanel';
 import type { Theme } from '../../theme';
+import { t, type LanguageCode } from './i18n';
 
 type ExportPanelProps = {
   theme: Theme;
+  language: LanguageCode;
   onExportPng: () => void;
   onExportJpeg: () => void;
   onExportSvg: () => void;
@@ -14,6 +16,7 @@ type ExportPanelProps = {
 
 export function ExportPanel({
   theme,
+  language,
   onExportPng,
   onExportJpeg,
   onExportSvg,
@@ -48,7 +51,7 @@ export function ExportPanel({
           marginBottom: 2,
         }}
       >
-        Export
+        {t(language, 'export.title')}
       </div>
       <button onClick={onExportPng} style={buttonStyle}>
         PNG
@@ -73,7 +76,7 @@ export function ExportPanel({
           marginBottom: 2,
         }}
       >
-        Import
+        {t(language, 'export.import')}
       </div>
 
       <button onClick={() => fileInputRef.current?.click()} style={buttonStyle}>

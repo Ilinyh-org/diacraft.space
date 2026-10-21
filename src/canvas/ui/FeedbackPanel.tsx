@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { CSSProperties, FormEvent } from 'react';
 import { DraggablePanel } from '../../ui/DraggablePanel';
 import type { Theme } from '../../theme';
+import { t, type LanguageCode } from './i18n';
 
 const WEB3FORMS_ACCESS_KEY = '58d46050-932f-49ac-bfdc-b07822fe6adc';
 
@@ -9,7 +10,7 @@ type FeedbackStatus = 'idle' | 'sending' | 'success' | 'error';
 
 const FEEDBACK_PANEL_WIDTH = 220;
 
-export function FeedbackPanel({ theme }: { theme: Theme }) {
+export function FeedbackPanel({ theme, language }: { theme: Theme; language: LanguageCode }) {
   const [status, setStatus] = useState<FeedbackStatus>('idle');
 
   const buttonStyle: CSSProperties = {
@@ -76,26 +77,26 @@ export function FeedbackPanel({ theme }: { theme: Theme }) {
             marginBottom: 4,
           }}
         >
-          Feedback
+          {t(language, 'feedback.title')}
         </div>
         <form onSubmit={handleSubmit} data-testid="feedback-form">
           <input
             type="text"
             name="name"
-            placeholder="Name"
+            placeholder={t(language, 'feedback.name')}
             required
             style={{ ...inputStyle, marginBottom: 4 }}
           />
           <input
             type="email"
             name="email"
-            placeholder="Email"
+            placeholder={t(language, 'feedback.email')}
             required
             style={{ ...inputStyle, marginBottom: 4 }}
           />
           <textarea
             name="message"
-            placeholder="Message"
+            placeholder={t(language, 'feedback.message')}
             required
             rows={4}
             style={{ ...inputStyle, marginBottom: 4, resize: 'vertical' }}
@@ -105,17 +106,19 @@ export function FeedbackPanel({ theme }: { theme: Theme }) {
             disabled={status === 'sending'}
             style={{ ...buttonStyle, width: '100%', marginBottom: 4 }}
           >
-            {status === 'sending' ? 'Sending…' : 'Submit'}
+            {status === 'sending'
+              ? t(language, 'feedback.sending')
+              : t(language, 'feedback.submit')}
           </button>
         </form>
         {status === 'success' && (
           <div style={{ fontSize: 11, color: theme.buttonText }}>
-            Success! Your message has been sent.
+            {t(language, 'feedback.success')}
           </div>
         )}
         {status === 'error' && (
           <div style={{ fontSize: 11, color: theme.deleteButton }}>
-            Error: something went wrong. Please try again.
+            {t(language, 'feedback.error')}
           </div>
         )}
         </div>

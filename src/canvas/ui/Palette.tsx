@@ -3,6 +3,7 @@ import { DraggablePanel } from "../../ui/DraggablePanel";
 import type { Theme } from "../../theme";
 import { PALETTE } from "../constants";
 import type { BlockType } from "../Blocks/Block";
+import { t, type LanguageCode, type TranslationKey } from "./i18n";
 
 type PaletteProps = {
   theme: Theme;
@@ -14,6 +15,7 @@ type PaletteProps = {
   onRedo: () => void;
   onPalettePointerDown: (e: React.PointerEvent, type: BlockType) => void;
   onClear: () => void;
+  language: LanguageCode;
 };
 
 export function Palette({
@@ -26,6 +28,7 @@ export function Palette({
   onRedo,
   onPalettePointerDown,
   onClear,
+  language,
 }: PaletteProps) {
   const smallButton = (enabled: boolean): CSSProperties => ({
     padding: "6px 8px",
@@ -70,7 +73,9 @@ export function Palette({
           fontWeight: 600,
         }}
       >
-        {isDrawMode ? "Draw ✏️" : "Select ✋"}
+        {isDrawMode
+          ? t(language, "palette.draw")
+          : t(language, "palette.select")}
       </div>
 
       <div style={{ display: "flex", gap: 4 }}>
@@ -81,7 +86,7 @@ export function Palette({
           }}
           style={{ ...smallButton(canUndo), flex: 1 }}
         >
-          ↶ Undo
+          {t(language, "palette.undo")}
         </div>
         <div
           onPointerDown={(e) => {
@@ -90,7 +95,7 @@ export function Palette({
           }}
           style={{ ...smallButton(canRedo), flex: 1 }}
         >
-          ↷ Redo
+          {t(language, "palette.redo")}
         </div>
       </div>
 
@@ -109,7 +114,7 @@ export function Palette({
               onPointerDown={(e) => onPalettePointerDown(e, item.type)}
               style={paletteItemStyle}
             >
-              {item.label}
+              {t(language, BLOCK_LABEL_KEY[item.type])}
             </div>
           ))}
         </>
@@ -130,8 +135,18 @@ export function Palette({
           cursor: 'pointer',
         }}
       >
-        Clear
+        {t(language, "palette.clear")}
       </div>
     </DraggablePanel>
   );
 }
+
+const BLOCK_LABEL_KEY: Record<BlockType, TranslationKey> = {
+  start: "block.startEnd",
+  action: "block.action",
+  condition: "block.condition",
+  io: "block.io",
+  forloop: "block.forloop",
+  function: "block.function",
+  link: "block.link",
+};

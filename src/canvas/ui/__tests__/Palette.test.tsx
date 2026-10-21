@@ -16,7 +16,7 @@ function setup(overrides: Partial<Parameters<typeof Palette>[0]> = {}) {
     onClear: vi.fn(),
     ...overrides,
   };
-  render(<Palette {...props} />);
+  render(<Palette language="en" {...props} />);
   return props;
 }
 
