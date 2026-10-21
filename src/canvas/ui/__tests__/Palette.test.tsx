@@ -62,6 +62,12 @@ describe('Palette', () => {
     expect(handler.mock.calls[0][1]).toBe('action');
   });
 
+  it('keeps the Undo arrow and label on one line like Redo (issue #61)', () => {
+    setup();
+    expect(screen.getByText('↶ Undo').style.whiteSpace).toBe('nowrap');
+    expect(screen.getByText('↷ Redo').style.whiteSpace).toBe('nowrap');
+  });
+
   it('shows the Clear button last in the palette (issue #45)', () => {
     setup();
     const clear = screen.getByText('Clear');
