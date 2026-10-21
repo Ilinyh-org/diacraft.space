@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { findDropTarget } from '../blocks';
+import { findDropTarget, getAnchor } from '../blocks';
 import type { BlockData } from '../../types';
 
 function block(id: string, x: number, y: number, w = 120, h = 60): BlockData {
@@ -39,5 +39,27 @@ describe('findDropTarget', () => {
     expect(
       findDropTarget([a, b], 'a', edge + 0.5, 130, HIT_RADIUS)
     ).toBeUndefined();
+  });
+});
+
+describe('getAnchor for io (parallelogram) blocks', () => {
+  // io shape points: [0.2w,0],[w,0],[0.8w,h],[0,h]
+  const io = block('io', 100, 100);
+  io.type = 'io';
+
+  it('anchors on the slanted left edge midpoint, not the bounding box', () => {
+    expect(getAnchor(io, 'left')).toEqual({ x: 100 + 12, y: 130 });
+  });
+
+  it('anchors on the slanted right edge midpoint, not the bounding box', () => {
+    expect(getAnchor(io, 'right')).toEqual({ x: 100 + 108, y: 130 });
+  });
+
+  it('centers the top anchor on the top edge of the parallelogram', () => {
+    expect(getAnchor(io, 'top')).toEqual({ x: 100 + 72, y: 100 });
+  });
+
+  it('centers the bottom anchor on the bottom edge of the parallelogram', () => {
+    expect(getAnchor(io, 'bottom')).toEqual({ x: 100 + 48, y: 160 });
   });
 });
