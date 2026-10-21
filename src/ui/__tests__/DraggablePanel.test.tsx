@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { DraggablePanel, moveWithCollision } from '../DraggablePanel';
+import { DraggablePanel, moveWithCollision, resolveInitialPosition } from '../DraggablePanel';
 import { lightTheme } from '../../theme';
 
 const rect = (left: number, top: number, w: number, h: number) => ({
@@ -87,6 +87,56 @@ describe('moveWithCollision', () => {
   });
 });
 
+describe('resolveInitialPosition', () => {
+  const win = { width: 800, height: 600 };
+
+  it('clamps an off-screen right position back inside the window', () => {
+    // Panels like export use x = innerWidth - 90, but can be wider than 90.
+    const result = resolveInitialPosition(
+      { x: 710, y: 10 },
+      { width: 120, height: 50 },
+      [],
+      win,
+    );
+    expect(result).toEqual({ x: 680, y: 10 });
+  });
+
+  it('clamps an off-screen bottom position back inside the window', () => {
+    const result = resolveInitialPosition(
+      { x: 10, y: 590 },
+      { width: 100, height: 50 },
+      [],
+      win,
+    );
+    expect(result).toEqual({ x: 10, y: 550 });
+  });
+
+  it('returns the position unchanged when it is free', () => {
+    const obstacles = [rect(400, 100, 100, 100)];
+    expect(
+      resolveInitialPosition({ x: 10, y: 10 }, { width: 100, height: 50 }, obstacles, win),
+    ).toEqual({ x: 10, y: 10 });
+  });
+
+  it('moves a panel that would start on top of another panel', () => {
+    const obstacles = [rect(10, 10, 200, 100)];
+    const result = resolveInitialPosition(
+      { x: 10, y: 10 },
+      { width: 100, height: 50 },
+      obstacles,
+      win,
+    );
+    const overlaps =
+      result.x < obstacles[0].right &&
+      result.x + 100 > obstacles[0].left &&
+      result.y < obstacles[0].bottom &&
+      result.y + 50 > obstacles[0].top;
+    expect(overlaps).toBe(false);
+    expect(result.x).toBe(10);
+    expect(result.y).toBeGreaterThan(0);
+  });
+});
+
 describe('DraggablePanel', () => {
   it('renders children at the initial position', () => {
     render(
@@ -132,6 +182,39 @@ describe('DraggablePanel', () => {
     const panel = screen.getByText('content').parentElement!.parentElement!;
     expect(panel.style.left).toBe('0px');
     expect(panel.style.top).toBe('0px');
+  });
+
+  it('clamps its initial position inside the window on mount', () => {
+    const originalW = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth');
+    const originalH = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight');
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+      configurable: true,
+      get() {
+        return 120;
+      },
+    });
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get() {
+        return 50;
+      },
+    });
+    try {
+      window.innerHeight = 600;
+      render(
+        <DraggablePanel theme={lightTheme} initialPosition={{ x: 1100, y: 590 }}>
+          <div>content</div>
+        </DraggablePanel>,
+      );
+      const panel = screen.getByText('content').parentElement!.parentElement!;
+      expect(parseFloat(panel.style.left)).toBe(window.innerWidth - 120);
+      expect(parseFloat(panel.style.top)).toBe(550);
+    } finally {
+      if (originalW) Object.defineProperty(HTMLElement.prototype, 'offsetWidth', originalW);
+      else delete (HTMLElement.prototype as unknown as Record<string, unknown>).offsetWidth;
+      if (originalH) Object.defineProperty(HTMLElement.prototype, 'offsetHeight', originalH);
+      else delete (HTMLElement.prototype as unknown as Record<string, unknown>).offsetHeight;
+    }
   });
 
   it('cannot be dragged into another panel (pushes out along the shallower axis)', () => {

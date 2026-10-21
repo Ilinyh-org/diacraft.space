@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { ReactNode, CSSProperties } from 'react';
 import type { Theme } from '../theme';
 
@@ -132,6 +132,37 @@ export function moveWithCollision(
   return { x: clamp.x(prev.x), y: clamp.y(prev.y) };
 }
 
+/**
+ * Resolve a panel's initial position: clamp it inside the window and, if it
+ * would start on top of another panel, shift it to the nearest free slot
+ * (scan down, then up, then right, then left). Issue #71.
+ */
+export function resolveInitialPosition(
+  pos: { x: number; y: number },
+  size: Size,
+  obstacles: Rect[],
+  windowSize: WindowSize,
+): { x: number; y: number } {
+  const clamp = makeClamp(windowSize, size);
+  const x = clamp.x(pos.x);
+  const y = clamp.y(pos.y);
+  if (!overlapsAny(x, y, size, obstacles)) return { x, y };
+  const step = 20;
+  const candidates: Array<{ x: number; y: number }> = [];
+  for (let v = 0; v <= windowSize.height; v += step) candidates.push({ x, y: v });
+  for (let v = windowSize.height - size.height; v >= 0; v -= step)
+    candidates.push({ x, y: v });
+  for (let v = 0; v <= windowSize.width; v += step) candidates.push({ x: v, y });
+  for (let v = windowSize.width - size.width; v >= 0; v -= step)
+    candidates.push({ x: v, y });
+  for (const c of candidates) {
+    const cx = clamp.x(c.x);
+    const cy = clamp.y(c.y);
+    if (!overlapsAny(cx, cy, size, obstacles)) return { x: cx, y: cy };
+  }
+  return { x, y };
+}
+
 type Props = {
   theme: Theme;
   initialPosition: { x: number; y: number };
@@ -149,6 +180,36 @@ export function DraggablePanel({ theme, initialPosition, width, children }: Prop
     panelY: number;
   } | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const adjustedRef = useRef(false);
+
+  // Clamp the initial position inside the window and shift it out of overlap
+  // with already-mounted panels (issue #71).
+  useEffect(() => {
+    if (adjustedRef.current) return;
+    adjustedRef.current = true;
+    const el = panelRef.current;
+    const panelWidth = el?.offsetWidth ?? 0;
+    const panelHeight = el?.offsetHeight ?? 0;
+    if (!el || panelWidth <= 0 || panelHeight <= 0) return;
+    const others = Array.from(
+      document.querySelectorAll<HTMLElement>(`.${PANEL_CLASS}`),
+    ).filter((o) => o !== el);
+    const obstacles: Rect[] = [];
+    for (const other of others) {
+      const or = other.getBoundingClientRect();
+      if (or.width <= 0 || or.height <= 0) continue;
+      obstacles.push({ left: or.left, top: or.top, right: or.right, bottom: or.bottom });
+    }
+    setPos(
+      resolveInitialPosition(
+        pos,
+        { width: panelWidth, height: panelHeight },
+        obstacles,
+        { width: window.innerWidth, height: window.innerHeight },
+      ),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onHandlePointerDown = (e: React.PointerEvent) => {
     e.preventDefault();
