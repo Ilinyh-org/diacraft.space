@@ -12,43 +12,124 @@ type Rect = {
 /** Shared class so panels can detect each other for collision. */
 export const PANEL_CLASS = 'draggable-panel';
 
-function clampToWindow(
-  pos: { x: number; y: number },
-  panelWidth: number,
-  panelHeight: number
-): { x: number; y: number } {
+function clampX(v: number, panelWidth: number): number {
   const maxX = Math.max(0, window.innerWidth - panelWidth);
+  return Math.max(0, Math.min(maxX, v));
+}
+
+function clampY(v: number, panelHeight: number): number {
   const maxY = Math.max(0, window.innerHeight - panelHeight);
+  return Math.max(0, Math.min(maxY, v));
+}
+
+type Size = { width: number; height: number };
+
+type WindowSize = { width: number; height: number };
+
+function makeClamp(windowSize: WindowSize, size: Size) {
+  const maxX = Math.max(0, windowSize.width - size.width);
+  const maxY = Math.max(0, windowSize.height - size.height);
   return {
-    x: Math.max(0, Math.min(maxX, pos.x)),
-    y: Math.max(0, Math.min(maxY, pos.y)),
+    x: (v: number) => Math.max(0, Math.min(maxX, v)),
+    y: (v: number) => Math.max(0, Math.min(maxY, v)),
   };
 }
 
-/** Push a rect out of any overlapping obstacle rect along the least-penetration axis. */
-function resolveOverlap(rect: Rect, obstacle: Rect) {
-  const overlapX =
-    Math.min(rect.right, obstacle.right) -
-    Math.max(rect.left, obstacle.left);
-  const overlapY =
-    Math.min(rect.bottom, obstacle.bottom) -
-    Math.max(rect.top, obstacle.top);
-  if (overlapX <= 0 || overlapY <= 0) return;
-  if (overlapX < overlapY) {
-    const push =
-      (rect.left + rect.right) / 2 < (obstacle.left + obstacle.right) / 2
-        ? -overlapX
-        : overlapX;
-    rect.left += push;
-    rect.right += push;
-  } else {
-    const push =
-      (rect.top + rect.bottom) / 2 < (obstacle.top + obstacle.bottom) / 2
-        ? -overlapY
-        : overlapY;
-    rect.top += push;
-    rect.bottom += push;
+function overlapsAny(x: number, y: number, size: Size, obstacles: Rect[]): boolean {
+  return obstacles.some(
+    (o) =>
+      x < o.right && x + size.width > o.left && y < o.bottom && y + size.height > o.top,
+  );
+}
+
+/**
+ * Snap a coordinate so the panel stops exactly at the boundary of the first
+ * obstacle ahead of it along one axis. Returns null if the snapped position
+ * would still overlap something (fully blocked).
+ */
+function snapAxis(
+  axis: 'x' | 'y',
+  fixed: number,
+  prev: number,
+  next: number,
+  size: Size,
+  obstacles: Rect[],
+  clamp: (v: number) => number,
+): number | null {
+  const delta = next - prev;
+  if (delta === 0) return null;
+  let limit = next;
+  for (const o of obstacles) {
+    const overlapsFixedRange =
+      axis === 'x'
+        ? fixed < o.bottom && fixed + size.height > o.top
+        : fixed < o.right && fixed + size.width > o.left;
+    if (!overlapsFixedRange) continue;
+    if (delta > 0) {
+      const ahead = axis === 'x' ? o.left >= prev + size.width : o.top >= prev + size.height;
+      if (!ahead) continue;
+      const edge = axis === 'x' ? o.left - size.width : o.top - size.height;
+      limit = Math.min(limit, edge);
+    } else {
+      const ahead = axis === 'x' ? o.right <= prev : o.bottom <= prev;
+      if (!ahead) continue;
+      const edge = axis === 'x' ? o.right : o.bottom;
+      limit = Math.max(limit, edge);
+    }
   }
+  limit = clamp(limit);
+  const at = axis === 'x' ? { x: limit, y: fixed } : { x: fixed, y: limit };
+  if (overlapsAny(at.x, at.y, size, obstacles)) return null;
+  return limit;
+}
+
+/**
+ * Compute the next panel position with solid collision against obstacles and
+ * the window bounds. Panels never overlap each other: movement along one axis
+ * is allowed to slide while the other axis is blocked at the obstacle's edge.
+ */
+export function moveWithCollision(
+  prev: { x: number; y: number },
+  next: { x: number; y: number },
+  size: Size,
+  obstacles: Rect[],
+  windowSize: WindowSize,
+): { x: number; y: number } {
+  const clamp = makeClamp(windowSize, size);
+  const x = clamp.x(next.x);
+  const y = clamp.y(next.y);
+  if (!overlapsAny(x, y, size, obstacles)) return { x, y };
+  // If the previous position already overlapped something, do not freeze the panel.
+  if (overlapsAny(clamp.x(prev.x), clamp.y(prev.y), size, obstacles)) return { x, y };
+
+  // Prefer sliding along the axis of the larger movement.
+  const horizontalFirst = Math.abs(next.x - prev.x) >= Math.abs(next.y - prev.y);
+  const tries: Array<() => { x: number; y: number } | null> = horizontalFirst
+    ? [
+        () => {
+          const sy = snapAxis('y', x, prev.y, y, size, obstacles, clamp.y);
+          return sy === null ? null : { x, y: sy };
+        },
+        () => {
+          const sx = snapAxis('x', y, prev.x, x, size, obstacles, clamp.x);
+          return sx === null ? null : { x: sx, y };
+        },
+      ]
+    : [
+        () => {
+          const sx = snapAxis('x', y, prev.x, x, size, obstacles, clamp.x);
+          return sx === null ? null : { x: sx, y };
+        },
+        () => {
+          const sy = snapAxis('y', x, prev.y, y, size, obstacles, clamp.y);
+          return sy === null ? null : { x, y: sy };
+        },
+      ];
+  for (const attempt of tries) {
+    const result = attempt();
+    if (result) return result;
+  }
+  return { x: clamp.x(prev.x), y: clamp.y(prev.y) };
 }
 
 type Props = {
@@ -88,40 +169,37 @@ export function DraggablePanel({ theme, initialPosition, width, children }: Prop
     const panelEl = panelRef.current;
     const panelWidth = panelEl?.offsetWidth ?? 0;
     const panelHeight = panelEl?.offsetHeight ?? 0;
-    let next = clampToWindow(
-      {
-        x: dragRef.current.panelX + dx,
-        y: dragRef.current.panelY + dy,
-      },
-      panelWidth,
-      panelHeight
-    );
-
+    let next = {
+      x: dragRef.current.panelX + dx,
+      y: dragRef.current.panelY + dy,
+    };
     if (panelEl && panelWidth > 0 && panelHeight > 0) {
-      const rect: Rect = {
-        left: next.x,
-        top: next.y,
-        right: next.x + panelWidth,
-        bottom: next.y + panelHeight,
-      };
       const others = Array.from(
         document.querySelectorAll<HTMLElement>(`.${PANEL_CLASS}`)
       ).filter((el) => el !== panelEl);
+      const obstacles: Rect[] = [];
       for (const other of others) {
         const or = other.getBoundingClientRect();
         if (or.width <= 0 || or.height <= 0) continue;
-        resolveOverlap(rect, {
+        obstacles.push({
           left: or.left,
           top: or.top,
           right: or.right,
           bottom: or.bottom,
         });
       }
-      next = clampToWindow(
-        { x: rect.left, y: rect.top },
-        panelWidth,
-        panelHeight
+      next = moveWithCollision(
+        { x: dragRef.current.panelX, y: dragRef.current.panelY },
+        next,
+        { width: panelWidth, height: panelHeight },
+        obstacles,
+        { width: window.innerWidth, height: window.innerHeight }
       );
+    } else {
+      next = {
+        x: clampX(next.x, panelWidth),
+        y: clampY(next.y, panelHeight),
+      };
     }
     setPos(next);
   };
