@@ -41,6 +41,19 @@ describe("MainMenu", () => {
     );
   });
 
+  it('labels the export menu "Export/Import" (issue #63)', () => {
+    render(
+      <MainMenu
+        theme={lightTheme}
+        visibility={INITIAL_MENU_VISIBILITY}
+        onToggle={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId("main-menu-export")).toHaveTextContent(
+      "Export/Import",
+    );
+  });
+
   it("starts with only the palette visible", () => {
     expect(INITIAL_MENU_VISIBILITY).toEqual({
       palette: true,
