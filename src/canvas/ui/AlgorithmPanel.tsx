@@ -53,7 +53,7 @@ export function AlgorithmPanel({
           marginBottom: 2,
         }}
       >
-        Algorithm
+        Animation
       </div>
       <button
         onClick={running ? onStop : onRun}

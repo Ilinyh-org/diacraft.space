@@ -11,7 +11,7 @@ import type { MenuVisibility } from "./menuVisibility";
 const MENU_LABELS: { id: MenuId; label: string }[] = [
   { id: "palette", label: "Palette" },
   { id: "export", label: "Export" },
-  { id: "algorithm", label: "Algorithm" },
+  { id: "algorithm", label: "Animation" },
   { id: "game", label: "Game" },
   { id: "feedback", label: "Feedback" },
 ];

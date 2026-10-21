@@ -10,7 +10,6 @@ type ExportPanelProps = {
   onExportSvg: () => void;
   onExportJson: () => void;
   onImportJson: (file: File) => void;
-  onClear: () => void;
 };
 
 export function ExportPanel({
@@ -20,7 +19,6 @@ export function ExportPanel({
   onExportSvg,
   onExportJson,
   onImportJson,
-  onClear,
 }: ExportPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const buttonStyle: CSSProperties = {
@@ -81,19 +79,6 @@ export function ExportPanel({
           e.target.value = '';
         }}
       />
-
-      <div style={{ height: 1, background: theme.divider, margin: '4px 0' }} />
-
-      <button
-        onClick={onClear}
-        style={{
-          ...buttonStyle,
-          color: theme.deleteButton,
-          borderColor: theme.deleteButton,
-        }}
-      >
-        Clear
-      </button>
     </DraggablePanel>
   );
 }

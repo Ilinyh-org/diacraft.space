@@ -15,6 +15,7 @@ function setup(overrides: Partial<Parameters<typeof Palette>[0]> = {}) {
     onUndo: vi.fn(),
     onRedo: vi.fn(),
     onPalettePointerDown: vi.fn(),
+    onClear: vi.fn(),
     ...overrides,
   };
   render(<Palette {...props} />);
@@ -59,5 +60,19 @@ describe('Palette', () => {
     fireEvent.pointerDown(screen.getByText('Action'));
     expect(handler).toHaveBeenCalledTimes(1);
     expect(handler.mock.calls[0][1]).toBe('action');
+  });
+
+  it('shows the Clear button last in the palette (issue #45)', () => {
+    setup();
+    const clear = screen.getByText('Clear');
+    const body = clear.parentElement!.parentElement!;
+    expect(body.lastElementChild).toBe(clear.parentElement);
+  });
+
+  it('calls onClear when Clear is pressed', () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const props = setup();
+    fireEvent.pointerDown(screen.getByText('Clear'));
+    expect(props.onClear).toHaveBeenCalledTimes(1);
   });
 });

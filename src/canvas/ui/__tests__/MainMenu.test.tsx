@@ -28,6 +28,19 @@ describe("MainMenu", () => {
     }
   });
 
+  it('labels the algorithm menu "Animation" (issue #45)', () => {
+    render(
+      <MainMenu
+        theme={lightTheme}
+        visibility={INITIAL_MENU_VISIBILITY}
+        onToggle={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId("main-menu-algorithm")).toHaveTextContent(
+      "Animation",
+    );
+  });
+
   it("starts with only the palette visible", () => {
     expect(INITIAL_MENU_VISIBILITY).toEqual({
       palette: true,
