@@ -8,27 +8,13 @@ describe('FeedbackPanel', () => {
     vi.restoreAllMocks();
   });
 
-  it('shows the feedback button in the menu', () => {
+  it('always shows the form immediately (no compressed view)', () => {
     render(<FeedbackPanel theme={lightTheme} />);
-    expect(screen.getByText('Feedback')).toBeInTheDocument();
-    expect(screen.queryByTestId('feedback-form')).not.toBeInTheDocument();
-  });
-
-  it('transforms to the form when Feedback is clicked', () => {
-    render(<FeedbackPanel theme={lightTheme} />);
-    fireEvent.click(screen.getByText('Feedback'));
     expect(screen.getByTestId('feedback-form')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Name')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Email')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Message')).toBeInTheDocument();
-  });
-
-  it('shrinks back to the menu via the back button', () => {
-    render(<FeedbackPanel theme={lightTheme} />);
-    fireEvent.click(screen.getByText('Feedback'));
-    fireEvent.click(screen.getByText('Back to menu'));
-    expect(screen.queryByTestId('feedback-form')).not.toBeInTheDocument();
-    expect(screen.getByText('Feedback')).toBeInTheDocument();
+    expect(screen.queryByText('Back to menu')).not.toBeInTheDocument();
   });
 
   it('submits the form to web3forms and shows success', async () => {
@@ -39,7 +25,6 @@ describe('FeedbackPanel', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     render(<FeedbackPanel theme={lightTheme} />);
-    fireEvent.click(screen.getByText('Feedback'));
 
     fireEvent.change(screen.getByPlaceholderText('Name'), {
       target: { value: 'Test' },
@@ -75,7 +60,6 @@ describe('FeedbackPanel', () => {
     );
 
     render(<FeedbackPanel theme={lightTheme} />);
-    fireEvent.click(screen.getByText('Feedback'));
 
     fireEvent.change(screen.getByPlaceholderText('Name'), {
       target: { value: 'Test' },
