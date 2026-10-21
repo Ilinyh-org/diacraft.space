@@ -48,6 +48,16 @@ export function ExportPanel({
           marginBottom: 2,
         }}
       >
+        Export/Import
+      </div>
+      <div
+        style={{
+          fontSize: 11,
+          textAlign: 'center',
+          color: theme.buttonTextDisabled,
+          marginBottom: 2,
+        }}
+      >
         Export
       </div>
       <button onClick={onExportPng} style={buttonStyle}>
@@ -65,8 +75,19 @@ export function ExportPanel({
 
       <div style={{ height: 1, background: theme.divider, margin: '4px 0' }} />
 
+      <div
+        style={{
+          fontSize: 11,
+          textAlign: 'center',
+          color: theme.buttonTextDisabled,
+          marginBottom: 2,
+        }}
+      >
+        Import
+      </div>
+
       <button onClick={() => fileInputRef.current?.click()} style={buttonStyle}>
-        Import JSON
+        JSON
       </button>
       <input
         ref={fileInputRef}
