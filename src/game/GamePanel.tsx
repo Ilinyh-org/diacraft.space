@@ -11,12 +11,6 @@ import { stepStatement } from './types';
 
 const STEP_MS = 350;
 
-const COMMAND_NAME: Record<string, string> = {
-  move: 'Move',
-  turnLeft: 'Turn Left',
-  turnRight: 'Turn Right',
-};
-
 type Props = {
   theme: Theme;
   blocks: BlockData[];
@@ -42,6 +36,7 @@ export function GamePanel({
   const [frameIndex, setFrameIndex] = useState(0);
   const [status, setStatus] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(true);
+  const [hasRun, setHasRun] = useState(false);
   const [highlighted, setHighlighted] = useState(false);
   const lastSignalSeq = useRef(0);
   const syncState = useRef<{ frames: Frame[]; crashed: boolean } | null>(null);
@@ -63,6 +58,7 @@ export function GamePanel({
     setFrames(null);
     setFrameIndex(0);
     setStatus(null);
+    setHasRun(false);
     setHighlighted(false);
     syncState.current = null;
     lastSignalSeq.current = 0;
@@ -88,6 +84,7 @@ export function GamePanel({
 
   const run = useCallback(
     (fromButton: boolean) => {
+      setHasRun(true);
       if (fromButton) onRunDiagram?.();
       if (!compiled.ok) {
         setFrames(null);
@@ -115,6 +112,7 @@ export function GamePanel({
   // The algorithm panel's Run button arms the game; the robot then moves in
   // sync with the diagram animation, one statement per activated block (#40).
   const armSync = useCallback(() => {
+    setHasRun(true);
     reset();
     if (!compiled.ok) {
       setStatus(`✖ ${compiled.errors.join(' ')}`);
@@ -232,10 +230,6 @@ export function GamePanel({
 
   const arrowByDir = ['▲', '▶', '▼', '◀'][current.dir];
 
-  const programSummary = compiled.ok
-    ? compiled.program.map((s) => COMMAND_NAME[s.kind]).join(' → ') || '(empty program)'
-    : null;
-
   return (
     <DraggablePanel
       theme={theme}
@@ -248,7 +242,7 @@ export function GamePanel({
           padding: 10,
           fontFamily: 'inherit',
           color: theme.buttonText,
-          userSelect: 'none',
+          userSelect: 'text',
           border: highlighted
             ? `2px solid ${theme.runHighlight}`
             : '2px solid transparent',
@@ -321,16 +315,14 @@ export function GamePanel({
 
         <div style={{ height: 1, background: theme.divider, margin: '6px 0' }} />
 
-        <div style={{ fontSize: 10, color: theme.buttonTextDisabled, marginBottom: 4 }}>
-          Build the program on the canvas: Start block, action blocks renamed
-          to Move / Left / Right, then an End block, connected with arrows.
-        </div>
-
-        {compiled.ok ? (
-          <div data-testid="flowchart-program" style={{ fontSize: 11 }}>
-            Program: {programSummary}
+        {hasRun && (
+          <div style={{ fontSize: 10, color: theme.buttonTextDisabled, marginBottom: 4 }}>
+            Build the program on the canvas: Start block, action blocks renamed
+            to Move / Turn left / Turn right, then an End block, connected with arrows.
           </div>
-        ) : (
+        )}
+
+        {!compiled.ok && (
           <div data-testid="flowchart-errors" style={{ fontSize: 11, color: theme.deleteButton }}>
             {compiled.errors.map((e, i) => (
               <div key={i}>✖ {e}</div>
@@ -354,9 +346,6 @@ export function GamePanel({
               Next level →
             </button>
           )}
-        </div>
-        <div style={{ fontSize: 10, color: theme.buttonTextDisabled, marginTop: 2 }}>
-          Commands: {compiled.ok ? compiled.program.length : 0}
         </div>
       </div>
     </DraggablePanel>

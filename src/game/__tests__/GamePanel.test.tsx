@@ -63,13 +63,42 @@ describe('GamePanel', () => {
     expect(screen.getByTestId('game-robot')).toBeDefined();
   });
 
-  it('shows the compiled program from the canvas flowchart', () => {
+  it('hides algorithm hints until Run is clicked, then shows them (#49)', () => {
+    const { blocks, arrows } = makeFlowchart(['move']);
+    render(<GamePanel theme={lightTheme} blocks={blocks} arrows={arrows} />);
+    expect(screen.queryByText(/Build the program on the canvas/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
+    expect(screen.getByText(/Build the program on the canvas/)).toBeDefined();
+  });
+
+  it('does not render a Program or Commands summary line (#49)', () => {
     const { blocks, arrows } = makeFlowchart(['move', 'move', 'move']);
     render(<GamePanel theme={lightTheme} blocks={blocks} arrows={arrows} />);
-    expect(screen.getByTestId('flowchart-program').textContent).toContain(
-      'Move',
+    expect(screen.queryByTestId('flowchart-program')).toBeNull();
+    expect(screen.queryByText(/Commands:/)).toBeNull();
+  });
+
+  it('makes the game text selectable (#49)', () => {
+    const { blocks, arrows } = makeFlowchart(['move']);
+    render(<GamePanel theme={lightTheme} blocks={blocks} arrows={arrows} />);
+    const panel = screen.getByTestId('game-panel') as HTMLElement;
+    expect(panel.style.userSelect).toBe('text');
+  });
+
+  it('names turn commands "Turn left" and "Turn right" in errors (#49)', () => {
+    const start = block({ type: 'start', label: 'Start' });
+    const bad = block({ label: 'Dance' });
+    const end = block({ label: 'End' });
+    render(
+      <GamePanel
+        theme={lightTheme}
+        blocks={[start, bad, end]}
+        arrows={[arrow(start.id, bad.id), arrow(bad.id, end.id)]}
+      />,
     );
-    expect(screen.getByText('Commands: 3')).toBeDefined();
+    expect(screen.getByTestId('flowchart-errors').textContent).toContain(
+      'Move, Turn left or Turn right',
+    );
   });
 
   it('wins the first level from the canvas flowchart', () => {
