@@ -10,6 +10,7 @@ import { useLayoutEffect, useRef, useEffect, useState } from 'react';
 import Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 import type { Theme } from '../../theme';
+import { absoluteToWorld } from '../utils/blocks';
 
 export type BlockType =
   | 'action'
@@ -343,15 +344,15 @@ export function Block({
             draggable
             onDragStart={(e) => {
               e.cancelBubble = true;
-              const abs = e.target.getAbsolutePosition();
+              const abs = absoluteToWorld(e.target);
               onHandleDragStart?.(side, abs.x, abs.y);
             }}
             onDragMove={(e) => {
-              const abs = e.target.getAbsolutePosition();
+              const abs = absoluteToWorld(e.target);
               onHandleDragMove?.(abs.x, abs.y);
             }}
             onDragEnd={(e) => {
-              const abs = e.target.getAbsolutePosition();
+              const abs = absoluteToWorld(e.target);
               onHandleDragEnd?.(abs.x, abs.y);
               // Reset the node to its anchor so an unconnected drop
               // does not leave the handle dot stranded on the canvas.
