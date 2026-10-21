@@ -63,15 +63,6 @@ describe('GamePanel', () => {
     expect(screen.getByTestId('game-robot')).toBeDefined();
   });
 
-  it('shows the compiled program from the canvas flowchart', () => {
-    const { blocks, arrows } = makeFlowchart(['move', 'move', 'move']);
-    render(<GamePanel theme={lightTheme} blocks={blocks} arrows={arrows} />);
-    expect(screen.getByTestId('flowchart-program').textContent).toContain(
-      'Move',
-    );
-    expect(screen.getByText('Commands: 3')).toBeDefined();
-  });
-
   it('wins the first level from the canvas flowchart', () => {
     const { blocks, arrows } = makeFlowchart(['move', 'move', 'move']);
     render(<GamePanel theme={lightTheme} blocks={blocks} arrows={arrows} />);
@@ -100,6 +91,34 @@ describe('GamePanel', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
     expect(screen.getByRole('status').textContent).toContain('✖');
+  });
+
+  it('does not show build hints before Run is clicked (#49)', () => {
+    const { blocks, arrows } = makeFlowchart(['move']);
+    render(<GamePanel theme={lightTheme} blocks={blocks} arrows={arrows} />);
+    expect(screen.queryByText(/Build the program on the canvas/)).toBeNull();
+  });
+
+  it('shows build hints only after Run is clicked (#49)', () => {
+    const { blocks, arrows } = makeFlowchart(['move', 'move', 'move']);
+    render(<GamePanel theme={lightTheme} blocks={blocks} arrows={arrows} />);
+    fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
+    expect(screen.getByText(/Build the program on the canvas/)).toBeDefined();
+  });
+
+  it('does not duplicate the program or the command count (#49)', () => {
+    const { blocks, arrows } = makeFlowchart(['move', 'move', 'move']);
+    render(<GamePanel theme={lightTheme} blocks={blocks} arrows={arrows} />);
+    expect(screen.queryByTestId('flowchart-program')).toBeNull();
+    expect(screen.queryByText(/Commands:/)).toBeNull();
+    expect(screen.queryByText(/Program:/)).toBeNull();
+  });
+
+  it('keeps the game text selectable (#49)', () => {
+    const { blocks, arrows } = makeFlowchart(['move']);
+    render(<GamePanel theme={lightTheme} blocks={blocks} arrows={arrows} />);
+    const panel = screen.getByTestId('game-panel') as HTMLElement;
+    expect(panel.style.userSelect).not.toBe('none');
   });
 
   it('starts the diagram animation when Run is clicked from the button', () => {
