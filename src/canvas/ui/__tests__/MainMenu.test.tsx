@@ -9,6 +9,7 @@ import { lightTheme } from "../../../theme";
 function renderMenu(overrides?: { language?: "en" | "ru" }) {
   const onToggle = vi.fn();
   const onLanguageChange = vi.fn();
+  const onToggleTheme = vi.fn();
   render(
     <MainMenu
       theme={lightTheme}
@@ -16,9 +17,11 @@ function renderMenu(overrides?: { language?: "en" | "ru" }) {
       onToggle={onToggle}
       language={overrides?.language ?? "en"}
       onLanguageChange={onLanguageChange}
+      themeName="light"
+      onToggleTheme={onToggleTheme}
     />,
   );
-  return { onToggle, onLanguageChange };
+  return { onToggle, onLanguageChange, onToggleTheme };
 }
 
 describe("MainMenu language selection (issue #62)", () => {
@@ -36,9 +39,10 @@ describe("MainMenu language selection (issue #62)", () => {
     ) as HTMLOptionElement[];
     expect(options.map((o) => o.value)).toContain("en");
     expect(options.map((o) => o.value)).toContain("ru");
-    // top of the menu: the language row is the first child
+    // top of the menu: the theme button is first, then the language row
     const menu = screen.getByTestId("main-menu");
-    expect(menu.firstElementChild).toBe(
+    expect(menu.children[0]).toBe(screen.getByTestId("main-menu-theme"));
+    expect(menu.children[1]).toBe(
       screen.getByTestId("main-menu-language-row"),
     );
     expect(screen.getByTestId("main-menu-palette")).toBeInTheDocument();
@@ -74,5 +78,22 @@ describe("MainMenu language selection (issue #62)", () => {
     expect(screen.getByTestId("main-menu-palette")).toHaveTextContent(
       "Palette",
     );
+  });
+
+  it("shows the theme toggle above the language row (issue #60)", () => {
+    renderMenu();
+    const themeButton = screen.getByTestId("main-menu-theme");
+    expect(themeButton).toHaveTextContent("🌙 Dark");
+    const menu = screen.getByTestId("main-menu");
+    expect(menu.firstElementChild).toBe(themeButton);
+    expect(menu.children[1]).toBe(
+      screen.getByTestId("main-menu-language-row"),
+    );
+  });
+
+  it("emits onToggleTheme when the theme button is pressed (issue #60)", () => {
+    const { onToggleTheme } = renderMenu();
+    fireEvent.pointerDown(screen.getByTestId("main-menu-theme"));
+    expect(onToggleTheme).toHaveBeenCalledTimes(1);
   });
 });

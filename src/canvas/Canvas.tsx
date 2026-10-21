@@ -967,18 +967,18 @@ const runExport = (
         onToggle={toggleMenu}
         language={language}
         onLanguageChange={setLanguage}
+        themeName={themeName}
+        onToggleTheme={() =>
+          setThemeName(themeName === 'dark' ? 'light' : 'dark')
+        }
       />
 
       {menus.palette && (
         <Palette
         theme={theme}
-        themeName={themeName}
         isDrawMode={isDrawMode}
         canUndo={canUndo}
         canRedo={canRedo}
-        onToggleTheme={() =>
-          setThemeName(themeName === 'dark' ? 'light' : 'dark')
-        }
         onToggleMode={() => setMode(isDrawMode ? 'select' : 'draw')}
         onUndo={undo}
         onRedo={redo}
