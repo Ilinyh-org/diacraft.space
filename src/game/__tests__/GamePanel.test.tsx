@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { GamePanel } from '../GamePanel';
 import { lightTheme } from '../../theme';
+import { stepDelayMs } from '../../canvas/ui/AlgorithmPanel';
 import type { BlockData, ArrowData } from '../../canvas/types';
 
 beforeEach(() => {
@@ -68,6 +69,29 @@ describe('GamePanel', () => {
     render(<GamePanel theme={lightTheme} blocks={blocks} arrows={arrows} />);
     fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
     expect(screen.getByRole('status').textContent).toContain('Level complete');
+  });
+
+  it('moves the robot with a transition that matches the animation speed', () => {
+    const { blocks, arrows } = makeFlowchart(['move']);
+    render(
+      <GamePanel
+        theme={lightTheme}
+        blocks={blocks}
+        arrows={arrows}
+        speed={6}
+      />,
+    );
+    const robot = screen.getByTestId('game-robot') as HTMLElement;
+    const ms = stepDelayMs(6);
+    expect(robot.style.transition).toContain(`left ${ms}ms`);
+    expect(robot.style.transition).toContain(`top ${ms}ms`);
+  });
+
+  it('uses the default animation speed when none is given', () => {
+    const { blocks, arrows } = makeFlowchart(['move']);
+    render(<GamePanel theme={lightTheme} blocks={blocks} arrows={arrows} />);
+    const robot = screen.getByTestId('game-robot') as HTMLElement;
+    expect(robot.style.transition).toContain(`${stepDelayMs(3)}ms`);
   });
 
   it('reports a crash when the flowchart moves the robot into a wall', () => {

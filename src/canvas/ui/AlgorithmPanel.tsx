@@ -5,6 +5,10 @@ import type { Theme } from '../../theme';
 export const MIN_SPEED = 1;
 export const MAX_SPEED = 10;
 
+/** Per-step diagram animation delay in ms; shared with the built-in game (#40). */
+export const stepDelayMs = (speed: number): number =>
+  Math.max(60, Math.round(600 / speed));
+
 type AlgorithmPanelProps = {
   theme: Theme;
   running: boolean;

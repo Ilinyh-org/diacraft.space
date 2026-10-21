@@ -61,6 +61,7 @@ import { FeedbackPanel } from './ui/FeedbackPanel';
 import { BlockEditInput } from './ui/BlockEditInput';
 import {
   AlgorithmPanel,
+  stepDelayMs,
   MIN_SPEED,
   MAX_SPEED,
 } from './ui/AlgorithmPanel';
@@ -418,7 +419,7 @@ export function Canvas() {
     setActiveBlockIds(new Set());
     setActiveArrowIds(new Set());
 
-    const stepDelay = Math.max(60, Math.round(600 / animSpeed));
+    const stepDelay = stepDelayMs(animSpeed);
     const runStep = (index: number, blocksOn: Set<string>, arrowsOn: Set<string>) => {
       if (index >= steps.length) {
         animTimerRef.current = window.setTimeout(() => {
@@ -1041,6 +1042,7 @@ const runExport = (
           arrows={arrows}
           runSignal={gameRunSignal}
           blockSignal={gameBlockSignal}
+              speed={animSpeed}
           onRunDiagram={runAnimation}
         />
       )}

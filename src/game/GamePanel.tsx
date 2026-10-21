@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { DraggablePanel } from '../ui/DraggablePanel';
+import { stepDelayMs } from '../canvas/ui/AlgorithmPanel';
 import type { Theme } from '../theme';
 import type { ArrowData, BlockData } from '../canvas/types';
 import { LEVELS } from './levels';
@@ -8,8 +9,6 @@ import { runProgram, wallAhead } from './types';
 import type { Frame } from './types';
 import { compileFlowchart, isEndBlock, statementForBlock } from './flowchart';
 import { stepStatement } from './types';
-
-const STEP_MS = 350;
 
 const BUILD_HINT =
   'Build the program on the canvas: Start block, action blocks renamed ' +
@@ -25,6 +24,8 @@ type Props = {
   blockSignal?: { seq: number; blockId: string } | null;
   /** Starts the canvas diagram animation (issue #33); called on button Run only. */
   onRunDiagram?: () => void;
+  /** Diagram animation speed (1-10); drives the robot's movement speed (#40). */
+  speed?: number;
 };
 
 export function GamePanel({
@@ -34,6 +35,7 @@ export function GamePanel({
   runSignal = 0,
   blockSignal = null,
   onRunDiagram,
+  speed = 3,
 }: Props) {
   const [levelIndex, setLevelIndex] = useState(0);
   const [frames, setFrames] = useState<Frame[] | null>(null);
@@ -176,7 +178,7 @@ export function GamePanel({
     sync.frames = [...sync.frames, next.frame];
     setFrames(sync.frames);
     setFrameIndex(sync.frames.length - 1);
-  }, [blockSignal, blocks, level]);
+  }, [blockSignal, blocks, level, speed]);
 
   useEffect(() => {
     return () => {
@@ -188,9 +190,9 @@ export function GamePanel({
 
   useEffect(() => {
     if (!frames || frameIndex >= frames.length - 1) return;
-    const timer = setTimeout(() => setFrameIndex((i) => i + 1), STEP_MS);
+    const timer = setTimeout(() => setFrameIndex((i) => i + 1), stepDelayMs(speed));
     return () => clearTimeout(timer);
-  }, [frames, frameIndex]);
+  }, [frames, frameIndex, speed]);
 
   const current: Frame = frames ? frames[frameIndex] : { ...level.start };
   const solved = status?.startsWith('✔') ?? false;
@@ -303,7 +305,7 @@ export function GamePanel({
               justifyContent: 'center',
               fontSize: 20,
               color: theme.selection,
-              transition: 'left 200ms, top 200ms',
+              transition: `left ${stepDelayMs(speed)}ms, top ${stepDelayMs(speed)}ms`,
               pointerEvents: 'none',
             }}
           >
