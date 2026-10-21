@@ -8,7 +8,6 @@ const WEB3FORMS_ACCESS_KEY = '58d46050-932f-49ac-bfdc-b07822fe6adc';
 type FeedbackStatus = 'idle' | 'sending' | 'success' | 'error';
 
 export function FeedbackPanel({ theme }: { theme: Theme }) {
-  const [showForm, setShowForm] = useState(false);
   const [status, setStatus] = useState<FeedbackStatus>('idle');
 
   const buttonStyle: CSSProperties = {
@@ -57,11 +56,6 @@ export function FeedbackPanel({ theme }: { theme: Theme }) {
     }
   };
 
-  const shrinkToMenu = () => {
-    setShowForm(false);
-    setStatus('idle');
-  };
-
   return (
     <DraggablePanel
       theme={theme}
@@ -70,83 +64,58 @@ export function FeedbackPanel({ theme }: { theme: Theme }) {
         y: window.innerHeight - 150,
       }}
     >
-      {showForm ? (
-        <div>
-          <div
-            style={{
-              fontSize: 11,
-              textAlign: 'center',
-              color: theme.buttonTextDisabled,
-              marginBottom: 4,
-            }}
-          >
-            Feedback
-          </div>
-          <form onSubmit={handleSubmit} data-testid="feedback-form">
-            <input
-              type="text"
-              name="name"
-              placeholder="Name"
-              required
-              style={{ ...inputStyle, marginBottom: 4 }}
-            />
-            <input
-              type="email"
-              name="email"
-              placeholder="Email"
-              required
-              style={{ ...inputStyle, marginBottom: 4 }}
-            />
-            <textarea
-              name="message"
-              placeholder="Message"
-              required
-              rows={4}
-              style={{ ...inputStyle, marginBottom: 4, resize: 'vertical' }}
-            />
-            <button
-              type="submit"
-              disabled={status === 'sending'}
-              style={{ ...buttonStyle, width: '100%', marginBottom: 4 }}
-            >
-              {status === 'sending' ? 'Sending…' : 'Submit'}
-            </button>
-          </form>
-          {status === 'success' && (
-            <div style={{ fontSize: 11, color: theme.buttonText }}>
-              Success! Your message has been sent.
-            </div>
-          )}
-          {status === 'error' && (
-            <div style={{ fontSize: 11, color: theme.deleteButton }}>
-              Error: something went wrong. Please try again.
-            </div>
-          )}
-          <div style={{ height: 1, background: theme.divider, margin: '4px 0' }} />
-          <button onClick={shrinkToMenu} style={{ ...buttonStyle, width: '100%' }}>
-            Back to menu
-          </button>
+      <div>
+        <div
+          style={{
+            fontSize: 11,
+            textAlign: 'center',
+            color: theme.buttonTextDisabled,
+            marginBottom: 4,
+          }}
+        >
+          Feedback
         </div>
-      ) : (
-        <div>
-          <div
-            style={{
-              fontSize: 11,
-              textAlign: 'center',
-              color: theme.buttonTextDisabled,
-              marginBottom: 2,
-            }}
-          >
-            Menu
-          </div>
+        <form onSubmit={handleSubmit} data-testid="feedback-form">
+          <input
+            type="text"
+            name="name"
+            placeholder="Name"
+            required
+            style={{ ...inputStyle, marginBottom: 4 }}
+          />
+          <input
+            type="email"
+            name="email"
+            placeholder="Email"
+            required
+            style={{ ...inputStyle, marginBottom: 4 }}
+          />
+          <textarea
+            name="message"
+            placeholder="Message"
+            required
+            rows={4}
+            style={{ ...inputStyle, marginBottom: 4, resize: 'vertical' }}
+          />
           <button
-            onClick={() => setShowForm(true)}
-            style={{ ...buttonStyle, width: '100%' }}
+            type="submit"
+            disabled={status === 'sending'}
+            style={{ ...buttonStyle, width: '100%', marginBottom: 4 }}
           >
-            Feedback
+            {status === 'sending' ? 'Sending…' : 'Submit'}
           </button>
+        </form>
+        {status === 'success' && (
+          <div style={{ fontSize: 11, color: theme.buttonText }}>
+            Success! Your message has been sent.
+          </div>
+        )}
+        {status === 'error' && (
+          <div style={{ fontSize: 11, color: theme.deleteButton }}>
+            Error: something went wrong. Please try again.
+          </div>
+        )}
         </div>
-      )}
     </DraggablePanel>
   );
 }
