@@ -11,6 +11,7 @@ function setup(overrides: Partial<Parameters<typeof AlgorithmPanel>[0]> = {}) {
     onRun: vi.fn(),
     onStop: vi.fn(),
     onSpeedChange: vi.fn(),
+    language: "en" as const,
     ...overrides,
   };
   render(<AlgorithmPanel {...props} />);

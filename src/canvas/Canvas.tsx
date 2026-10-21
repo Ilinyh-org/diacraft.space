@@ -42,8 +42,17 @@ import {
   BLOCK_HEIGHT,
   GRID_EXTENT,
   PALETTE,
-  LABEL_BY_TYPE,
 } from './constants';
+
+const BLOCK_LABEL_BY_TYPE: Record<string, TranslationKey> = {
+  start: 'block.start',
+  action: 'block.action',
+  condition: 'block.condition',
+  io: 'block.io',
+  forloop: 'block.forloop',
+  function: 'block.function',
+  link: 'block.link',
+};
 import type { KonvaEventObject } from 'konva/lib/Node';
 import type { BlockData, ArrowData, DiagramState } from './types';
 import { findDropTarget, getAnchor, pickClosestSide } from './utils/blocks';
@@ -56,7 +65,7 @@ import {
   type MenuId,
   type MenuVisibility,
 } from './ui/MainMenu';
-import { loadLanguage, saveLanguage, type LanguageCode } from './ui/i18n';
+import { loadLanguage, saveLanguage, t, type LanguageCode, type TranslationKey } from './ui/i18n';
 import { ExportPanel } from './ui/ExportPanel';
 import { FeedbackPanel } from './ui/FeedbackPanel';
 import { BlockEditInput } from './ui/BlockEditInput';
@@ -278,17 +287,17 @@ export function Canvas() {
 
   const contextMenuItems: ContextMenuItem[] = contextMenu?.blockId
     ? [
-        { label: 'Cut', onSelect: handleCut },
-        { label: 'Copy', onSelect: handleCopy },
+        { label: t(language, 'context.cut'), onSelect: handleCut },
+        { label: t(language, 'context.copy'), onSelect: handleCopy },
       ]
     : [
         {
-          label: 'Copy',
+          label: t(language, 'context.copy'),
           disabled: selectedIds.length === 0,
           onSelect: handleCopy,
         },
         {
-          label: 'Paste',
+          label: t(language, 'context.paste'),
           disabled: !hasClipboard,
           onSelect: () =>
             handlePaste(
@@ -357,13 +366,13 @@ export function Canvas() {
         y: result.y,
         width: result.width,
         height: result.height,
-        label: LABEL_BY_TYPE[result.type],
+        label: t(language, BLOCK_LABEL_BY_TYPE[result.type]),
         type: result.type,
         initialRotation: result.rotation,
       };
       commit((s) => ({ ...s, blocks: [...s.blocks, newBlock] }));
     },
-    [commit]
+    [commit, language]
   );
 
   const trail = useGestureDraw(
@@ -976,6 +985,7 @@ const runExport = (
       {menus.palette && (
         <Palette
         theme={theme}
+        language={language}
         isDrawMode={isDrawMode}
         canUndo={canUndo}
         canRedo={canRedo}
@@ -984,7 +994,7 @@ const runExport = (
         onRedo={redo}
         onPalettePointerDown={handlePalettePointerDown}
         onClear={() => {
-          if (window.confirm('Clear the whole diagram?')) {
+          if (window.confirm(t(language, 'palette.confirmClear'))) {
             stopAnimation();
             commit(() => ({ blocks: [], arrows: [] }));
             setSelectedId(null);
@@ -999,6 +1009,7 @@ const runExport = (
       {menus.export && (
         <ExportPanel
         theme={theme}
+        language={language}
         onExportPng={() => runExport(exportPng, 'transparent')}
         onExportJpeg={() => runExport(exportJpeg, 'white')}
         onExportSvg={() => runExport(exportSvg, 'transparent')}
@@ -1015,9 +1026,12 @@ const runExport = (
               setEditingId(null);
             } catch (err) {
               window.alert(
-                `Import failed: ${
-                  err instanceof Error ? err.message : 'unknown error'
-                }`
+                t(language, 'export.importFailed', {
+                  message:
+                    err instanceof Error
+                      ? err.message
+                      : t(language, 'export.unknownError'),
+                }),
               );
             }
           };
@@ -1029,6 +1043,7 @@ const runExport = (
       {menus.algorithm && (
         <AlgorithmPanel
           theme={theme}
+          language={language}
           running={animRunning}
           speed={animSpeed}
           onRun={() => {
@@ -1047,6 +1062,7 @@ const runExport = (
       {menus.game && (
         <GamePanel
           theme={theme}
+          language={language}
           blocks={blocks}
           arrows={arrows}
           runSignal={gameRunSignal}
@@ -1056,7 +1072,7 @@ const runExport = (
         />
       )}
 
-      {menus.feedback && <FeedbackPanel theme={theme} />}
+      {menus.feedback && <FeedbackPanel theme={theme} language={language} />}
 
       {contextMenu && !isExporting && (
         <ContextMenu

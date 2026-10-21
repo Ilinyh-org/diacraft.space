@@ -12,7 +12,7 @@ function setup() {
     onExportJson: vi.fn(),
     onImportJson: vi.fn(),
   };
-  render(<ExportPanel {...props} />);
+  render(<ExportPanel language="en" {...props} />);
   return props;
 }
 

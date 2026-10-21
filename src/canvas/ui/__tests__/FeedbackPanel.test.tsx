@@ -9,7 +9,7 @@ describe('FeedbackPanel', () => {
   });
 
   it('renders with a fixed width that fits the screen and starts fully on-screen', () => {
-    render(<FeedbackPanel theme={lightTheme} />);
+    render(<FeedbackPanel theme={lightTheme} language="en" />);
     const panel = document.querySelector('.draggable-panel') as HTMLElement;
     expect(panel).not.toBeNull();
     // Panel has an explicit width and never exceeds the viewport.
@@ -24,7 +24,7 @@ describe('FeedbackPanel', () => {
   });
 
   it('always shows the form immediately (no compressed view)', () => {
-    render(<FeedbackPanel theme={lightTheme} />);
+    render(<FeedbackPanel theme={lightTheme} language="en" />);
     expect(screen.getByTestId('feedback-form')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Name')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Email')).toBeInTheDocument();
@@ -39,7 +39,7 @@ describe('FeedbackPanel', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    render(<FeedbackPanel theme={lightTheme} />);
+    render(<FeedbackPanel theme={lightTheme} language="en" />);
 
     fireEvent.change(screen.getByPlaceholderText('Name'), {
       target: { value: 'Test' },
@@ -74,7 +74,7 @@ describe('FeedbackPanel', () => {
       })
     );
 
-    render(<FeedbackPanel theme={lightTheme} />);
+    render(<FeedbackPanel theme={lightTheme} language="en" />);
 
     fireEvent.change(screen.getByPlaceholderText('Name'), {
       target: { value: 'Test' },

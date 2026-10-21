@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import { DraggablePanel } from '../../ui/DraggablePanel';
 import type { Theme } from '../../theme';
+import { t, type LanguageCode } from './i18n';
 
 export const MIN_SPEED = 1;
 export const MAX_SPEED = 10;
@@ -11,6 +12,7 @@ export const stepDelayMs = (speed: number): number =>
 
 type AlgorithmPanelProps = {
   theme: Theme;
+  language: LanguageCode;
   running: boolean;
   speed: number;
   onRun: () => void;
@@ -20,6 +22,7 @@ type AlgorithmPanelProps = {
 
 export function AlgorithmPanel({
   theme,
+  language,
   running,
   speed,
   onRun,
@@ -53,7 +56,7 @@ export function AlgorithmPanel({
           marginBottom: 2,
         }}
       >
-        Animation
+        {t(language, 'algorithm.title')}
       </div>
       <button
         onClick={running ? onStop : onRun}
@@ -63,7 +66,7 @@ export function AlgorithmPanel({
           borderColor: running ? theme.deleteButton : theme.addButton,
         }}
       >
-        {running ? 'Stop' : 'Run'}
+        {running ? t(language, 'algorithm.stop') : t(language, 'algorithm.run')}
       </button>
 
       <div style={{ height: 1, background: theme.divider, margin: '4px 0' }} />
@@ -76,7 +79,7 @@ export function AlgorithmPanel({
           textAlign: 'center',
         }}
       >
-        Speed: {speed}
+        {t(language, 'algorithm.speed', { speed })}
       </label>
       <input
         id="algorithm-speed"

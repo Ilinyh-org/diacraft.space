@@ -4,6 +4,7 @@ import {
   loadLanguage,
   saveLanguage,
   t,
+  translationKeys,
 } from "../i18n";
 
 describe("i18n (issue #62)", () => {
@@ -13,6 +14,37 @@ describe("i18n (issue #62)", () => {
 
   it("lists English and Russian", () => {
     expect(LANGUAGES.map((l) => l.code)).toEqual(["en", "ru"]);
+  });
+
+  it("covers every key in every declared language (issue #62 completeness)", () => {
+    const enKeys = translationKeys("en").sort();
+    for (const { code } of LANGUAGES) {
+      expect(translationKeys(code).sort()).toEqual(enKeys);
+    }
+  });
+
+  it("translates panel text, not just the main menu (#62: all text)", () => {
+    for (const key of [
+      "palette.draw",
+      "palette.undo",
+      "palette.clear",
+      "export.title",
+      "export.import",
+      "algorithm.run",
+      "feedback.submit",
+      "context.cut",
+      "game.title",
+      "game.level.linear-1.title",
+      "flow.mustReachEnd",
+    ] as const) {
+      expect(t("ru", key)).not.toBe(t("en", key));
+      expect(t("ru", key).length).toBeGreaterThan(0);
+    }
+  });
+
+  it("interpolates parameters", () => {
+    expect(t("en", "algorithm.speed", { speed: 5 })).toContain("5");
+    expect(t("ru", "flow.notPartOfFlowchart", { label: "X" })).toContain("X");
   });
 
   it("translates every menu label in both languages", () => {
