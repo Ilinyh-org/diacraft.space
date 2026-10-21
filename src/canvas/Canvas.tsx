@@ -56,6 +56,7 @@ import {
   type MenuId,
   type MenuVisibility,
 } from './ui/MainMenu';
+import { loadLanguage, saveLanguage, type LanguageCode } from './ui/i18n';
 import { ExportPanel } from './ui/ExportPanel';
 import { FeedbackPanel } from './ui/FeedbackPanel';
 import { BlockEditInput } from './ui/BlockEditInput';
@@ -95,6 +96,12 @@ export function Canvas() {
 
   const [themeName, setThemeName] = useState<ThemeName>(() => loadThemeName());
   const theme = getTheme(themeName);
+
+  const [language, setLanguage] = useState<LanguageCode>(() => loadLanguage());
+
+  useEffect(() => {
+    saveLanguage(language);
+  }, [language]);
 
   useEffect(() => {
     saveThemeName(themeName);
@@ -958,6 +965,8 @@ const runExport = (
         theme={theme}
         visibility={menus}
         onToggle={toggleMenu}
+        language={language}
+        onLanguageChange={setLanguage}
       />
 
       {menus.palette && (
