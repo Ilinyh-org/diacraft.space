@@ -1,28 +1,38 @@
 import type { CSSProperties } from "react";
 import { DraggablePanel } from "../../ui/DraggablePanel";
 import type { Theme } from "../../theme";
+import { LANGUAGES, t, type LanguageCode } from "./i18n";
 
 export type MenuId = "palette" | "export" | "algorithm" | "game" | "feedback";
 
 export type { MenuVisibility } from "./menuVisibility";
 export { INITIAL_MENU_VISIBILITY } from "./menuVisibility";
+export { LANGUAGES, type LanguageCode } from "./i18n";
 import type { MenuVisibility } from "./menuVisibility";
 
-const MENU_LABELS: { id: MenuId; label: string }[] = [
-  { id: "palette", label: "Palette" },
-  { id: "export", label: "Export/Import" },
-  { id: "algorithm", label: "Animation" },
-  { id: "game", label: "Game" },
-  { id: "feedback", label: "Feedback" },
+const MENU_KEYS: { id: MenuId; key: Parameters<typeof t>[1] }[] = [
+  { id: "palette", key: "menu.palette" },
+  { id: "export", key: "menu.export" },
+  { id: "algorithm", key: "menu.algorithm" },
+  { id: "game", key: "menu.game" },
+  { id: "feedback", key: "menu.feedback" },
 ];
 
 type MainMenuProps = {
   theme: Theme;
   visibility: MenuVisibility;
   onToggle: (id: MenuId) => void;
+  language: LanguageCode;
+  onLanguageChange: (lang: LanguageCode) => void;
 };
 
-export function MainMenu({ theme, visibility, onToggle }: MainMenuProps) {
+export function MainMenu({
+  theme,
+  visibility,
+  onToggle,
+  language,
+  onLanguageChange,
+}: MainMenuProps) {
   const buttonStyle = (active: boolean): CSSProperties => ({
     padding: "6px 10px",
     border: `1px solid ${theme.buttonBorder}`,
@@ -34,13 +44,47 @@ export function MainMenu({ theme, visibility, onToggle }: MainMenuProps) {
     textAlign: "center",
   });
 
+  const selectStyle: CSSProperties = {
+    padding: "4px 6px",
+    border: `1px solid ${theme.buttonBorder}`,
+    borderRadius: 4,
+    background: theme.inputBg,
+    color: theme.inputText,
+    cursor: "pointer",
+    fontSize: 13,
+  };
+
   return (
     <DraggablePanel theme={theme} initialPosition={{ x: 10, y: 10 }}>
       <div
         data-testid="main-menu"
         style={{ display: "flex", flexDirection: "column", gap: 4 }}
       >
-        {MENU_LABELS.map(({ id, label }) => (
+        <div
+          data-testid="main-menu-language-row"
+          style={{ display: "flex", alignItems: "center", gap: 6 }}
+        >
+          <label
+            htmlFor="main-menu-language"
+            style={{ fontSize: 13, color: theme.buttonText }}
+          >
+            {t(language, "menu.language")}
+          </label>
+          <select
+            id="main-menu-language"
+            data-testid="main-menu-language"
+            value={language}
+            onChange={(e) => onLanguageChange(e.target.value as LanguageCode)}
+            style={selectStyle}
+          >
+            {LANGUAGES.map(({ code, label }) => (
+              <option key={code} value={code}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+        {MENU_KEYS.map(({ id, key }) => (
           <div
             key={id}
             data-testid={`main-menu-${id}`}
@@ -50,7 +94,7 @@ export function MainMenu({ theme, visibility, onToggle }: MainMenuProps) {
             }}
             style={buttonStyle(visibility[id])}
           >
-            {label}
+            {t(language, key)}
           </div>
         ))}
       </div>

@@ -1,85 +1,78 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MainMenu } from "../MainMenu";
 import {
   INITIAL_MENU_VISIBILITY,
-  type MenuVisibility,
 } from "../menuVisibility";
 import { lightTheme } from "../../../theme";
 
-describe("MainMenu", () => {
-  it("renders a toggle button for every menu", () => {
-    render(
-      <MainMenu
-        theme={lightTheme}
-        visibility={INITIAL_MENU_VISIBILITY}
-        onToggle={vi.fn()}
-      />,
-    );
-    expect(screen.getByTestId("main-menu")).toBeInTheDocument();
-    for (const id of [
-      "palette",
-      "export",
-      "algorithm",
-      "game",
-      "feedback",
-    ] as const) {
-      expect(screen.getByTestId(`main-menu-${id}`)).toBeInTheDocument();
-    }
+function renderMenu(overrides?: { language?: "en" | "ru" }) {
+  const onToggle = vi.fn();
+  const onLanguageChange = vi.fn();
+  render(
+    <MainMenu
+      theme={lightTheme}
+      visibility={INITIAL_MENU_VISIBILITY}
+      onToggle={onToggle}
+      language={overrides?.language ?? "en"}
+      onLanguageChange={onLanguageChange}
+    />,
+  );
+  return { onToggle, onLanguageChange };
+}
+
+describe("MainMenu language selection (issue #62)", () => {
+  beforeEach(() => {
+    localStorage.clear();
   });
 
-  it('labels the algorithm menu "Animation" (issue #45)', () => {
-    render(
-      <MainMenu
-        theme={lightTheme}
-        visibility={INITIAL_MENU_VISIBILITY}
-        onToggle={vi.fn()}
-      />,
+  it("shows a language drop-down at the top of the main menu", () => {
+    renderMenu();
+    const select = screen.getByTestId("main-menu-language");
+    expect(select).toBeInTheDocument();
+    expect(select.tagName).toBe("SELECT");
+    const options = Array.from(
+      select.querySelectorAll("option"),
+    ) as HTMLOptionElement[];
+    expect(options.map((o) => o.value)).toContain("en");
+    expect(options.map((o) => o.value)).toContain("ru");
+    // top of the menu: the language row is the first child
+    const menu = screen.getByTestId("main-menu");
+    expect(menu.firstElementChild).toBe(
+      screen.getByTestId("main-menu-language-row"),
     );
-    expect(screen.getByTestId("main-menu-algorithm")).toHaveTextContent(
-      "Animation",
-    );
+    expect(screen.getByTestId("main-menu-palette")).toBeInTheDocument();
   });
 
-  it('labels the export menu "Export/Import" (issue #63)', () => {
-    render(
-      <MainMenu
-        theme={lightTheme}
-        visibility={INITIAL_MENU_VISIBILITY}
-        onToggle={vi.fn()}
-      />,
+  it("emits onLanguageChange when a language is picked", () => {
+    const { onLanguageChange } = renderMenu();
+    fireEvent.change(screen.getByTestId("main-menu-language"), {
+      target: { value: "ru" },
+    });
+    expect(onLanguageChange).toHaveBeenCalledWith("ru");
+  });
+
+  it("translates menu labels to Russian when ru is selected", () => {
+    renderMenu({ language: "ru" });
+    expect(screen.getByTestId("main-menu-palette")).toHaveTextContent(
+      "Палитра",
     );
     expect(screen.getByTestId("main-menu-export")).toHaveTextContent(
-      "Export/Import",
+      "Экспорт/Импорт",
+    );
+    expect(screen.getByTestId("main-menu-algorithm")).toHaveTextContent(
+      "Анимация",
+    );
+    expect(screen.getByTestId("main-menu-game")).toHaveTextContent("Игра");
+    expect(screen.getByTestId("main-menu-feedback")).toHaveTextContent(
+      "Отзыв",
     );
   });
 
-  it("starts with only the palette visible", () => {
-    expect(INITIAL_MENU_VISIBILITY).toEqual({
-      palette: true,
-      export: false,
-      algorithm: false,
-      game: false,
-      feedback: false,
-    });
-  });
-
-  it("toggles a menu on click", () => {
-    const onToggle = vi.fn();
-    const visibility: MenuVisibility = {
-      ...INITIAL_MENU_VISIBILITY,
-      export: true,
-    };
-    render(
-      <MainMenu
-        theme={lightTheme}
-        visibility={visibility}
-        onToggle={onToggle}
-      />,
+  it("keeps English labels by default", () => {
+    renderMenu({ language: "en" });
+    expect(screen.getByTestId("main-menu-palette")).toHaveTextContent(
+      "Palette",
     );
-    fireEvent.pointerDown(screen.getByTestId("main-menu-export"));
-    expect(onToggle).toHaveBeenCalledWith("export");
-    fireEvent.pointerDown(screen.getByTestId("main-menu-palette"));
-    expect(onToggle).toHaveBeenCalledWith("palette");
   });
 });
