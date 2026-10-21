@@ -15,6 +15,7 @@ type PaletteProps = {
   onUndo: () => void;
   onRedo: () => void;
   onPalettePointerDown: (e: React.PointerEvent, type: BlockType) => void;
+  onClear: () => void;
 };
 
 export function Palette({
@@ -28,6 +29,7 @@ export function Palette({
   onUndo,
   onRedo,
   onPalettePointerDown,
+  onClear,
 }: PaletteProps) {
   const smallButton = (enabled: boolean): CSSProperties => ({
     padding: "6px 8px",
@@ -135,6 +137,24 @@ export function Palette({
           ))}
         </>
       )}
+
+      <div style={{ height: 1, background: theme.divider, margin: '4px 0' }} />
+
+      {/* Clear moved here from the export panel (issue #45). */}
+      <div
+        onPointerDown={(e) => {
+          e.preventDefault();
+          onClear();
+        }}
+        style={{
+          ...paletteItemStyle,
+          color: theme.deleteButton,
+          borderColor: theme.deleteButton,
+          cursor: 'pointer',
+        }}
+      >
+        Clear
+      </div>
     </DraggablePanel>
   );
 }

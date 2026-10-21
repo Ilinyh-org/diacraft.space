@@ -197,7 +197,7 @@ export function GamePanel({
   const current: Frame = frames ? frames[frameIndex] : { ...level.start };
   const solved = status?.startsWith('✔') ?? false;
 
-  const cellPx = 36;
+  const cellPx = 28;
 
   const board = useMemo(() => {
     const cells: ReactNode[] = [];
@@ -238,13 +238,13 @@ export function GamePanel({
   return (
     <DraggablePanel
       theme={theme}
-      initialPosition={{ x: Math.max(10, window.innerWidth - 340), y: 10 }}
+      initialPosition={{ x: Math.max(10, window.innerWidth - 270), y: 10 }}
     >
       <div
         data-testid="game-panel"
         style={{
-          width: 320,
-          padding: 10,
+          width: 244,
+          padding: 8,
           fontFamily: 'inherit',
           color: theme.buttonText,
           userSelect: 'text',

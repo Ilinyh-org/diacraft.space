@@ -974,6 +974,16 @@ const runExport = (
         onUndo={undo}
         onRedo={redo}
         onPalettePointerDown={handlePalettePointerDown}
+        onClear={() => {
+          if (window.confirm('Clear the whole diagram?')) {
+            stopAnimation();
+            commit(() => ({ blocks: [], arrows: [] }));
+            setSelectedId(null);
+            setSelectedIds([]);
+            setSelectedArrowId(null);
+            setEditingId(null);
+          }
+        }}
         />
       )}
 
@@ -1003,16 +1013,6 @@ const runExport = (
             }
           };
           reader.readAsText(file);
-        }}
-        onClear={() => {
-          if (window.confirm('Clear the whole diagram?')) {
-            stopAnimation();
-            commit(() => ({ blocks: [], arrows: [] }));
-            setSelectedId(null);
-            setSelectedIds([]);
-            setSelectedArrowId(null);
-            setEditingId(null);
-          }
         }}
         />
       )}
