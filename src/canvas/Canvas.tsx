@@ -869,6 +869,9 @@ const runExport = (
         position: 'relative',
         width: '100%',
         height: '100%',
+        // Issue #82: without this the browser's native pinch-zoom captures
+        // two-finger gestures before Konva's touch handlers can zoom the stage.
+        touchAction: 'none',
         cursor: isDrawMode ? 'crosshair' : 'grab',
         background: theme.canvasBg,
         overflow: 'hidden',
