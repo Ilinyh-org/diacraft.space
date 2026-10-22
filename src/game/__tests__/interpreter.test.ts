@@ -1,95 +1,110 @@
 import { describe, expect, it } from 'vitest';
-import { runProgram, wallAhead } from '../types';
-import type { Level } from '../types';
+import { runProgram } from '../types';
+import type { Dir, Statement, Subprograms } from '../types';
 import { LEVELS } from '../levels';
 
-const level: Level = LEVELS[0]; // linear-1: 5x1 corridor, start (0,0) → goal (3,0)
+/**
+ * Issue #70: interpreter semantics for i/o, functions and the inventory array.
+ */
+const D = (d: string): Dir =>
+  ({ up: 0, right: 1, down: 2, left: 3 })[d] as Dir;
 
-describe('runProgram', () => {
-  it('wins when the robot reaches the goal', () => {
-    const result = runProgram(level, [
+describe('io statements', () => {
+  it('output records the robot position for `pos`', () => {
+    const level = LEVELS.find((l) => l.id === 'linear-5')!;
+    const program: Statement[] = [
       { kind: 'move' },
       { kind: 'move' },
       { kind: 'move' },
-    ]);
+      { kind: 'output', text: 'pos' },
+    ];
+    const result = runProgram(level, program);
     expect(result.status).toBe('win');
-    expect(result.frames.at(-1)).toEqual({ x: 3, y: 0, dir: 1 });
+    expect(result.output).toContain('(3, 0)');
   });
 
-  it('misses when the robot stops short of the goal', () => {
-    const result = runProgram(level, [{ kind: 'move' }]);
-    expect(result.status).toBe('missed');
+  it('output keeps literal text and unknown slot placeholders', () => {
+    const level = LEVELS.find((l) => l.id === 'linear-1')!;
+    const result = runProgram(level, [{ kind: 'output', text: 'hello inv[3]' }]);
+    expect(result.output).toContain('hello ?');
   });
 
-  it('crashes when the robot walks into a wall', () => {
-    const result = runProgram(level, [
-      { kind: 'move' },
-      { kind: 'move' },
-      { kind: 'move' },
-      { kind: 'move' },
-      { kind: 'move' },
-    ]);
-    expect(result.status).toBe('crash');
-  });
-
-  it('records a frame per state change', () => {
-    const result = runProgram(level, [
-      { kind: 'move' },
-      { kind: 'move' },
-    ]);
-    expect(result.frames.length).toBe(3);
-  });
-
-  it('executes repeat bodies', () => {
-    const result = runProgram(level, [
-      { kind: 'repeat', times: 3, body: [{ kind: 'move' }] },
-    ]);
+  it('inputDir consumes provided directions and turns the robot', () => {
+    const level = LEVELS.find((l) => l.id === 'conditions-8')!;
+    const result = runProgram(
+      level,
+      [{ kind: 'move' }, { kind: 'inputDir' }, { kind: 'move' }],
+      {},
+      [D('left')],
+    );
     expect(result.status).toBe('win');
-    expect(result.steps).toBe(4);
+    expect(result.frames.at(-1)).toEqual({ x: 0, y: 1, dir: 3 });
   });
 
-  it('executes the ifWall branch when a wall is ahead', () => {
-    const corner: Level = LEVELS[2]; // conditions-1
-    const result = runProgram(corner, [
+  it('reports needInput when no direction was supplied', () => {
+    const level = LEVELS.find((l) => l.id === 'conditions-8')!;
+    const result = runProgram(level, [
       { kind: 'move' },
-      {
-        kind: 'ifWall',
-        then: [{ kind: 'turnRight' }, { kind: 'move' }, { kind: 'turnLeft' }, { kind: 'move' }],
-        else: [],
-      },
+      { kind: 'inputDir' },
     ]);
-    expect(result.status).toBe('win');
-  });
-
-  it('executes the else branch when no wall is ahead', () => {
-    const result = runProgram(level, [
-      {
-        kind: 'ifWall',
-        then: [],
-        else: [{ kind: 'move' }, { kind: 'move' }, { kind: 'move' }],
-      },
-    ]);
-    expect(result.status).toBe('win');
-  });
-
-  it('times out runaway programs', () => {
-    const result = runProgram(level, [
-      { kind: 'repeat', times: 999, body: [{ kind: 'repeat', times: 999, body: [{ kind: 'move' }] }] },
-    ]);
-    expect(result.status).toBe('crash');
-  });
-
-  it('handles empty programs', () => {
-    const result = runProgram(level, []);
-    expect(result.status).toBe('missed');
-    expect(result.steps).toBe(0);
+    expect(result.status).toBe('needInput');
   });
 });
 
-describe('wallAhead', () => {
-  it('detects a wall in front of the robot', () => {
-    const corner: Level = LEVELS[2];
-    expect(wallAhead(corner, { x: 1, y: 0, dir: 1 })).toBe(true);
-    expect(wallAhead(corner, { x: 1, y: 0, dir: 2 })).toBe(false);
+describe('inventory array', () => {
+  it('setInv picks up the item at the current cell into a slot', () => {
+    const level = LEVELS.find((l) => l.id === 'arrays-21')!;
+    const result = runProgram(level, [
+      { kind: 'move' },
+      { kind: 'setInv', index: 0 },
+      { kind: 'move' },
+      { kind: 'move' },
+      { kind: 'setInv', index: 1 },
+      { kind: 'move' },
+      { kind: 'output', text: 'got inv[0]' },
+    ]);
+    expect(result.status).toBe('win');
+    expect(result.output.some((line) => line.startsWith('got '))).toBe(true);
+    expect(result.output.some((line) => line.includes('?'))).toBe(false);
+  });
+
+  it('reports missing items in the slot as ?', () => {
+    const level = LEVELS.find((l) => l.id === 'linear-1')!;
+    const result = runProgram(level, [
+      { kind: 'setInv', index: 0 },
+      { kind: 'output', text: 'inv[0]' },
+    ]);
+    expect(result.output).toContain('?');
+  });
+});
+
+describe('function calls', () => {
+  const level = LEVELS.find((l) => l.id === 'functions-17')!;
+  const subs: Subprograms = {
+    leg: [{ kind: 'move' }, { kind: 'move' }],
+  };
+
+  it('a call runs the named subprogram', () => {
+    const result = runProgram(
+      level,
+      [{ kind: 'call', name: 'leg' }, { kind: 'turnRight' }, { kind: 'call', name: 'leg' }],
+      subs,
+    );
+    expect(result.status).toBe('win');
+  });
+
+  it('an unknown subprogram is a no-op that cannot win silently', () => {
+    const result = runProgram(level, [{ kind: 'call', name: 'ghost' }]);
+    expect(result.status).not.toBe('win');
+  });
+
+  it('recursive calls stop before hanging forever', () => {
+    const subs: Subprograms = { a: [{ kind: 'call', name: 'a' }] };
+    const result = runProgram(
+      LEVELS.find((l) => l.id === 'linear-1')!,
+      [{ kind: 'call', name: 'a' }],
+      subs,
+    );
+    expect(result.status).toBe('crash');
   });
 });

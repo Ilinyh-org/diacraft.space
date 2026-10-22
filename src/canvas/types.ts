@@ -18,6 +18,8 @@ export type ArrowData = {
   fromSide: Side;
   toBlockId: string;
   toSide: Side;
+  /** Optional user label, e.g. yes/no on condition branches. */
+  label?: string;
   waypoints: Waypoint[];
   /**
    * True once the user explicitly shaped the arrow (added/dragged/deleted a

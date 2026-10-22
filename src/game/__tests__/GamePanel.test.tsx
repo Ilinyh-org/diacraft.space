@@ -60,7 +60,7 @@ describe('GamePanel', () => {
     const { blocks, arrows } = makeFlowchart(['move']);
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
     expect(screen.getByTestId('game-panel')).toBeDefined();
-    expect(screen.getByText('First steps')).toBeDefined();
+    expect(screen.getByText('Level 1')).toBeDefined();
     expect(screen.getByTestId('game-robot')).toBeDefined();
   });
 
@@ -283,8 +283,8 @@ describe('GamePanel', () => {
   it('switches levels from the menu', () => {
     const { blocks, arrows } = makeFlowchart(['move']);
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
-    fireEvent.click(screen.getByRole('button', { name: /The corner/ }));
-    expect(screen.getByText('The corner')).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: '2' }));
+    expect(screen.getByText('Level 2')).toBeDefined();
     expect(screen.getByRole('button', { name: '▶ Run' })).toBeDefined();
   });
 });
