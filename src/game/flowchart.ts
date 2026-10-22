@@ -20,6 +20,10 @@ export type FlowchartResult =
 
 const MOVE_WORDS = new Set(['move', 'left', 'turn left', 'right', 'turn right']);
 
+// Issue #87: text blocks created before the `block.text` translation key
+// existed can carry an undefined label; never crash the compiler on it.
+const safeLabel = (block: BlockData): string => block.label ?? '';
+
 const parseAction = (label: string): Statement | null => {
   const low = label.trim().toLowerCase();
   if (MOVE_WORDS.has(low)) {
@@ -51,7 +55,7 @@ const isYesLabel = (label: string | undefined): boolean =>
   !!label && /^(yes|y|\+|да)/i.test(label.trim());
 
 export const isEndBlock = (block: BlockData): boolean =>
-  block.label.trim().toLowerCase() === 'end';
+  safeLabel(block).trim().toLowerCase() === 'end';
 
 export const isStartBlock = (block: BlockData): boolean =>
   block.type === 'start' && !isEndBlock(block);
@@ -116,9 +120,9 @@ function compileFrom(
       seen.add(current.id);
       ctx.reachable.add(current.id);
       const entries = chainTargets(ctx, current);
-      const times = parseLoopTimes(current.label);
+      const times = parseLoopTimes(safeLabel(current));
       if (times === null) {
-        err(ctx, 'flow.unknownAction', { label: current.label });
+        err(ctx, 'flow.unknownAction', { label: safeLabel(current) });
         return program;
       }
       // The body arrow is the one whose chain flows back into the header.
@@ -153,7 +157,7 @@ function compileFrom(
       return program;
     }
     if (outs.length > 1) {
-      err(ctx, 'flow.multipleOutgoing', { label: current.label });
+      err(ctx, 'flow.multipleOutgoing', { label: safeLabel(current) });
       return program;
     }
     const next = target(ctx, outs[0].toBlockId);
@@ -168,11 +172,11 @@ function compileFrom(
     }
 
     const stmt =
-      current.type === 'io' ? parseIo(current.label) : parseAction(current.label);
+      current.type === 'io' ? parseIo(safeLabel(current)) : parseAction(safeLabel(current));
     if (current.type === 'function') {
-      program.push({ kind: 'call', name: current.label.trim() });
+      program.push({ kind: 'call', name: safeLabel(current).trim() });
     } else if (!stmt) {
-      err(ctx, 'flow.unknownAction', { label: current.label });
+      err(ctx, 'flow.unknownAction', { label: safeLabel(current) });
       return program;
     } else {
       program.push(stmt);
@@ -207,7 +211,7 @@ function compileStart(ctx: Ctx, start: BlockData, seen: Set<string>): Statement[
     return [];
   }
   if (outs.length > 1) {
-    err(ctx, 'flow.multipleOutgoing', { label: start.label });
+    err(ctx, 'flow.multipleOutgoing', { label: safeLabel(start) });
     return [];
   }
   return compileFrom(ctx, outs[0].toBlockId, seen);
@@ -229,7 +233,7 @@ export function compileFlowchart(
   };
 
   const starts = blocks.filter(isStartBlock);
-  const main = starts.find((s) => s.label.trim().toLowerCase() === 'start');
+  const main = starts.find((s) => safeLabel(s).trim().toLowerCase() === 'start');
   if (!main) {
     return { ok: false, errors: [t(language, 'flow.noStart')] };
   }
@@ -243,7 +247,7 @@ export function compileFlowchart(
   const subprograms: Subprograms = {};
   for (const sub of starts) {
     if (sub.id === main.id) continue;
-    const name = sub.label.trim();
+    const name = safeLabel(sub).trim();
     if (!name || name.toLowerCase() === 'end') continue;
     ctx.reachable.add(sub.id);
     const outs = outgoing(ctx, sub.id);
@@ -257,7 +261,7 @@ export function compileFlowchart(
       // executed flowchart, so they must not be flagged as redundant.
       if (block.type === 'text') continue;
       if (!ctx.reachable.has(block.id)) {
-        errors.push(t(language, 'flow.notPartOfFlowchart', { label: block.label }));
+      errors.push(t(language, 'flow.notPartOfFlowchart', { label: safeLabel(block) }));
       }
     }
   }

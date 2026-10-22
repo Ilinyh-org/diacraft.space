@@ -52,6 +52,7 @@ const BLOCK_LABEL_BY_TYPE: Record<string, TranslationKey> = {
   forloop: 'block.forloop',
   function: 'block.function',
   link: 'block.link',
+  text: 'block.text',
 };
 import type { KonvaEventObject } from 'konva/lib/Node';
 import type { BlockData, ArrowData, DiagramState } from './types';
