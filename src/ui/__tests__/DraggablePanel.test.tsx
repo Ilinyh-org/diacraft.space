@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { DraggablePanel, moveWithCollision, resolveInitialPosition } from '../DraggablePanel';
+import { DraggablePanel, centeredPosition, isPcScreen, moveWithCollision, resolveInitialPosition } from '../DraggablePanel';
 import { lightTheme } from '../../theme';
 
 const rect = (left: number, top: number, w: number, h: number) => ({
@@ -8,6 +8,34 @@ const rect = (left: number, top: number, w: number, h: number) => ({
   top,
   right: left + w,
   bottom: top + h,
+});
+
+describe('centered first appearance (issue #81)', () => {
+  it('centers a panel on a PC-sized window', () => {
+    const size = { width: 100, height: 50 };
+    expect(centeredPosition(size, { width: 800, height: 600 })).toEqual({
+      x: 350,
+      y: 275,
+    });
+  });
+
+  it('clamps the centered position inside small windows', () => {
+    const size = { width: 400, height: 300 };
+    expect(centeredPosition(size, { width: 500, height: 400 })).toEqual({
+      x: 50,
+      y: 50,
+    });
+    expect(centeredPosition(size, { width: 350, height: 200 })).toEqual({
+      x: 0,
+      y: 0,
+    });
+  });
+
+  it('treats wide screens as PC and narrow ones as mobile', () => {
+    expect(isPcScreen({ width: 768, height: 600 })).toBe(true);
+    expect(isPcScreen({ width: 1024, height: 768 })).toBe(true);
+    expect(isPcScreen({ width: 767, height: 1024 })).toBe(false);
+  });
 });
 
 describe('moveWithCollision', () => {

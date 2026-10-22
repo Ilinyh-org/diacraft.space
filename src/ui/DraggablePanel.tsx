@@ -133,6 +133,28 @@ export function moveWithCollision(
 }
 
 /**
+ * Minimum window width at which a panel may center itself on first appear.
+ * Anything narrower is treated as a mobile/small screen (issue #81).
+ */
+export const PC_MIN_WIDTH = 768;
+
+export function isPcScreen(windowSize: WindowSize): boolean {
+  return windowSize.width >= PC_MIN_WIDTH;
+}
+
+/** Position that places a panel of the given size in the window center, clamped inside the window. */
+export function centeredPosition(
+  size: Size,
+  windowSize: WindowSize,
+): { x: number; y: number } {
+  const clamp = makeClamp(windowSize, size);
+  return {
+    x: clamp.x(Math.round((windowSize.width - size.width) / 2)),
+    y: clamp.y(Math.round((windowSize.height - size.height) / 2)),
+  };
+}
+
+/**
  * Resolve a panel's initial position: clamp it inside the window and, if it
  * would start on top of another panel, shift it to the nearest free slot
  * (scan down, then up, then right, then left). Issue #71.
@@ -167,6 +189,11 @@ type Props = {
   theme: Theme;
   initialPosition: { x: number; y: number };
   width?: number;
+  /**
+   * When true and the current window is PC-sized, the panel first appears
+   * centered on the screen instead of at `initialPosition` (issue #81).
+   */
+  center?: boolean;
   /**
    * When set, the panel's position is restored from localStorage on mount and
    * saved there after each drag, so the panel reappears where it was last
@@ -205,7 +232,7 @@ function savePosition(key: string, pos: { x: number; y: number }) {
   }
 }
 
-export function DraggablePanel({ theme, initialPosition, width, storageKey, children }: Props) {
+export function DraggablePanel({ theme, initialPosition, width, storageKey, center, children }: Props) {
   const [pos, setPos] = useState(
     () => (storageKey ? loadSavedPosition(storageKey) ?? initialPosition : initialPosition),
   );
@@ -237,12 +264,16 @@ export function DraggablePanel({ theme, initialPosition, width, storageKey, chil
       if (or.width <= 0 || or.height <= 0) continue;
       obstacles.push({ left: or.left, top: or.top, right: or.right, bottom: or.bottom });
     }
+    const windowSize = { width: window.innerWidth, height: window.innerHeight };
+    const desired = center && isPcScreen(windowSize)
+      ? centeredPosition({ width: panelWidth, height: panelHeight }, windowSize)
+      : pos;
     setPos(
       resolveInitialPosition(
-        pos,
+        desired,
         { width: panelWidth, height: panelHeight },
         obstacles,
-        { width: window.innerWidth, height: window.innerHeight },
+        windowSize,
       ),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
