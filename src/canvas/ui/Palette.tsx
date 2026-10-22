@@ -149,4 +149,5 @@ const BLOCK_LABEL_KEY: Record<BlockType, TranslationKey> = {
   forloop: "block.forloop",
   function: "block.function",
   link: "block.link",
+  text: "block.text",
 };

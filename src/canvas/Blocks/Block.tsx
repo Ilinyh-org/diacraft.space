@@ -19,7 +19,8 @@ export type BlockType =
   | 'forloop'
   | 'function'
   | 'start'
-  | 'link';
+  | 'link'
+  | 'text';
 
 export type Side = 'top' | 'right' | 'bottom' | 'left';
 
@@ -167,6 +168,11 @@ export function Block({
 
   const renderShape = () => {
     switch (type) {
+      case 'text':
+        // Text comment block (issue #84): borderless floating label with no
+        // shape behind it; arrows can never connect to it.
+        return null;
+
       case 'action':
         return (
           <Rect
@@ -332,6 +338,7 @@ export function Block({
 
       {selected &&
         !removing &&
+        type !== 'text' &&
         sides.map(({ side, hx, hy }) => (
           <Circle
             key={side}

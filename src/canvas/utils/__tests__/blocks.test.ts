@@ -40,6 +40,12 @@ describe('findDropTarget', () => {
       findDropTarget([a, b], 'a', edge + 0.5, 130, HIT_RADIUS)
     ).toBeUndefined();
   });
+
+  it('never targets a text comment block (issue #84)', () => {
+    const note: BlockData = { ...block('note', 400, 100), type: 'text' };
+    expect(findDropTarget([a, note], 'a', 450, 120, HIT_RADIUS)).toBeUndefined();
+    expect(findDropTarget([a, note], 'a', 530, 130, HIT_RADIUS)).toBeUndefined();
+  });
 });
 
 describe('getAnchor for io (parallelogram) blocks', () => {

@@ -40,6 +40,26 @@ const theme = {
   editButton: '#0f0',
 } as unknown as Theme;
 
+describe('Text comment block (issue #84)', () => {
+  it('renders no connection handles when selected', () => {
+    const { queryAllByTestId } = render(
+      <Block x={0} y={0} type="text" selected theme={theme} />,
+    );
+    // Only the delete and edit buttons remain; connection handles must
+    // not render for a text block.
+    const circles = queryAllByTestId('circle');
+    expect(circles).toHaveLength(2);
+  });
+
+  it('renders no shape behind the label', () => {
+    const { queryByTestId } = render(
+      <Block x={0} y={0} type="text" theme={theme} />,
+    );
+    expect(queryByTestId('rect')).toBeNull();
+    expect(queryByTestId('line')).toBeNull();
+  });
+});
+
 describe('Block handle drag reset', () => {
   it('resets the handle node position when a drag ends without connecting', () => {
     const onHandleDragEnd = vi.fn();

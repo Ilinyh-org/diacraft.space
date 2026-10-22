@@ -253,6 +253,9 @@ export function compileFlowchart(
 
   if (errors.length === 0) {
     for (const block of blocks) {
+      // Text comment blocks (issue #84) are annotations, never part of the
+      // executed flowchart, so they must not be flagged as redundant.
+      if (block.type === 'text') continue;
       if (!ctx.reachable.has(block.id)) {
         errors.push(t(language, 'flow.notPartOfFlowchart', { label: block.label }));
       }
