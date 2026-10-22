@@ -24,8 +24,8 @@ describe('Palette', () => {
   it('renders palette items and control buttons', () => {
     setup();
     expect(screen.getByText('Select ✋')).toBeInTheDocument();
-    expect(screen.getByText('↶ Undo')).toBeInTheDocument();
-    expect(screen.getByText('↷ Redo')).toBeInTheDocument();
+    expect(screen.getByText('↶')).toBeInTheDocument();
+    expect(screen.getByText('↷')).toBeInTheDocument();
     for (const label of ['Start/End', 'Action', 'Condition', 'I/O', 'For-loop', 'Link']) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
@@ -39,8 +39,8 @@ describe('Palette', () => {
 
   it('calls undo and redo', () => {
     const props = setup();
-    fireEvent.pointerDown(screen.getByText('↶ Undo'));
-    fireEvent.pointerDown(screen.getByText('↷ Redo'));
+    fireEvent.pointerDown(screen.getByText('↶'));
+    fireEvent.pointerDown(screen.getByText('↷'));
     expect(props.onUndo).toHaveBeenCalledTimes(1);
     expect(props.onRedo).toHaveBeenCalledTimes(1);
   });
@@ -55,8 +55,8 @@ describe('Palette', () => {
 
   it('keeps the Undo arrow and label on one line like Redo (issue #61)', () => {
     setup();
-    expect(screen.getByText('↶ Undo').style.whiteSpace).toBe('nowrap');
-    expect(screen.getByText('↷ Redo').style.whiteSpace).toBe('nowrap');
+    expect(screen.getByText('↶').style.whiteSpace).toBe('nowrap');
+    expect(screen.getByText('↷').style.whiteSpace).toBe('nowrap');
   });
 
   it('shows the Clear button last in the palette (issue #45)', () => {

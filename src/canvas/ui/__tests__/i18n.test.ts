@@ -26,7 +26,6 @@ describe("i18n (issue #62)", () => {
   it("translates panel text, not just the main menu (#62: all text)", () => {
     for (const key of [
       "palette.draw",
-      "palette.undo",
       "palette.clear",
       "export.title",
       "export.import",
@@ -39,6 +38,14 @@ describe("i18n (issue #62)", () => {
     ] as const) {
       expect(t("ru", key)).not.toBe(t("en", key));
       expect(t("ru", key).length).toBeGreaterThan(0);
+    }
+  });
+
+  it("undo/redo buttons are icon-only, no text (#79)", () => {
+    for (const key of ["palette.undo", "palette.redo"] as const) {
+      for (const lang of ["en", "ru"] as const) {
+        expect(["↶", "↷"]).toContain(t(lang, key));
+      }
     }
   });
 
