@@ -271,6 +271,7 @@ export function GamePanel({
       theme={theme}
       initialPosition={{ x: Math.max(10, window.innerWidth - 270), y: 10 }}
       storageKey="diacraft-panel-pos-game"
+      center
     >
       <div
         data-testid="game-panel"
