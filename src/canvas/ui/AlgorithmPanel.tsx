@@ -47,6 +47,7 @@ export function AlgorithmPanel({
         x: Math.max(10, window.innerWidth - 190),
         y: 10,
       }}
+      storageKey="diacraft-panel-pos-algorithm"
     >
       <div
         style={{

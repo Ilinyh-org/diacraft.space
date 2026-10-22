@@ -167,6 +167,64 @@ describe('DraggablePanel', () => {
     expect(panel.style.top).toBe('30px');
   });
 
+  it('restores a persisted position when storageKey has a saved position', () => {
+    window.localStorage.setItem(
+      'diacraft-panel-pos-test-panel',
+      JSON.stringify({ x: 120, y: 80 }),
+    );
+    render(
+      <DraggablePanel
+        theme={lightTheme}
+        initialPosition={{ x: 20, y: 30 }}
+        storageKey="diacraft-panel-pos-test-panel"
+      >
+        <div>content</div>
+      </DraggablePanel>,
+    );
+    const panel = screen.getByText('content').parentElement!.parentElement!;
+    expect(panel.style.left).toBe('120px');
+    expect(panel.style.top).toBe('80px');
+  });
+
+  it('falls back to initialPosition when nothing is saved for storageKey', () => {
+    window.localStorage.removeItem('diacraft-panel-pos-test-panel');
+    render(
+      <DraggablePanel
+        theme={lightTheme}
+        initialPosition={{ x: 20, y: 30 }}
+        storageKey="diacraft-panel-pos-test-panel"
+      >
+        <div>content</div>
+      </DraggablePanel>,
+    );
+    const panel = screen.getByText('content').parentElement!.parentElement!;
+    expect(panel.style.left).toBe('20px');
+    expect(panel.style.top).toBe('30px');
+  });
+
+  it('saves the position after a drag when storageKey is provided', () => {
+    window.localStorage.removeItem('diacraft-panel-pos-test-panel');
+    render(
+      <DraggablePanel
+        theme={lightTheme}
+        initialPosition={{ x: 0, y: 0 }}
+        storageKey="diacraft-panel-pos-test-panel"
+      >
+        <div>content</div>
+      </DraggablePanel>,
+    );
+    const handle = screen.getByText('content').parentElement!.parentElement!
+      .firstElementChild!;
+    fireEvent.pointerDown(handle, { clientX: 10, clientY: 10, pointerId: 1 });
+    fireEvent.pointerMove(handle, { clientX: 60, clientY: 40 });
+    fireEvent.pointerUp(handle, { pointerId: 1 });
+    expect(
+      JSON.parse(
+        window.localStorage.getItem('diacraft-panel-pos-test-panel') ?? '',
+      ),
+    ).toEqual({ x: 50, y: 30 });
+  });
+
   it('stops dragging on pointer up so later moves have no effect', () => {
     render(
       <DraggablePanel theme={lightTheme} initialPosition={{ x: 0, y: 0 }}>

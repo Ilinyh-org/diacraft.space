@@ -167,11 +167,48 @@ type Props = {
   theme: Theme;
   initialPosition: { x: number; y: number };
   width?: number;
+  /**
+   * When set, the panel's position is restored from localStorage on mount and
+   * saved there after each drag, so the panel reappears where it was last
+   * placed even after being hidden and reshown. Issue #75.
+   */
+  storageKey?: string;
   children: ReactNode;
 };
 
-export function DraggablePanel({ theme, initialPosition, width, children }: Props) {
-  const [pos, setPos] = useState(initialPosition);
+function loadSavedPosition(key: string): { x: number; y: number } | null {
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (
+      parsed &&
+      typeof parsed === 'object' &&
+      typeof (parsed as { x?: unknown }).x === 'number' &&
+      typeof (parsed as { y?: unknown }).y === 'number' &&
+      Number.isFinite((parsed as { x: number }).x) &&
+      Number.isFinite((parsed as { y: number }).y)
+    ) {
+      return { x: (parsed as { x: number }).x, y: (parsed as { y: number }).y };
+    }
+  } catch {
+    // ignore parse/quota errors
+  }
+  return null;
+}
+
+function savePosition(key: string, pos: { x: number; y: number }) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(pos));
+  } catch {
+    // ignore quota / privacy errors
+  }
+}
+
+export function DraggablePanel({ theme, initialPosition, width, storageKey, children }: Props) {
+  const [pos, setPos] = useState(
+    () => (storageKey ? loadSavedPosition(storageKey) ?? initialPosition : initialPosition),
+  );
   const [dragging, setDragging] = useState(false);
   const dragRef = useRef<{
     startX: number;
@@ -269,6 +306,7 @@ export function DraggablePanel({ theme, initialPosition, width, children }: Prop
     if (!dragRef.current) return;
     dragRef.current = null;
     setDragging(false);
+    if (storageKey) savePosition(storageKey, pos);
     try {
       (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
     } catch {
