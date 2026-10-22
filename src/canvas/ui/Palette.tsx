@@ -55,7 +55,7 @@ export function Palette({
 
   return (
     // Positioned below the always-visible main menu (issue #31).
-    <DraggablePanel theme={theme} initialPosition={{ x: 10, y: 230 }}>
+    <DraggablePanel theme={theme} initialPosition={{ x: 10, y: 230 }} storageKey="diacraft-panel-pos-palette">
       <div
         onPointerDown={(e) => {
           e.preventDefault();

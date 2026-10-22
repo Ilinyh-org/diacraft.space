@@ -67,6 +67,7 @@ export function FeedbackPanel({ theme, language }: { theme: Theme; language: Lan
         y: window.innerHeight - 150,
       }}
       width={FEEDBACK_PANEL_WIDTH}
+      storageKey="diacraft-panel-pos-feedback"
     >
       <div>
         <div

@@ -42,6 +42,7 @@ export function ExportPanel({
         x: Math.max(10, window.innerWidth - 90),
         y: 10,
       }}
+      storageKey="diacraft-panel-pos-export"
     >
       <div
         style={{
