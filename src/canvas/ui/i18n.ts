@@ -29,6 +29,7 @@ export type TranslationKey =
   | "block.forloop"
   | "block.function"
   | "block.link"
+  | "block.text"
   | "block.start"
   // export/import panel
   | "export.title"
@@ -115,6 +116,7 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "block.forloop": "For-loop",
     "block.function": "Function",
     "block.link": "Link",
+    "block.text": "Text",
     "block.start": "Start",
     "export.title": "Export",
     "export.import": "Import",
@@ -195,6 +197,7 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "block.forloop": "Цикл For",
     "block.function": "Функция",
     "block.link": "Ссылка",
+    "block.text": "Текст",
     "block.start": "Начало",
     "export.title": "Экспорт",
     "export.import": "Импорт",

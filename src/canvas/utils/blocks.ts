@@ -53,7 +53,8 @@ export function pickClosestSide(
  *
  * A drop inside a block's bounds, or inside the hit radius of any of its
  * side anchors (the visible connection area circles), attaches the arrow.
- * Blocks whose id is `excludeId` (the source block) are skipped.
+ * Blocks whose id is `excludeId` (the source block) are skipped, and text
+ * comment blocks are never arrow targets (issue #84).
  */
 export function findDropTarget(
   blocks: BlockData[],
@@ -64,6 +65,7 @@ export function findDropTarget(
 ): BlockData | undefined {
   return blocks.find((b) => {
     if (b.id === excludeId) return false;
+    if (b.type === 'text') return false;
     if (x >= b.x && x <= b.x + b.width && y >= b.y && y <= b.y + b.height) {
       return true;
     }

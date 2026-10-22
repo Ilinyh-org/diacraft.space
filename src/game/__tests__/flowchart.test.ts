@@ -147,4 +147,15 @@ describe('compileFlowchart (#70 semantics)', () => {
     );
     expect(result.ok).toBe(false);
   });
+
+  it('ignores text comment blocks instead of flagging them (issue #84)', () => {
+    const start = block('Start', 'start');
+    const note = block('this sorts the list', 'text');
+    const end = block('End', 'start');
+    const result = compileFlowchart([start, note, end], [arrow(start.id, end.id)]);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.program).toEqual([]);
+    }
+  });
 });
