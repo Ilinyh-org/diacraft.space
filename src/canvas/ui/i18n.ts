@@ -64,6 +64,10 @@ export type TranslationKey =
   | "game.crash"
   | "game.timeout"
   | "game.tooShort"
+  | "game.levelName"
+  | "game.ioTitle"
+  | "game.ioInputHint"
+  | "game.needInput"
   | "game.level.linear-1.title"
   | "game.level.linear-1.description"
   | "game.level.linear-2.title"
@@ -143,6 +147,10 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "game.crash": "✖ The robot crashed into a wall.",
     "game.timeout": "✖ Program ran too long.",
     "game.tooShort": "✖ The robot stopped short of the flag.",
+    "game.levelName": "Level {n}",
+    "game.ioTitle": "Program I/O",
+    "game.ioInputHint": "Directions for `in` blocks (up/right/down/left):",
+    "game.needInput": "✖ Waiting for input — add a direction above and run again.",
     "game.level.linear-1.title": "First steps",
     "game.level.linear-1.description":
       "Teach the robot to walk. Build a program of Move commands to reach the flag.",
@@ -220,6 +228,10 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "game.crash": "✖ Робот врезался в стену.",
     "game.timeout": "✖ Программа работала слишком долго.",
     "game.tooShort": "✖ Робот остановился, не дойдя до флага.",
+    "game.levelName": "Уровень {n}",
+    "game.ioTitle": "Ввод/вывод программы",
+    "game.ioInputHint": "Направления для блоков «ввод» (up/right/down/left):",
+    "game.needInput": "✖ Ожидаю ввод — добавьте направление выше и запустите снова.",
     "game.level.linear-1.title": "Первые шаги",
     "game.level.linear-1.description":
       "Научите робота ходить. Соберите программу из команд «Идти», чтобы дойти до флага.",

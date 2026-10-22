@@ -1,13 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { compileFlowchart, isEndBlock } from '../flowchart';
-import type { BlockData, ArrowData } from '../../canvas/types';
-import type { Statement } from '../types';
+import { compileFlowchart } from '../flowchart';
+import type { ArrowData, BlockData } from '../../canvas/types';
 
 let nextId = 0;
-
-function block(
-  overrides: Partial<BlockData> = {},
-): BlockData {
+const block = (label: string, type: BlockData['type'] = 'action'): BlockData => {
   nextId += 1;
   return {
     id: `b${nextId}`,
@@ -15,134 +11,140 @@ function block(
     y: 0,
     width: 120,
     height: 60,
-    label: 'Action',
-    type: 'action',
-    ...overrides,
+    label,
+    type,
   };
-}
-
-function arrow(
+};
+const arrow = (
   fromBlockId: string,
   toBlockId: string,
-  overrides: Partial<ArrowData> = {},
-): ArrowData {
+  fromSide: ArrowData['fromSide'] = 'bottom',
+  label?: string,
+): ArrowData => {
   nextId += 1;
   return {
     id: `a${nextId}`,
     fromBlockId,
-    fromSide: 'bottom',
+    fromSide,
     toBlockId,
     toSide: 'top',
     waypoints: [],
-    ...overrides,
+    label,
   };
-}
+};
 
-const programKinds = (program: Statement[]) =>
-  program.map((s) => s.kind);
-
-describe('compileFlowchart', () => {
-  it('compiles a valid start → actions → end chain', () => {
-    const start = block({ type: 'start', label: 'Start' });
-    const move = block({ label: 'move' });
-    const left = block({ label: 'Left' });
-    const end = block({ label: 'End' });
-    const result = compileFlowchart(
-      [start, move, left, end],
-      [arrow(start.id, move.id), arrow(move.id, left.id), arrow(left.id, end.id)],
-    );
-    expect(result).toEqual({
-      ok: true,
-      program: [{ kind: 'move' }, { kind: 'turnLeft' }],
-    });
-  });
-
-  it('reports a missing start block', () => {
-    const end = block({ label: 'End' });
-    const result = compileFlowchart([end], []);
-    expect(result).toEqual({
-      ok: false,
-      errors: ['Add a Start block to the canvas.'],
-    });
-  });
-
-  it('reports a chain that never reaches an end block', () => {
-    const start = block({ type: 'start', label: 'Start' });
-    const move = block({ label: 'move' });
-    const result = compileFlowchart([start, move], [arrow(start.id, move.id)]);
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.errors[0]).toContain('End block');
+describe('compileFlowchart (#70 semantics)', () => {
+  it('compiles io blocks to output/input statements', () => {
+    const start = block('Start', 'start');
+    const out = block('out pos', 'io');
+    const input = block('in', 'io');
+    const end = block('End', 'start');
+    const blocks = [start, out, input, end];
+    const arrows = [
+      arrow(start.id, out.id),
+      arrow(out.id, input.id),
+      arrow(input.id, end.id),
+    ];
+    const result = compileFlowchart(blocks, arrows);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.program).toEqual([
+        { kind: 'output', text: 'pos' },
+        { kind: 'inputDir' },
+      ]);
     }
   });
 
-  it('reports an unknown action label', () => {
-    const start = block({ type: 'start', label: 'Start' });
-    const jump = block({ label: 'jump' });
-    const end = block({ label: 'end' });
-    const result = compileFlowchart(
-      [start, jump, end],
-      [arrow(start.id, jump.id), arrow(jump.id, end.id)],
-    );
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.errors[0]).toContain('Unknown action "jump"');
-    }
-  });
-
-  it('reports blocks with more than one outgoing arrow', () => {
-    const start = block({ type: 'start', label: 'Start' });
-    const move = block({ label: 'move' });
-    const end = block({ label: 'end' });
-    const result = compileFlowchart(
-      [start, move, end],
-      [arrow(start.id, move.id), arrow(start.id, end.id)],
-    );
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.errors[0]).toContain('more than one outgoing arrow');
-    }
-  });
-
-  it('reports blocks that are not part of the flowchart', () => {
-    const start = block({ type: 'start', label: 'Start' });
-    const end = block({ label: 'end' });
-    const stray = block({ label: 'move' });
-    const result = compileFlowchart(
-      [start, end, stray],
-      [arrow(start.id, end.id)],
-    );
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.errors[0]).toContain('not part of the flowchart');
-    }
-  });
-
-  it('accepts a start block that goes straight to the end', () => {
-    const start = block({ type: 'start', label: 'Start' });
-    const end = block({ label: 'end' });
-    const result = compileFlowchart([start, end], [arrow(start.id, end.id)]);
-    expect(result).toEqual({ ok: true, program: [] });
-  });
-
-  it('detects end blocks by label', () => {
-    const end = block({ label: '  END  ' });
-    expect(isEndBlock(end)).toBe(true);
-    expect(isEndBlock(block({ label: 'move' }))).toBe(false);
-  });
-
-  it('maps turn labels in both short and long form', () => {
-    const start = block({ type: 'start', label: 'Start' });
-    const a = block({ label: 'turn left' });
-    const b = block({ label: 'right' });
-    const end = block({ label: 'end' });
-    const result = compileFlowchart(
-      [start, a, b, end],
-      [arrow(start.id, a.id), arrow(a.id, b.id), arrow(b.id, end.id)],
-    );
-    expect(result.ok && programKinds(result.program)).toEqual([
-      'turnLeft',
-      'turnRight',
+  it('compiles an inventory assignment action block', () => {
+    const start = block('Start', 'start');
+    const take = block('inv[0] = item');
+    const end = block('End', 'start');
+    const blocks = [start, take, end];
+    const result = compileFlowchart(blocks, [
+      arrow(start.id, take.id),
+      arrow(take.id, end.id),
     ]);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.program).toEqual([{ kind: 'setInv', index: 0 }]);
+  });
+
+  it('compiles a wall condition into ifWall with both branches', () => {
+    const start = block('Start', 'start');
+    const cond = block('wall ahead?', 'condition');
+    const detour = block('left');
+    const step = block('move');
+    const end = block('End', 'start');
+    const blocks = [start, cond, detour, step, end];
+    const arrows = [
+      arrow(start.id, cond.id),
+      arrow(cond.id, detour.id, 'bottom', 'yes'),
+      arrow(cond.id, step.id, 'right', 'no'),
+      arrow(detour.id, end.id),
+      arrow(step.id, end.id),
+    ];
+    const result = compileFlowchart(blocks, arrows);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.program).toEqual([
+        {
+          kind: 'ifWall',
+          then: [{ kind: 'turnLeft' }],
+          else: [{ kind: 'move' }],
+        },
+      ]);
+    }
+  });
+
+  it('compiles a for-loop block with a body that returns to the loop', () => {
+    const start = block('Start', 'start');
+    const loop = block('3 times', 'forloop');
+    const step = block('move');
+    const end = block('End', 'start');
+    const blocks = [start, loop, step, end];
+    const arrows = [
+      arrow(start.id, loop.id),
+      arrow(loop.id, step.id, 'bottom'),
+      arrow(step.id, loop.id, 'top'),
+      arrow(loop.id, end.id, 'right'),
+    ];
+    const result = compileFlowchart(blocks, arrows);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.program).toEqual([
+        { kind: 'repeat', times: 3, body: [{ kind: 'move' }] },
+      ]);
+    }
+  });
+
+  it('compiles function blocks into calls of same-canvas subprograms', () => {
+    const main = block('Start', 'start');
+    const call = block('walk', 'function');
+    const end = block('End', 'start');
+    const subStart = block('walk', 'start');
+    const step = block('move');
+    const subEnd = block('End', 'start');
+    const blocks = [main, call, end, subStart, step, subEnd];
+    const result = compileFlowchart(blocks, [
+      arrow(main.id, call.id),
+      arrow(call.id, end.id),
+      arrow(subStart.id, step.id),
+      arrow(step.id, subEnd.id),
+    ]);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.program).toEqual([{ kind: 'call', name: 'walk' }]);
+      expect(result.subprograms.walk).toEqual([{ kind: 'move' }]);
+    }
+  });
+
+  it('rejects a link block for now', () => {
+    const start = block('Start', 'start');
+    const link = block('go here', 'link');
+    const end = block('End', 'start');
+    const result = compileFlowchart(
+      [start, link, end],
+      [arrow(start.id, link.id), arrow(link.id, end.id)],
+    );
+    expect(result.ok).toBe(false);
   });
 });

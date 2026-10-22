@@ -6,13 +6,28 @@ import type { Theme } from '../theme';
 import type { ArrowData, BlockData } from '../canvas/types';
 import { LEVELS } from './levels';
 import { runProgram, wallAhead } from './types';
-import type { Frame } from './types';
+import type { Dir, Frame } from './types';
 import { compileFlowchart, isEndBlock, statementForBlock } from './flowchart';
 import { stepStatement } from './types';
-import { t, type LanguageCode, type TranslationKey } from '../canvas/ui/i18n';
+import { t, type LanguageCode } from '../canvas/ui/i18n';
 
-const levelKey = (id: string, part: 'title' | 'description'): TranslationKey =>
-  `game.level.${id}.${part}` as TranslationKey;
+/** Parses the game menu's I/O field into directions for `in` blocks (#70). */
+const DIR_BY_WORD: Record<string, Dir> = {
+  up: 0,
+  right: 1,
+  down: 2,
+  left: 3,
+  вверх: 0,
+  вправо: 1,
+  вниз: 2,
+  влево: 3,
+};
+
+const parseIoInput = (text: string): Dir[] =>
+  text
+    .split(/[\s,;]+/)
+    .map((w) => DIR_BY_WORD[w.trim().toLowerCase()])
+    .filter((d): d is Dir => d !== undefined);
 
 type Props = {
   theme: Theme;
@@ -46,6 +61,8 @@ export function GamePanel({
   const [menuOpen, setMenuOpen] = useState(true);
   const [highlighted, setHighlighted] = useState(false);
   const [hasRun, setHasRun] = useState(false);
+  const [ioText, setIoText] = useState('');
+  const [ioOutput, setIoOutput] = useState<string[]>([]);
   const lastSignalSeq = useRef(0);
   const syncState = useRef<{ frames: Frame[]; crashed: boolean } | null>(null);
   const highlightTimer = useRef<number | null>(null);
@@ -68,6 +85,7 @@ export function GamePanel({
     setStatus(null);
     setHighlighted(false);
     setHasRun(false);
+    setIoOutput([]);
     syncState.current = null;
     lastSignalSeq.current = 0;
     if (highlightTimer.current !== null) {
@@ -100,20 +118,28 @@ export function GamePanel({
         setStatus(`✖ ${compiled.errors.join(' ')}`);
         return;
       }
-      const result = runProgram(level, compiled.program);
+      const result = runProgram(
+        level,
+        compiled.program,
+        compiled.subprograms,
+        parseIoInput(ioText),
+      );
       setFrames(result.frames);
       setFrameIndex(0);
+      setIoOutput(result.output);
       setStatus(
         result.status === 'win'
           ? t(language, 'game.win')
           : result.status === 'crash'
             ? t(language, 'game.crash')
-            : result.status === 'timeout'
-              ? t(language, 'game.timeout')
-              : t(language, 'game.tooShort'),
+            : result.status === 'needInput'
+              ? t(language, 'game.needInput')
+              : result.status === 'timeout'
+                ? t(language, 'game.timeout')
+                : t(language, 'game.tooShort'),
       );
     },
-    [compiled, level, onRunDiagram, language],
+    [compiled, level, onRunDiagram, language, ioText],
   );
 
   // The game panel's own ▶ Run button runs the whole program immediately.
@@ -209,6 +235,7 @@ export function GamePanel({
       for (let x = 0; x < level.width; x += 1) {
         const isWall = level.walls.some(([wx, wy]) => wx === x && wy === y);
         const isGoal = level.goal.x === x && level.goal.y === y;
+        const hasItem = (level.items ?? []).some(([ix, iy]) => ix === x && iy === y);
         cells.push(
           <div
             key={`${x},${y}`}
@@ -229,7 +256,7 @@ export function GamePanel({
               boxSizing: 'border-box',
             }}
           >
-            {isGoal ? '⚑' : ''}
+            {isGoal ? '⚑' : hasItem ? '◆' : ''}
           </div>,
         );
       }
@@ -268,15 +295,31 @@ export function GamePanel({
 
         {menuOpen && (
           <div style={{ marginTop: 8 }}>
-            {LEVELS.map((l, i) => (
-              <button
-                key={l.id}
-                type="button"
-                onClick={() => pickLevel(i)}
-                style={{ ...buttonStyle, display: 'block', width: '100%', textAlign: 'left', marginBottom: 4 }}
-              >
-                {i + 1}. {t(language, levelKey(l.id, 'title'))} — {t(language, levelKey(l.id, 'description'))}
-              </button>
+            {/* Issue #70: 5x5 numbered levels table — five concept rows. */}
+            {[0, 1, 2, 3, 4].map((row) => (
+              <div key={row} style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
+                {LEVELS.slice(row * 5, row * 5 + 5).map((l, col) => {
+                  const index = row * 5 + col;
+                  return (
+                    <button
+                      key={l.id}
+                      type="button"
+                      title={`${t(language, 'game.levelName', { n: index + 1 })}`}
+                      onClick={() => pickLevel(index)}
+                      style={{
+                        ...buttonStyle,
+                        width: 40,
+                        textAlign: 'center',
+                        fontWeight: index === levelIndex ? 700 : 400,
+                        borderColor:
+                          index === levelIndex ? theme.selection : theme.buttonBorder,
+                      }}
+                    >
+                      {index + 1}
+                    </button>
+                  );
+                })}
+              </div>
             ))}
           </div>
         )}
@@ -284,7 +327,7 @@ export function GamePanel({
         <div style={{ height: 1, background: theme.divider, margin: '6px 0' }} />
 
         <div style={{ fontSize: 11, marginBottom: 4 }}>
-          <strong>{t(language, levelKey(level.id, 'title'))}</strong> · {t(language, levelKey(level.id, 'description'))}
+          <strong>{t(language, 'game.levelName', { n: levelIndex + 1 })}</strong>
         </div>
 
         <div
@@ -346,6 +389,47 @@ export function GamePanel({
           >
             {t(language, 'game.run')}
           </button>
+        </div>
+
+        {/* Issue #70: program I/O field — input directions + output log. */}
+        <div style={{ marginTop: 8 }}>
+          <div style={{ fontSize: 10, marginBottom: 2 }}>
+            {t(language, 'game.ioTitle')}
+          </div>
+          <div style={{ fontSize: 10, color: theme.buttonTextDisabled, marginBottom: 2 }}>
+            {t(language, 'game.ioInputHint')}
+          </div>
+          <input
+            type="text"
+            value={ioText}
+            onChange={(e) => setIoText(e.target.value)}
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              padding: '3px 5px',
+              fontSize: 11,
+              border: `1px solid ${theme.buttonBorder}`,
+              borderRadius: 4,
+              background: theme.blockFill,
+              color: theme.buttonText,
+            }}
+          />
+          {ioOutput.length > 0 && (
+            <div
+              data-testid="game-io-output"
+              role="log"
+              style={{
+                marginTop: 4,
+                fontSize: 10,
+                whiteSpace: 'pre-wrap',
+                fontFamily: 'monospace',
+              }}
+            >
+              {ioOutput.map((line, i) => (
+                <div key={i}>› {line}</div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div style={{ fontSize: 11, marginTop: 6, minHeight: 16 }} role="status">
