@@ -7,6 +7,8 @@ type BlockEditInputProps = {
   block: BlockData;
   stageX: number;
   stageY: number;
+  /** Issue #82: the input must follow the zoomed-out view too. */
+  stageScale: number;
   value: string;
   inputRef: RefObject<HTMLInputElement | null>;
   onChange: (v: string) => void;
@@ -18,6 +20,7 @@ export function BlockEditInput({
   block,
   stageX,
   stageY,
+  stageScale,
   value,
   inputRef,
   onChange,
@@ -27,9 +30,13 @@ export function BlockEditInput({
     <div
       style={{
         position: 'absolute',
-        left: stageX + block.x - 4,
-        top: stageY + block.y + block.height / 2 - 18,
-        width: block.width + 8,
+        left: stageX + block.x * stageScale - 4,
+        top:
+          stageY +
+          block.y * stageScale +
+          (block.height * stageScale) / 2 -
+          18,
+        width: (block.width + 8) * stageScale,
         zIndex: 500,
       }}
     >

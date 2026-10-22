@@ -76,19 +76,25 @@ export function findDropTarget(
 
 /**
  * Converts a node's absolute (screen) position into world (layer) coordinates
- * by subtracting the Stage's pan offset. Drag events report positions that
- * include the stage transform; canvas geometry (blocks, arrows, anchors) lives
- * in world coordinates, so the offset must be removed before hit testing or
- * rendering (issue #23).
+ * by subtracting the Stage's pan offset and dividing by its scale. Drag events
+ * report positions that include the stage transform; canvas geometry (blocks,
+ * arrows, anchors) lives in world coordinates, so the transform must be
+ * removed before hit testing or rendering (issue #23, zoom in #82).
  */
 export function absoluteToWorld(node: {
   getAbsolutePosition: () => { x: number; y: number };
-  getStage: () => { x: () => number; y: () => number } | null;
+  getStage: () =>
+    | { x: () => number; y: () => number; scaleX?: () => number }
+    | null;
 }): { x: number; y: number } {
   const abs = node.getAbsolutePosition();
   const stage = node.getStage();
   if (!stage) return { x: abs.x, y: abs.y };
-  return { x: abs.x - stage.x(), y: abs.y - stage.y() };
+  const scale = stage.scaleX?.() ?? 1;
+  return {
+    x: (abs.x - stage.x()) / scale,
+    y: (abs.y - stage.y()) / scale,
+  };
 }
 
 const SIDES: Side[] = ['top', 'right', 'bottom', 'left'];
