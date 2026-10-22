@@ -23,6 +23,7 @@ describe('BlockEditInput', () => {
         block={block}
         stageX={10}
         stageY={20}
+        stageScale={1}
         value="Step"
         inputRef={createRef()}
         onChange={() => {}}
@@ -36,6 +37,28 @@ describe('BlockEditInput', () => {
     expect(wrapper.style.top).toBe('232px'); // stageY + block.y + h/2 - 18
   });
 
+  it('scales the overlay position with a zoomed-out stage (issue #82)', () => {
+    render(
+      <BlockEditInput
+        theme={lightTheme}
+        block={block}
+        stageX={10}
+        stageY={20}
+        stageScale={0.5}
+        value="Step"
+        inputRef={createRef()}
+        onChange={() => {}}
+        onCommit={() => {}}
+      />,
+    );
+    const input = screen.getByDisplayValue('Step');
+    const wrapper = input.closest('div')!;
+    // stageX + block.x * 0.5 - 4
+    expect(wrapper.style.left).toBe('56px');
+    // stageY + block.y * 0.5 + (h * 0.5) / 2 - 18
+    expect(wrapper.style.top).toBe('117px');
+  });
+
   it('reports value changes', () => {
     const onChange = vi.fn();
     render(
@@ -44,6 +67,7 @@ describe('BlockEditInput', () => {
         block={block}
         stageX={0}
         stageY={0}
+        stageScale={1}
         value=""
         inputRef={createRef()}
         onChange={onChange}
@@ -64,6 +88,7 @@ describe('BlockEditInput', () => {
         block={block}
         stageX={0}
         stageY={0}
+        stageScale={1}
         value="Step"
         inputRef={createRef()}
         onChange={() => {}}

@@ -79,6 +79,7 @@ import { planAnimation } from './animation/planAnimation';
 import { GamePanel } from '../game/GamePanel';
 import type { AnimStep } from './animation/planAnimation';
 import { useKeyboard } from './hooks/useKeyboard';
+import { clampStageScale } from './utils/zoom';
 import {
   copySelection,
   pasteClipboard,
@@ -158,6 +159,10 @@ export function Canvas() {
   const [activeArrowIds, setActiveArrowIds] = useState<Set<string>>(new Set());
   const animTimerRef = useRef<number | null>(null);
   const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
+  // Issue #82: zoomed-out view. Default view is scale 1; zoom-out only.
+  const [stageScale, setStageScale] = useState(1);
+  const pinchDistRef = useRef<number | null>(null);
+  const pinchingRef = useRef(false);
   const [preview, setPreview] = useState<{
     fromBlockId: string;
     fromSide: Side;
@@ -246,9 +251,10 @@ export function Canvas() {
       let center: { x: number; y: number } | undefined;
       if (cursor && containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
+        const scale = stageRef.current?.scaleX() ?? 1;
         center = {
-          x: cursor.x - rect.left - (stageRef.current?.x() ?? 0),
-          y: cursor.y - rect.top - (stageRef.current?.y() ?? 0),
+          x: (cursor.x - rect.left - (stageRef.current?.x() ?? 0)) / scale,
+          y: (cursor.y - rect.top - (stageRef.current?.y() ?? 0)) / scale,
         };
       }
       const pasted = pasteClipboard(clipboardRef.current, center);
@@ -308,12 +314,14 @@ export function Canvas() {
 
   const handleGestureComplete = useCallback(
     (strokes: Point[][]) => {
-      const stageX = stageRef.current?.x() ?? 0;
-      const stageY = stageRef.current?.y() ?? 0;
+      const stage = stageRef.current;
+      const stageX = stage?.x() ?? 0;
+      const stageY = stage?.y() ?? 0;
+      const scale = stage?.scaleX() ?? 1;
       const canvasStrokes = strokes.map((stroke) =>
         stroke.map((p) => ({
-          x: p.x - stageX,
-          y: p.y - stageY,
+          x: (p.x - stageX) / scale,
+          y: (p.y - stageY) / scale,
         }))
       );
 
@@ -374,6 +382,78 @@ export function Canvas() {
     },
     [commit, language]
   );
+
+  /** Issue #82: wheel zoom, anchored at the pointer position. */
+  const handleStageWheel = useCallback(
+    (e: KonvaEventObject<WheelEvent>) => {
+      e.evt.preventDefault();
+      const stage = stageRef.current;
+      if (!stage) return;
+      const pointer = stage.getPointerPosition();
+      if (!pointer) return;
+      const oldScale = stage.scaleX();
+      const newScale = clampStageScale(
+        oldScale * (e.evt.deltaY > 0 ? 0.9 : 1.1)
+      );
+      if (newScale === oldScale) return;
+      const world = {
+        x: (pointer.x - stage.x()) / oldScale,
+        y: (pointer.y - stage.y()) / oldScale,
+      };
+      setStageScale(newScale);
+      setStagePos({
+        x: pointer.x - world.x * newScale,
+        y: pointer.y - world.y * newScale,
+      });
+    },
+    []
+  );
+
+  /** Issue #82: pinch-to-zoom on touch screens, anchored at the pinch center. */
+  const handleStageTouchMove = useCallback(
+    (e: KonvaEventObject<TouchEvent>) => {
+      const evt = e.evt;
+      const stage = stageRef.current;
+      if (!stage) return;
+      if (evt.touches.length !== 2) {
+        pinchDistRef.current = null;
+        pinchingRef.current = false;
+        return;
+      }
+      evt.preventDefault();
+      const t1 = evt.touches[0];
+      const t2 = evt.touches[1];
+      const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+      const lastDist = pinchDistRef.current;
+      pinchDistRef.current = dist;
+      pinchingRef.current = true;
+      // Two fingers mean zoom, not canvas panning.
+      if (stage.isDragging()) stage.stopDrag();
+      if (!lastDist || dist === lastDist) return;
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const oldScale = stage.scaleX();
+      const newScale = clampStageScale(oldScale * (dist / lastDist));
+      if (newScale === oldScale) return;
+      const centerX = (t1.clientX + t2.clientX) / 2 - rect.left;
+      const centerY = (t1.clientY + t2.clientY) / 2 - rect.top;
+      const world = {
+        x: (centerX - stage.x()) / oldScale,
+        y: (centerY - stage.y()) / oldScale,
+      };
+      setStageScale(newScale);
+      setStagePos({
+        x: centerX - world.x * newScale,
+        y: centerY - world.y * newScale,
+      });
+    },
+    []
+  );
+
+  const handleStageTouchEnd = useCallback(() => {
+    pinchDistRef.current = null;
+    pinchingRef.current = false;
+  }, []);
 
   const trail = useGestureDraw(
     containerRef,
@@ -560,10 +640,12 @@ export function Canvas() {
       if (!type || !containerRef.current) return;
 
       const rect = containerRef.current.getBoundingClientRect();
-      const stageX = stageRef.current?.x() ?? 0;
-      const stageY = stageRef.current?.y() ?? 0;
-      const x = e.clientX - rect.left - stageX;
-      const y = e.clientY - rect.top - stageY;
+      const stage = stageRef.current;
+      const stageX = stage?.x() ?? 0;
+      const stageY = stage?.y() ?? 0;
+      const scale = stage?.scaleX() ?? 1;
+      const x = (e.clientX - rect.left - stageX) / scale;
+      const y = (e.clientY - rect.top - stageY) / scale;
 
       const item = PALETTE.find((p) => p.type === type);
       if (!item) return;
@@ -797,15 +879,20 @@ const runExport = (
         height={size.height}
         x={stagePos.x}
         y={stagePos.y}
+        scaleX={stageScale}
+        scaleY={stageScale}
         draggable={!isDrawMode && !editingId && !isExporting}
         dragDistance={4}
         onDragEnd={(e) => {
-          if (e.target === stageRef.current) {
+          if (e.target === stageRef.current && !pinchingRef.current) {
             setStagePos({ x: e.target.x(), y: e.target.y() });
           }
         }}
         onMouseDown={isDrawMode ? undefined : handleStageClick}
         onTouchStart={isDrawMode ? undefined : handleStageClick}
+        onTouchMove={handleStageTouchMove}
+        onTouchEnd={handleStageTouchEnd}
+        onWheel={handleStageWheel}
         onContextMenu={isDrawMode ? undefined : handleStageContextMenu}
       >
         <Layer listening={!isDrawMode && !editingId}>
@@ -943,8 +1030,8 @@ const runExport = (
           {isDrawMode && trail.length > 1 && (
             <Line
               points={trail.flatMap((p) => [
-                p.x - stagePos.x,
-                p.y - stagePos.y,
+                (p.x - stagePos.x) / stageScale,
+                (p.y - stagePos.y) / stageScale,
               ])}
               stroke={theme.selection}
               strokeWidth={2}
@@ -964,6 +1051,7 @@ const runExport = (
           block={editingBlock}
           stageX={stagePos.x}
           stageY={stagePos.y}
+          stageScale={stageScale}
           value={editValue}
           inputRef={editInputRef}
           onChange={setEditValue}
