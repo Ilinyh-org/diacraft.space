@@ -574,7 +574,8 @@ export function Canvas() {
         y: y - BLOCK_HEIGHT / 2,
         width: BLOCK_WIDTH,
         height: BLOCK_HEIGHT,
-        label: item.label,
+        // Issue #77: the default label must follow the selected language.
+        label: t(language, BLOCK_LABEL_BY_TYPE[item.type]),
         type: item.type,
       };
       commit((s) => ({ ...s, blocks: [...s.blocks, newBlock] }));
@@ -586,7 +587,7 @@ export function Canvas() {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
     };
-  }, [commit]);
+  }, [commit, language]);
 
   const handlePalettePointerDown = (
     e: React.PointerEvent,
