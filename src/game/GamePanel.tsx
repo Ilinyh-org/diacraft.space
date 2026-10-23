@@ -5,11 +5,10 @@ import { stepDelayMs } from '../canvas/ui/AlgorithmPanel';
 import type { Theme } from '../theme';
 import type { ArrowData, BlockData } from '../canvas/types';
 import { LEVELS } from './levels';
-import { wallAhead } from './types';
 import type { Frame } from './types';
 import { compileFlowchart, isEndBlock, statementForBlock } from './flowchart';
 import { stepStatement } from './types';
-import { t, type LanguageCode } from '../canvas/ui/i18n';
+import { t, tOptional, type LanguageCode } from '../canvas/ui/i18n';
 
 type Props = {
   theme: Theme;
@@ -50,6 +49,12 @@ export function GamePanel({
   const highlightTimer = useRef<number | null>(null);
 
   const level = LEVELS[levelIndex];
+
+  // Issue #107: a short task text above the level graphics. Levels with a
+  // dedicated description use it; the rest get the generic goal text.
+  const taskText =
+    tOptional(language, `game.level.${level.id}.description`) ??
+    t(language, 'game.taskFallback');
 
   const buttonStyle: CSSProperties = {
     padding: '4px 8px',
@@ -253,11 +258,14 @@ export function GamePanel({
 
         {menuOpen && (
           <div style={{ marginTop: 8 }}>
-            {/* Issue #70: 5x5 numbered levels table — five concept rows. */}
+            {/* Issue #70: 5x5 numbered levels table — five concept rows.
+                Issue #107: the exact current level is not offered in the
+                menu — its cell is omitted. */}
             {[0, 1, 2, 3, 4].map((row) => (
               <div key={row} style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
                 {LEVELS.slice(row * 5, row * 5 + 5).map((l, col) => {
                   const index = row * 5 + col;
+                  if (index === levelIndex) return null;
                   return (
                     <button
                       key={l.id}
@@ -268,9 +276,6 @@ export function GamePanel({
                         ...buttonStyle,
                         width: 40,
                         textAlign: 'center',
-                        fontWeight: index === levelIndex ? 700 : 400,
-                        borderColor:
-                          index === levelIndex ? theme.selection : theme.buttonBorder,
                       }}
                     >
                       {index + 1}
@@ -286,6 +291,11 @@ export function GamePanel({
 
         <div style={{ fontSize: 11, marginBottom: 4 }}>
           <strong>{t(language, 'game.levelName', { n: levelIndex + 1 })}</strong>
+        </div>
+
+        {/* Issue #107: short task text above the level graphics. */}
+        <div data-testid="game-task" style={{ fontSize: 11, marginBottom: 4 }}>
+          <strong>{t(language, 'game.task')}:</strong> {taskText}
         </div>
 
         <div
@@ -317,21 +327,12 @@ export function GamePanel({
             {arrowByDir}
           </div>
         </div>
-        {wallAhead(level, current) && (
-          <div style={{ fontSize: 10, color: theme.deleteButton, marginTop: 2 }}>
-            {t(language, 'game.wallAhead')}
-          </div>
-        )}
 
         <div style={{ height: 1, background: theme.divider, margin: '6px 0' }} />
 
-        {hasRun && (
-          <div style={{ fontSize: 10, color: theme.buttonTextDisabled, marginBottom: 4 }}>
-            {t(language, 'game.buildHint')}
-          </div>
-        )}
-
-        {!compiled.ok && (
+        {/* Issue #107: the error hint appears and updates only after the
+            Run click, when the animation starts. */}
+        {hasRun && !compiled.ok && (
           <div data-testid="flowchart-errors" style={{ fontSize: 11, color: theme.deleteButton }}>
             {compiled.errors.map((e, i) => (
               <div key={i}>✖ {e}</div>
@@ -339,7 +340,7 @@ export function GamePanel({
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+        <div style={{ display: 'flex', gap: 6, marginTop: 8, alignItems: 'center' }}>
           <button
             type="button"
             onClick={run}
@@ -347,31 +348,40 @@ export function GamePanel({
           >
             {t(language, 'game.run')}
           </button>
+          {/* Issue #107: hint label to the right of the Run button. */}
+          <span style={{ fontSize: 10, color: theme.buttonTextDisabled }}>
+            {t(language, 'game.runHint')}
+          </span>
         </div>
 
-        {/* Issue #70: program I/O field — input directions + output log. */}
+        {/* Issue #70: program I/O field — input directions + output log.
+            Issue #107: label and field share one line. */}
         <div style={{ marginTop: 8 }}>
-          <div style={{ fontSize: 10, marginBottom: 2 }}>
-            {t(language, 'game.ioTitle')}
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <label
+              htmlFor="game-io-input"
+              style={{ fontSize: 10, whiteSpace: 'nowrap' }}
+            >
+              {t(language, 'game.ioTitle')}
+            </label>
+            <input
+              id="game-io-input"
+              type="text"
+              value={ioText}
+              onChange={(e) => setIoText(e.target.value)}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                boxSizing: 'border-box',
+                padding: '3px 5px',
+                fontSize: 11,
+                border: `1px solid ${theme.buttonBorder}`,
+                borderRadius: 4,
+                background: theme.blockFill,
+                color: theme.buttonText,
+              }}
+            />
           </div>
-          <div style={{ fontSize: 10, color: theme.buttonTextDisabled, marginBottom: 2 }}>
-            {t(language, 'game.ioInputHint')}
-          </div>
-          <input
-            type="text"
-            value={ioText}
-            onChange={(e) => setIoText(e.target.value)}
-            style={{
-              width: '100%',
-              boxSizing: 'border-box',
-              padding: '3px 5px',
-              fontSize: 11,
-              border: `1px solid ${theme.buttonBorder}`,
-              borderRadius: 4,
-              background: theme.blockFill,
-              color: theme.buttonText,
-            }}
-          />
           {ioOutput.length > 0 && (
             <div
               data-testid="game-io-output"
@@ -396,6 +406,32 @@ export function GamePanel({
               {t(language, 'game.nextLevel')}
             </button>
           )}
+        </div>
+
+        {/* Issue #107: previous / next level buttons at the bottom. */}
+        <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+          <button
+            type="button"
+            data-testid="game-prev-level"
+            onClick={() => pickLevel(levelIndex - 1)}
+            disabled={levelIndex === 0}
+            style={{ ...buttonStyle, flex: 1, opacity: levelIndex === 0 ? 0.5 : 1 }}
+          >
+            {t(language, 'game.prevLevel')}
+          </button>
+          <button
+            type="button"
+            data-testid="game-next-level"
+            onClick={() => pickLevel(levelIndex + 1)}
+            disabled={levelIndex === LEVELS.length - 1}
+            style={{
+              ...buttonStyle,
+              flex: 1,
+              opacity: levelIndex === LEVELS.length - 1 ? 0.5 : 1,
+            }}
+          >
+            {t(language, 'game.nextLevel')}
+          </button>
         </div>
       </div>
     </DraggablePanel>

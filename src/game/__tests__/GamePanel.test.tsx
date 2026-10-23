@@ -149,27 +149,80 @@ describe('GamePanel', () => {
     expect(robot.style.left).toBe('0px');
   });
 
-  it('shows flowchart validation errors and refuses to run', () => {
+  it('shows flowchart validation errors only after Run is clicked (#107)', () => {
     const start = block({ type: 'start', label: 'Start' });
     render(<GamePanel language="en" theme={lightTheme} blocks={[start]} arrows={[]} />);
+    expect(screen.queryByTestId('flowchart-errors')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
     expect(screen.getByTestId('flowchart-errors').textContent).toContain(
       'End block',
     );
-    fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
     expect(screen.getByRole('status').textContent).toContain('✖');
   });
 
-  it('does not show build hints before Run is clicked (#49)', () => {
+  it('shows the task text above the level graphics (#107)', () => {
+    const { blocks, arrows } = makeFlowchart(['move']);
+    render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
+    const task = screen.getByTestId('game-task');
+    expect(task.textContent).toContain('Task:');
+    expect(task.textContent).toContain('flag');
+    // The task text sits above the board in DOM order.
+    const panel = screen.getByTestId('game-panel');
+    expect(panel.innerHTML.indexOf('game-task')).toBeLessThan(
+      panel.innerHTML.indexOf('game-robot'),
+    );
+  });
+
+  it('shows a hint label to the right of the Run button (#107)', () => {
+    const { blocks, arrows } = makeFlowchart(['move']);
+    render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
+    const runButton = screen.getByRole('button', { name: '▶ Run' });
+    expect(runButton.parentElement!.textContent).toContain(
+      'Click run to check the flowchart',
+    );
+  });
+
+  it('places the Program I/O label and field on one line (#107)', () => {
+    const { blocks, arrows } = makeFlowchart(['move']);
+    render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
+    const input = screen.getByLabelText('Program I/O');
+    const label = input.closest('div')!.querySelector('label');
+    expect(label).not.toBeNull();
+  });
+
+  it('does not show extra hints besides the task and error hint (#107)', () => {
     const { blocks, arrows } = makeFlowchart(['move']);
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
     expect(screen.queryByText(/Build the program on the canvas/)).toBeNull();
+    expect(screen.queryByText(/Directions for/)).toBeNull();
+    expect(screen.queryByText(/Wall directly ahead/)).toBeNull();
   });
 
-  it('shows build hints only after Run is clicked (#49)', () => {
-    const { blocks, arrows } = makeFlowchart(['move', 'move', 'move']);
+  it('does not offer the current level in the levels menu (#107)', () => {
+    const { blocks, arrows } = makeFlowchart(['move']);
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
-    fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
-    expect(screen.getByText(/Build the program on the canvas/)).toBeDefined();
+    // Level 1 is current: no button labelled 1.
+    expect(screen.queryByRole('button', { name: '1' })).toBeNull();
+    expect(screen.getByRole('button', { name: '2' })).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: '2' }));
+    expect(screen.getByText('Level 2')).toBeDefined();
+    // Reopen the menu (pickLevel closes it) and re-check.
+    fireEvent.click(screen.getByRole('button', { name: 'Levels' }));
+    // Now level 2 is current: its button is gone, level 1 is offered.
+    expect(screen.queryByRole('button', { name: '2' })).toBeNull();
+    expect(screen.getByRole('button', { name: '1' })).toBeDefined();
+  });
+
+  it('switches levels with previous/next buttons at the bottom (#107)', () => {
+    const { blocks, arrows } = makeFlowchart(['move']);
+    render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
+    const prev = screen.getByTestId('game-prev-level') as HTMLButtonElement;
+    const next = screen.getByTestId('game-next-level') as HTMLButtonElement;
+    expect(prev.disabled).toBe(true);
+    fireEvent.click(next);
+    expect(screen.getByText('Level 2')).toBeDefined();
+    fireEvent.click(screen.getByTestId('game-prev-level'));
+    expect(screen.getByText('Level 1')).toBeDefined();
   });
 
   it('does not duplicate the program or the command count (#49)', () => {
