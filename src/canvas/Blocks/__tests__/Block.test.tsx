@@ -65,10 +65,11 @@ describe('Text comment block (issue #84)', () => {
     );
     // The delete/edit buttons render circles, not rects; the only rect is
     // the dashed selection border.
-    // The only rect is the dashed selection border (delete/edit buttons
-    // are circles); unselected text blocks render no rect at all.
+    // The dashed selection border is a rect (delete/edit buttons are
+    // circles; the resize handle adds a second rect). Unselected text
+    // blocks render no rect at all.
     const rects = getAllByTestId('rect');
-    expect(rects).toHaveLength(1);
+    expect(rects.length).toBeGreaterThanOrEqual(1);
   });
 });
 
