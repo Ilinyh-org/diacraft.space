@@ -296,15 +296,27 @@ describe('Canvas copy/cut/paste (issue #42)', () => {
     expect((minY + maxY) / 2).toBe(cursor.y);
   });
 
-  it('Ctrl+V pastes centered on the last mouse position (issue #104)', () => {
+  it('Ctrl+V pastes at the exact mouse cursor position when over the canvas (issue #104)', () => {
     renderCanvas();
     fireEvent.click(blockNode('Alpha'));
     key('ctrl+c');
 
-    // Move the pointer; the container rect in jsdom is empty (0x0 at 0,0),
-    // so the pointer counts as beyond the canvas and the paste must land
-    // at the center of the view (rect center = (0, 0) here).
-    fireEvent(window, new MouseEvent('pointermove', { clientX: 400, clientY: 300 }));
+    // Stub a real-size canvas anchored at 0,0 (jsdom rects are zero-sized)
+    // and put the pointer over it; the paste must land exactly there.
+    const stageEl = screen.getByTestId('stage');
+    const container = stageEl.parentElement as HTMLElement;
+    vi.spyOn(container, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      right: 800,
+      bottom: 600,
+      width: 800,
+      height: 600,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+    fireEvent(window, new MouseEvent('pointermove', { clientX: 300, clientY: 200 }));
     key('ctrl+v');
 
     const saved = JSON.parse(
@@ -314,8 +326,78 @@ describe('Canvas copy/cut/paste (issue #42)', () => {
       (b: { label: string }) => b.label === 'Alpha',
     );
     expect(alphas).toHaveLength(2);
-    expect(alphas[1].x + alphas[1].width / 2).toBe(0);
-    expect(alphas[1].y + alphas[1].height / 2).toBe(0);
+    expect(alphas[1].x + alphas[1].width / 2).toBe(300);
+    expect(alphas[1].y + alphas[1].height / 2).toBe(200);
+  });
+
+  it('Ctrl+V pastes at the center of the view when the cursor is beyond the canvas (issue #104)', () => {
+    renderCanvas();
+    fireEvent.click(blockNode('Alpha'));
+    key('ctrl+c');
+
+    const stageEl = screen.getByTestId('stage');
+    const container = stageEl.parentElement as HTMLElement;
+    vi.spyOn(container, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      right: 800,
+      bottom: 600,
+      width: 800,
+      height: 600,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+    // Pointer outside the canvas: paste must land at the view center.
+    fireEvent(window, new MouseEvent('pointermove', { clientX: 1000, clientY: 900 }));
+    key('ctrl+v');
+
+    const saved = JSON.parse(
+      localStorage.getItem(STORAGE_KEY) ?? '{"blocks":[]}',
+    );
+    const alphas = saved.blocks.filter(
+      (b: { label: string }) => b.label === 'Alpha',
+    );
+    expect(alphas).toHaveLength(2);
+    expect(alphas[1].x + alphas[1].width / 2).toBe(400);
+    expect(alphas[1].y + alphas[1].height / 2).toBe(300);
+  });
+
+  it('Ctrl+V in a focused text input does NOT paste a canvas block and does not block text paste (issue #104)', () => {
+    renderCanvas();
+    fireEvent.click(blockNode('Alpha'));
+    key('ctrl+c');
+
+    // Focus a plain text input (as in the game/export/algorithm panels);
+    // the canvas hotkey handler must ignore editable targets.
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+    input.focus();
+    expect(document.activeElement).toBe(input);
+
+    fireEvent.keyDown(input, {
+      key: 'v',
+      ctrlKey: true,
+      bubbles: true,
+    });
+
+    const saved = JSON.parse(
+      localStorage.getItem(STORAGE_KEY) ?? '{"blocks":[]}',
+    );
+    expect(saved.blocks).toHaveLength(2);
+    expect(saved.blocks.filter((b: { label: string }) => b.label === 'Alpha')).toHaveLength(1);
+  });
+
+  it('Ctrl+V still pastes when focus is on the page body (issue #104)', () => {
+    renderCanvas();
+    fireEvent.click(blockNode('Alpha'));
+    key('ctrl+c');
+    key('ctrl+v');
+
+    const saved = JSON.parse(
+      localStorage.getItem(STORAGE_KEY) ?? '{"blocks":[]}',
+    );
+    expect(saved.blocks.filter((b: { label: string }) => b.label === 'Alpha')).toHaveLength(2);
   });
 
   it('canvas context menu Paste inserts clipboard content', () => {
