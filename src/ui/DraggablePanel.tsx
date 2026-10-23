@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useLayoutEffect } from 'react';
 import type { ReactNode, CSSProperties } from 'react';
 import type { Theme } from '../theme';
 
@@ -233,9 +233,12 @@ function savePosition(key: string, pos: { x: number; y: number }) {
 }
 
 export function DraggablePanel({ theme, initialPosition, width, storageKey, center, children }: Props) {
-  const [pos, setPos] = useState(
-    () => (storageKey ? loadSavedPosition(storageKey) ?? initialPosition : initialPosition),
-  );
+  const saved = storageKey ? loadSavedPosition(storageKey) : null;
+  const [pos, setPos] = useState(() => saved ?? initialPosition);
+  // Issue #100: the panel stays hidden until its first-appearance adjustment
+  // (clamping/centering/overlap shift) has run in a layout effect, so the
+  // browser never paints the fallback position followed by a jump.
+  const [placed, setPlaced] = useState(false);
   const [dragging, setDragging] = useState(false);
   const dragRef = useRef<{
     startX: number;
@@ -247,14 +250,19 @@ export function DraggablePanel({ theme, initialPosition, width, storageKey, cent
   const adjustedRef = useRef(false);
 
   // Clamp the initial position inside the window and shift it out of overlap
-  // with already-mounted panels (issue #71).
-  useEffect(() => {
+  // with already-mounted panels (issue #71). Runs as a layout effect so the
+  // corrected position is committed before the first paint (issue #100).
+  useLayoutEffect(() => {
     if (adjustedRef.current) return;
     adjustedRef.current = true;
     const el = panelRef.current;
     const panelWidth = el?.offsetWidth ?? 0;
     const panelHeight = el?.offsetHeight ?? 0;
-    if (!el || panelWidth <= 0 || panelHeight <= 0) return;
+    if (!el || panelWidth <= 0 || panelHeight <= 0) {
+      // Nothing to measure (e.g. no layout available): show at initial pos.
+      setPlaced(true);
+      return;
+    }
     const others = Array.from(
       document.querySelectorAll<HTMLElement>(`.${PANEL_CLASS}`),
     ).filter((o) => o !== el);
@@ -265,7 +273,9 @@ export function DraggablePanel({ theme, initialPosition, width, storageKey, cent
       obstacles.push({ left: or.left, top: or.top, right: or.right, bottom: or.bottom });
     }
     const windowSize = { width: window.innerWidth, height: window.innerHeight };
-    const desired = center && isPcScreen(windowSize)
+    // Issue #100: centering applies only to the very first appearance. A
+    // position remembered from a previous session always wins.
+    const desired = center && isPcScreen(windowSize) && !saved
       ? centeredPosition({ width: panelWidth, height: panelHeight }, windowSize)
       : pos;
     setPos(
@@ -276,6 +286,7 @@ export function DraggablePanel({ theme, initialPosition, width, storageKey, cent
         windowSize,
       ),
     );
+    setPlaced(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -360,6 +371,7 @@ export function DraggablePanel({ theme, initialPosition, width, storageKey, cent
     flexDirection: 'column',
     userSelect: 'none',
     touchAction: 'none',
+    visibility: placed ? 'visible' : 'hidden',
     zIndex: dragging ? 1000 : 100,
   };
 
