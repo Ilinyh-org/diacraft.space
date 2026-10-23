@@ -296,6 +296,44 @@ describe('Canvas copy/cut/paste (issue #42)', () => {
     expect((minY + maxY) / 2).toBe(cursor.y);
   });
 
+  it('Ctrl+V pastes at the exact mouse cursor position when over the canvas (issue #104)', () => {
+    renderCanvas();
+    fireEvent.click(blockNode('Alpha'));
+    key('ctrl+c');
+
+    // Move the mouse over the canvas; the container rect is stubbed to a
+    // real-size canvas anchored at 0,0 (jsdom rects are zero-sized).
+    const stageEl = screen.getByTestId('stage');
+    const container = stageEl.parentElement as HTMLElement;
+    vi.spyOn(container, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      right: 800,
+      bottom: 600,
+      width: 800,
+      height: 600,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+    fireEvent.pointerMove(stageEl, {
+      clientX: 300,
+      clientY: 200,
+    });
+    key('ctrl+v');
+
+    const saved = JSON.parse(
+      localStorage.getItem(STORAGE_KEY) ?? '{"blocks":[]}',
+    );
+    const alphas = saved.blocks.filter(
+      (b: { label: string }) => b.label === 'Alpha',
+    );
+    expect(alphas).toHaveLength(2);
+    const pasted = alphas[1];
+    expect(pasted.x + pasted.width / 2).toBe(300);
+    expect(pasted.y + pasted.height / 2).toBe(200);
+  });
+
   it('canvas context menu Paste inserts clipboard content', () => {
     renderCanvas();
     fireEvent.click(blockNode('Alpha'));

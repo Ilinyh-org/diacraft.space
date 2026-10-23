@@ -183,6 +183,8 @@ export function Canvas() {
   } | null>(null);
   const clipboardRef = useRef<Clipboard>({ blocks: [], arrows: [] });
   const [hasClipboard, setHasClipboard] = useState(false);
+  /** Issue #104: last observed pointer position (client coords) for Ctrl+V. */
+  const pointerPosRef = useRef<{ x: number; y: number } | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
@@ -275,6 +277,27 @@ export function Canvas() {
     },
     [commit]
   );
+
+  /**
+   * Issue #104: Ctrl+V pastes at the mouse cursor when it is over the
+   * canvas; otherwise the duplicate lands at the center of the view.
+   */
+  const handleHotkeyPaste = useCallback(() => {
+    const pos = pointerPosRef.current;
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (
+      pos &&
+      rect &&
+      pos.x >= rect.left &&
+      pos.x <= rect.right &&
+      pos.y >= rect.top &&
+      pos.y <= rect.bottom
+    ) {
+      handlePaste(pos);
+    } else {
+      handlePaste();
+    }
+  }, [handlePaste]);
 
   const handleStageContextMenu = useCallback(
     (e: KonvaEventObject<PointerEvent>) => {
@@ -664,7 +687,7 @@ export function Canvas() {
     onDeleteArrow: requestDeleteArrow,
     onCopy: handleCopy,
     onCut: handleCut,
-    onPaste: () => handlePaste(),
+    onPaste: handleHotkeyPaste,
   });
 
   useEffect(() => {
@@ -924,12 +947,15 @@ const runExport = (
         position: 'relative',
         width: '100%',
         height: '100%',
-        // Issue #82: without this the browser's native pinch-zoom captures
-        // two-finger gestures before Konva's touch handlers can zoom the stage.
-        touchAction: 'none',
         cursor: isDrawMode ? 'crosshair' : 'grab',
         background: theme.canvasBg,
         overflow: 'hidden',
+        // Issue #82: without this the browser's native pinch-zoom captures
+        // two-finger gestures before Konva's touch handlers can zoom the stage.
+        touchAction: 'none',
+      }}
+      onPointerMove={(e) => {
+        pointerPosRef.current = { x: e.clientX, y: e.clientY };
       }}
     >
       <Stage
