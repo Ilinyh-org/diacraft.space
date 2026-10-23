@@ -58,6 +58,18 @@ describe('Text comment block (issue #84)', () => {
     expect(queryByTestId('rect')).toBeNull();
     expect(queryByTestId('line')).toBeNull();
   });
+
+  it('renders a dashed selection border when selected (issue #90)', () => {
+    const { getAllByTestId } = render(
+      <Block x={0} y={0} type="text" selected theme={theme} />,
+    );
+    // The delete/edit buttons render circles, not rects; the only rect is
+    // the dashed selection border.
+    // The only rect is the dashed selection border (delete/edit buttons
+    // are circles); unselected text blocks render no rect at all.
+    const rects = getAllByTestId('rect');
+    expect(rects).toHaveLength(1);
+  });
 });
 
 describe('Block handle drag reset', () => {

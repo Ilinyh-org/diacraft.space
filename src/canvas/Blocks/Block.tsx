@@ -170,8 +170,20 @@ export function Block({
     switch (type) {
       case 'text':
         // Text comment block (issue #84): borderless floating label with no
-        // shape behind it; arrows can never connect to it.
-        return null;
+        // shape behind it; arrows can never connect to it. When selected,
+        // show a dashed border so the selection is visible (issue #90).
+        if (!selected) return null;
+        return (
+          <Rect
+            width={w}
+            height={h}
+            fill="transparent"
+            stroke={theme.selection}
+            strokeWidth={2}
+            dash={[6, 4]}
+            cornerRadius={4}
+          />
+        );
 
       case 'action':
         return (
