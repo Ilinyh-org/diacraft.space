@@ -59,7 +59,11 @@ export function MainMenu({
   };
 
   return (
-    <DraggablePanel theme={theme} initialPosition={{ x: 10, y: 10 }} center>
+    <DraggablePanel
+      theme={theme}
+      initialPosition={{ x: 10, y: 10 }}
+      storageKey="diacraft-panel-pos-main"
+    >
       <div
         data-testid="main-menu"
         style={{ display: "flex", flexDirection: "column", gap: 4 }}

@@ -1,6 +1,26 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import type { ComponentType, ReactNode } from "react";
 import { MainMenu } from "../MainMenu";
+
+/* Issue #96: the main menu must first appear in the top-left corner, not
+ * centered. Mock DraggablePanel to capture the props MainMenu passes to it. */
+
+type DraggablePanelProps = {
+  initialPosition: { x: number; y: number };
+  center?: boolean;
+  storageKey?: string;
+  children: ReactNode;
+};
+
+const captured: DraggablePanelProps[] = [];
+
+vi.mock("../../../ui/DraggablePanel", () => ({
+  DraggablePanel: ((props: DraggablePanelProps) => {
+    captured.push(props);
+    return <div>{props.children}</div>;
+  }) as unknown as ComponentType<DraggablePanelProps>,
+}));
 import {
   INITIAL_MENU_VISIBILITY,
 } from "../menuVisibility";
@@ -23,6 +43,26 @@ function renderMenu(overrides?: { language?: "en" | "ru" }) {
   );
   return { onToggle, onLanguageChange, onToggleTheme };
 }
+
+describe("MainMenu first appearance (issue #96)", () => {
+  beforeEach(() => {
+    cleanup();
+    localStorage.clear();
+    captured.length = 0;
+  });
+
+  it("starts at the top-left corner instead of being centered", () => {
+    renderMenu();
+    expect(captured).toHaveLength(1);
+    expect(captured[0].center).toBeFalsy();
+    expect(captured[0].initialPosition).toEqual({ x: 10, y: 10 });
+  });
+
+  it("keeps remembering its dragged position across sessions", () => {
+    renderMenu();
+    expect(captured[0].storageKey).toBe("diacraft-panel-pos-main");
+  });
+});
 
 describe("MainMenu language selection (issue #62)", () => {
   beforeEach(() => {
