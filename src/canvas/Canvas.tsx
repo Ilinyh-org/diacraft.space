@@ -187,7 +187,7 @@ export function Canvas() {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const dragTypeRef = useRef<BlockType | null>(null);
-  const editInputRef = useRef<HTMLInputElement>(null);
+  const editInputRef = useRef<HTMLTextAreaElement>(null);
   const blocksRef = useRef(blocks);
   const arrowsRef = useRef(arrows);
   const [ghost, setGhost] = useState<{ x: number; y: number } | null>(null);
