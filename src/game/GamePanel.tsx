@@ -256,8 +256,10 @@ export function GamePanel({
           </button>
         </div>
 
+        {/* Issue #107 (rework): the levels menu is an exclusive view —
+            while it is open, no level content is shown on the same page. */}
         {menuOpen && (
-          <div style={{ marginTop: 8 }}>
+          <div data-testid="game-levels-menu" style={{ marginTop: 8 }}>
             {/* Issue #70: 5x5 numbered levels table — five concept rows.
                 Issue #107: the exact current level is not offered in the
                 menu — its cell is omitted. */}
@@ -289,11 +291,13 @@ export function GamePanel({
 
         <div style={{ height: 1, background: theme.divider, margin: '6px 0' }} />
 
+        {/* Issue #107: short task text above the level graphics. Hidden
+            together with the board while the levels menu is open. */}
+        {!menuOpen && (
+        <>
         <div style={{ fontSize: 11, marginBottom: 4 }}>
           <strong>{t(language, 'game.levelName', { n: levelIndex + 1 })}</strong>
         </div>
-
-        {/* Issue #107: short task text above the level graphics. */}
         <div data-testid="game-task" style={{ fontSize: 11, marginBottom: 4 }}>
           <strong>{t(language, 'game.task')}:</strong> {taskText}
         </div>
@@ -327,6 +331,8 @@ export function GamePanel({
             {arrowByDir}
           </div>
         </div>
+        </>
+        )}
 
         <div style={{ height: 1, background: theme.divider, margin: '6px 0' }} />
 

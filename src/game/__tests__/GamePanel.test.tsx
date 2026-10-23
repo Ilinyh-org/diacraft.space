@@ -59,6 +59,8 @@ describe('GamePanel', () => {
   it('renders the level board of the first level', () => {
     const { blocks, arrows } = makeFlowchart(['move']);
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
+    // Issue #107 rework: close the levels menu to see the level content.
+    fireEvent.click(screen.getByRole('button', { name: 'Levels' }));
     expect(screen.getByTestId('game-panel')).toBeDefined();
     expect(screen.getByText('Level 1')).toBeDefined();
     expect(screen.getByTestId('game-robot')).toBeDefined();
@@ -88,6 +90,7 @@ describe('GamePanel', () => {
 
   it('moves the robot with a transition that matches the animation speed', () => {
     const { blocks, arrows } = makeFlowchart(['move']);
+    render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
     render(
       <GamePanel
         language="en"
@@ -97,6 +100,7 @@ describe('GamePanel', () => {
         speed={6}
       />,
     );
+    fireEvent.click(screen.getByRole('button', { name: 'Levels' }));
     const robot = screen.getByTestId('game-robot') as HTMLElement;
     const ms = stepDelayMs(6);
     expect(robot.style.transition).toContain(`left ${ms}ms`);
@@ -106,6 +110,7 @@ describe('GamePanel', () => {
   it('uses the default animation speed when none is given', () => {
     const { blocks, arrows } = makeFlowchart(['move']);
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Levels' }));
     const robot = screen.getByTestId('game-robot') as HTMLElement;
     expect(robot.style.transition).toContain(`${stepDelayMs(5)}ms`);
   });
@@ -141,6 +146,7 @@ describe('GamePanel', () => {
   it('does not finish instantly: game Run arms the sync like the animation Run (#91)', () => {
     const { blocks, arrows } = makeFlowchart(['move', 'move', 'move']);
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Levels' }));
     fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
     // Same behavior as the animation Run button: the game is armed and the
     // verdict only arrives as the diagram animation activates blocks.
@@ -163,6 +169,7 @@ describe('GamePanel', () => {
   it('shows the task text above the level graphics (#107)', () => {
     const { blocks, arrows } = makeFlowchart(['move']);
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Levels' }));
     const task = screen.getByTestId('game-task');
     expect(task.textContent).toContain('Task:');
     expect(task.textContent).toContain('flag');
@@ -171,6 +178,20 @@ describe('GamePanel', () => {
     expect(panel.innerHTML.indexOf('game-task')).toBeLessThan(
       panel.innerHTML.indexOf('game-robot'),
     );
+  });
+
+  it('shows the levels menu exclusively: no level content while the menu is open (#107)', () => {
+    const { blocks, arrows } = makeFlowchart(['move']);
+    render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
+    // The menu is open initially and the level content is hidden.
+    expect(screen.getByTestId('game-levels-menu')).toBeTruthy();
+    expect(screen.queryByTestId('game-task')).toBeNull();
+    expect(screen.queryByTestId('game-robot')).toBeNull();
+    // Closing the menu brings the level content back.
+    fireEvent.click(screen.getByRole('button', { name: 'Levels' }));
+    expect(screen.queryByTestId('game-levels-menu')).toBeNull();
+    expect(screen.getByTestId('game-task')).toBeTruthy();
+    expect(screen.getByTestId('game-robot')).toBeTruthy();
   });
 
   it('shows a hint label to the right of the Run button (#107)', () => {
@@ -291,6 +312,7 @@ describe('GamePanel', () => {
     const { rerender } = render(
       <GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} runSignal={1} />,
     );
+    fireEvent.click(screen.getByRole('button', { name: 'Levels' }));
     const robotBefore = screen.getByTestId('game-robot');
     const leftBefore = (robotBefore as HTMLElement).style.left;
     for (const id of blocks.filter((b) => b.type !== 'start').map((b) => b.id)) {
