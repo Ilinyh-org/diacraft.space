@@ -107,7 +107,7 @@ describe('GamePanel', () => {
     const { blocks, arrows } = makeFlowchart(['move']);
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
     const robot = screen.getByTestId('game-robot') as HTMLElement;
-    expect(robot.style.transition).toContain(`${stepDelayMs(3)}ms`);
+    expect(robot.style.transition).toContain(`${stepDelayMs(5)}ms`);
   });
 
   it('reports a crash when the flowchart moves the robot into a wall (#91, sync path)', () => {
