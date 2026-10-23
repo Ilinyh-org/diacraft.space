@@ -10,7 +10,7 @@ type BlockEditInputProps = {
   /** Issue #82: the input must follow the zoomed-out view too. */
   stageScale: number;
   value: string;
-  inputRef: RefObject<HTMLInputElement | null>;
+  inputRef: RefObject<HTMLTextAreaElement | null>;
   onChange: (v: string) => void;
   onCommit: () => void;
 };
@@ -40,11 +40,12 @@ export function BlockEditInput({
         zIndex: 500,
       }}
     >
-      <input
+      <textarea
         ref={inputRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onBlur={onCommit}
+        rows={Math.max(1, value.split('\n').length)}
         style={{
           width: '100%',
           padding: '6px 8px',
@@ -56,6 +57,9 @@ export function BlockEditInput({
           background: theme.inputBg,
           color: theme.inputText,
           boxShadow: `0 2px 8px ${theme.panelShadow}`,
+          resize: 'none',
+          overflow: 'hidden',
+          fontFamily: 'inherit',
         }}
       />
     </div>

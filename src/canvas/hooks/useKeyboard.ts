@@ -33,6 +33,14 @@ export function useKeyboard({
     const onKeyDown = (e: KeyboardEvent) => {
       if (editingId) {
         if (e.key === 'Enter') {
+          // Shift+Enter inserts a newline in the edit input (issue #95);
+          // on touch devices the keyboard's ↵ key does the same, and the
+          // edit is committed by tapping outside (blur). Let the native
+          // textarea handle both.
+          const isTouchDevice =
+            typeof window.matchMedia === 'function' &&
+            window.matchMedia('(pointer: coarse)').matches;
+          if (e.shiftKey || isTouchDevice) return;
           e.preventDefault();
           onCommitEdit();
         } else if (e.key === 'Escape') {

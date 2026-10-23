@@ -84,6 +84,20 @@ describe('useKeyboard', () => {
     expect(o.onCommitEdit).toHaveBeenCalledTimes(1);
   });
 
+  it('shift+Enter while editing inserts a newline instead of committing', () => {
+    const o = setup({ editingId: 'b1' });
+    const event = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      shiftKey: true,
+      cancelable: true,
+    });
+    act(() => {
+      window.dispatchEvent(event);
+    });
+    expect(o.onCommitEdit).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(false);
+  });
+
   it('cancel edit on Escape while editing', () => {
     const o = setup({ editingId: 'b1' });
     press('Escape');
