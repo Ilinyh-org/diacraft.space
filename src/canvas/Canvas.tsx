@@ -17,7 +17,7 @@ import {
 
 import { useArrows } from './Arrows/useArrows';
 import { initialWaypoints } from './Arrows/arrowGeometry';
-import { refreshWaypointsAfterBlockMove } from './Arrows/arrowConstraints';
+import { translateWaypointsAfterBlockMove } from './Arrows/arrowConstraints';
 
 import { ArrowShape } from './Arrows/ArrowShape';
 import { SelectedArrowOverlay } from './Arrows/SelectedArrowOverlay';
@@ -737,11 +737,21 @@ export function Canvas() {
     const blocks = s.blocks.map((b) => (b.id === id ? { ...b, x, y } : b));
     const arrows = s.arrows.map((ar) => {
       if (ar.fromBlockId !== id && ar.toBlockId !== id) return ar;
-      const from = blocks.find((b) => b.id === ar.fromBlockId);
-      const to = blocks.find((b) => b.id === ar.toBlockId);
-      if (!from || !to) return ar;
-      const wps = refreshWaypointsAfterBlockMove(from, to, ar);
-      return wps ? { ...ar, waypoints: wps } : ar;
+      const prevFrom = s.blocks.find((b) => b.id === ar.fromBlockId);
+      const prevTo = s.blocks.find((b) => b.id === ar.toBlockId);
+      const nextFrom = blocks.find((b) => b.id === ar.fromBlockId);
+      const nextTo = blocks.find((b) => b.id === ar.toBlockId);
+      if (!prevFrom || !prevTo || !nextFrom || !nextTo) return ar;
+      // Issue #102: bends are static after creation — translate, never
+      // re-route, so the waypoint count (== bend count) never changes.
+      const wps = translateWaypointsAfterBlockMove(
+        prevFrom,
+        prevTo,
+        nextFrom,
+        nextTo,
+        ar
+      );
+      return { ...ar, waypoints: wps };
     });
     return { ...s, blocks, arrows };
   };
