@@ -65,7 +65,6 @@ export type TranslationKey =
   | "game.tooShort"
   | "game.levelName"
   | "game.ioTitle"
-  | "game.runHint"
   | "game.task"
   | "game.taskFallback"
   | "game.prevLevel"
@@ -142,7 +141,6 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "game.levels": "Levels",
     "game.run": "▶ Run",
     "game.nextLevel": "Next level →",
-    "game.runHint": "Click run to check the flowchart",
     "game.task": "Task",
     "game.taskFallback": "Lead the robot to the flag ⚑.",
     "game.prevLevel": "← Prev",
@@ -222,7 +220,6 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "game.levels": "Уровни",
     "game.run": "▶ Запуск",
     "game.nextLevel": "Следующий уровень →",
-    "game.runHint": "Нажмите «Запуск», чтобы проверить блок-схему",
     "game.task": "Задача",
     "game.taskFallback": "Проведите робота к флагу ⚑.",
     "game.prevLevel": "← Назад",
