@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { copySelection, clipboardBBox, pasteClipboard } from '../clipboard';
+import {
+  copySelection,
+  clipboardBBox,
+  pasteClipboard,
+  keyboardPasteTarget,
+} from '../clipboard';
 import type { BlockData, ArrowData } from '../../types';
 
 function block(id: string, x = 0, y = 0): BlockData {
@@ -101,5 +106,38 @@ describe('pasteClipboard', () => {
     const { blocks: nb } = pasteClipboard(clip);
     expect(nb[0].x).toBeGreaterThan(0);
     expect(nb[0].y).toBeGreaterThan(0);
+  });
+});
+
+describe('keyboardPasteTarget (issue #104)', () => {
+  const rect = {
+    left: 100,
+    top: 50,
+    right: 500,
+    bottom: 450,
+    width: 400,
+    height: 400,
+  };
+
+  it('returns the mouse position when it is inside the canvas rect', () => {
+    expect(keyboardPasteTarget({ x: 200, y: 120 }, rect)).toEqual({
+      x: 200,
+      y: 120,
+    });
+  });
+
+  it('returns the center of the view when the mouse is outside the canvas', () => {
+    expect(keyboardPasteTarget({ x: 10, y: 20 }, rect)).toEqual({
+      x: 300,
+      y: 250,
+    });
+  });
+
+  it('returns the center of the view when there is no mouse position yet', () => {
+    expect(keyboardPasteTarget(null, rect)).toEqual({ x: 300, y: 250 });
+  });
+
+  it('returns null when the container rect is unavailable', () => {
+    expect(keyboardPasteTarget({ x: 200, y: 120 }, null)).toBeNull();
   });
 });

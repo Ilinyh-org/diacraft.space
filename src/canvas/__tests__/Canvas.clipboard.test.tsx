@@ -296,6 +296,28 @@ describe('Canvas copy/cut/paste (issue #42)', () => {
     expect((minY + maxY) / 2).toBe(cursor.y);
   });
 
+  it('Ctrl+V pastes centered on the last mouse position (issue #104)', () => {
+    renderCanvas();
+    fireEvent.click(blockNode('Alpha'));
+    key('ctrl+c');
+
+    // Move the pointer; the container rect in jsdom is empty (0x0 at 0,0),
+    // so the pointer counts as beyond the canvas and the paste must land
+    // at the center of the view (rect center = (0, 0) here).
+    fireEvent(window, new MouseEvent('pointermove', { clientX: 400, clientY: 300 }));
+    key('ctrl+v');
+
+    const saved = JSON.parse(
+      localStorage.getItem(STORAGE_KEY) ?? '{"blocks":[]}',
+    );
+    const alphas = saved.blocks.filter(
+      (b: { label: string }) => b.label === 'Alpha',
+    );
+    expect(alphas).toHaveLength(2);
+    expect(alphas[1].x + alphas[1].width / 2).toBe(0);
+    expect(alphas[1].y + alphas[1].height / 2).toBe(0);
+  });
+
   it('canvas context menu Paste inserts clipboard content', () => {
     renderCanvas();
     fireEvent.click(blockNode('Alpha'));
