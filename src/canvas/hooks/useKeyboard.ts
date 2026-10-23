@@ -52,6 +52,21 @@ export function useKeyboard({
 
       const mod = e.ctrlKey || e.metaKey;
       const key = e.key.toLowerCase();
+
+      // Issue #104: when the user is typing in a text input (game panel,
+      // export panel, algorithm panel, etc.) the canvas clipboard and
+      // editing hotkeys must not fire — the native text editing takes
+      // precedence. The block-label edit input is handled above via the
+      // editingId branch.
+      const target = e.target as HTMLElement | null;
+      const isEditableTarget =
+        !!target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable);
+      if (isEditableTarget) return;
+
       if (mod && key === 'c') {
         e.preventDefault();
         onCopy();
