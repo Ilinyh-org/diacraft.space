@@ -64,10 +64,25 @@ describe('GamePanel', () => {
     expect(screen.getByTestId('game-robot')).toBeDefined();
   });
 
-  it('wins the first level from the canvas flowchart', () => {
+  it('wins the first level from the canvas flowchart via the sync path (#91)', () => {
     const { blocks, arrows } = makeFlowchart(['move', 'move', 'move']);
-    render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
+    const { rerender } = render(
+      <GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />,
+    );
     fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
+    let seq = 0;
+    for (const id of blocks.filter((b) => b.type !== 'start').map((b) => b.id)) {
+      seq += 1;
+      rerender(
+        <GamePanel
+          language="en"
+          theme={lightTheme}
+          blocks={blocks}
+          arrows={arrows}
+          blockSignal={{ seq, blockId: id }}
+        />,
+      );
+    }
     expect(screen.getByRole('status').textContent).toContain('Level complete');
   });
 
@@ -95,7 +110,7 @@ describe('GamePanel', () => {
     expect(robot.style.transition).toContain(`${stepDelayMs(3)}ms`);
   });
 
-  it('reports a crash when the flowchart moves the robot into a wall', () => {
+  it('reports a crash when the flowchart moves the robot into a wall (#91, sync path)', () => {
     const { blocks, arrows } = makeFlowchart([
       'move',
       'move',
@@ -103,9 +118,35 @@ describe('GamePanel', () => {
       'move',
       'move',
     ]);
+    const { rerender } = render(
+      <GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
+    let seq = 0;
+    for (const id of blocks.filter((b) => b.type !== 'start').map((b) => b.id)) {
+      seq += 1;
+      rerender(
+        <GamePanel
+          language="en"
+          theme={lightTheme}
+          blocks={blocks}
+          arrows={arrows}
+          blockSignal={{ seq, blockId: id }}
+        />,
+      );
+    }
+    expect(screen.getByRole('status').textContent).toContain('crashed');
+  });
+
+  it('does not finish instantly: game Run arms the sync like the animation Run (#91)', () => {
+    const { blocks, arrows } = makeFlowchart(['move', 'move', 'move']);
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
     fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
-    expect(screen.getByRole('status').textContent).toContain('crashed');
+    // Same behavior as the animation Run button: the game is armed and the
+    // verdict only arrives as the diagram animation activates blocks.
+    expect(screen.getByRole('status').textContent).not.toContain('Level complete');
+    const robot = screen.getByTestId('game-robot') as HTMLElement;
+    expect(robot.style.left).toBe('0px');
   });
 
   it('shows flowchart validation errors and refuses to run', () => {
@@ -160,7 +201,6 @@ describe('GamePanel', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
     expect(onRunDiagram).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole('status').textContent).toContain('Level complete');
   });
 
   it('does not trigger the diagram animation on a run signal', () => {

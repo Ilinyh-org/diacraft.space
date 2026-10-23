@@ -5,29 +5,11 @@ import { stepDelayMs } from '../canvas/ui/AlgorithmPanel';
 import type { Theme } from '../theme';
 import type { ArrowData, BlockData } from '../canvas/types';
 import { LEVELS } from './levels';
-import { runProgram, wallAhead } from './types';
-import type { Dir, Frame } from './types';
+import { wallAhead } from './types';
+import type { Frame } from './types';
 import { compileFlowchart, isEndBlock, statementForBlock } from './flowchart';
 import { stepStatement } from './types';
 import { t, type LanguageCode } from '../canvas/ui/i18n';
-
-/** Parses the game menu's I/O field into directions for `in` blocks (#70). */
-const DIR_BY_WORD: Record<string, Dir> = {
-  up: 0,
-  right: 1,
-  down: 2,
-  left: 3,
-  вверх: 0,
-  вправо: 1,
-  вниз: 2,
-  влево: 3,
-};
-
-const parseIoInput = (text: string): Dir[] =>
-  text
-    .split(/[\s,;]+/)
-    .map((w) => DIR_BY_WORD[w.trim().toLowerCase()])
-    .filter((d): d is Dir => d !== undefined);
 
 type Props = {
   theme: Theme;
@@ -108,43 +90,6 @@ export function GamePanel({
     [blocks, arrows, language],
   );
 
-  const run = useCallback(
-    (fromButton: boolean) => {
-      setHasRun(true);
-      if (fromButton) onRunDiagram?.();
-      if (!compiled.ok) {
-        setFrames(null);
-        setFrameIndex(0);
-        setStatus(`✖ ${compiled.errors.join(' ')}`);
-        return;
-      }
-      const result = runProgram(
-        level,
-        compiled.program,
-        compiled.subprograms,
-        parseIoInput(ioText),
-      );
-      setFrames(result.frames);
-      setFrameIndex(0);
-      setIoOutput(result.output);
-      setStatus(
-        result.status === 'win'
-          ? t(language, 'game.win')
-          : result.status === 'crash'
-            ? t(language, 'game.crash')
-            : result.status === 'needInput'
-              ? t(language, 'game.needInput')
-              : result.status === 'timeout'
-                ? t(language, 'game.timeout')
-                : t(language, 'game.tooShort'),
-      );
-    },
-    [compiled, level, onRunDiagram, language, ioText],
-  );
-
-  // The game panel's own ▶ Run button runs the whole program immediately.
-  // The algorithm panel's Run button arms the game; the robot then moves in
-  // sync with the diagram animation, one statement per activated block (#40).
   const armSync = useCallback(() => {
     reset();
     if (!compiled.ok) {
@@ -155,6 +100,17 @@ export function GamePanel({
     setFrames(syncState.current.frames);
     setFrameIndex(0);
   }, [compiled, level, reset]);
+
+  // Issue #91: the game panel's ▶ Run button works exactly like the
+  // algorithm panel's Run button: it starts the diagram animation and arms
+  // the game; the robot then moves in sync with the animation, one statement
+  // per activated block, and the level pass conditions are checked as the
+  // animation runs. The `runSignal` effect arms the game the same way.
+  const run = useCallback(() => {
+    armSync();
+    setHasRun(true);
+    onRunDiagram?.();
+  }, [armSync, onRunDiagram]);
 
   const armSyncRef = useRef(armSync);
   useEffect(() => {
@@ -386,7 +342,7 @@ export function GamePanel({
         <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
           <button
             type="button"
-            onClick={() => run(true)}
+            onClick={run}
             style={buttonStyle}
           >
             {t(language, 'game.run')}
