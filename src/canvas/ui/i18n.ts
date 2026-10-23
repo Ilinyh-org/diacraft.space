@@ -59,15 +59,16 @@ export type TranslationKey =
   | "game.levels"
   | "game.run"
   | "game.nextLevel"
-  | "game.wallAhead"
-  | "game.buildHint"
   | "game.win"
   | "game.crash"
   | "game.timeout"
   | "game.tooShort"
   | "game.levelName"
   | "game.ioTitle"
-  | "game.ioInputHint"
+  | "game.runHint"
+  | "game.task"
+  | "game.taskFallback"
+  | "game.prevLevel"
   | "game.needInput"
   | "game.level.linear-1.title"
   | "game.level.linear-1.description"
@@ -141,17 +142,16 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "game.levels": "Levels",
     "game.run": "▶ Run",
     "game.nextLevel": "Next level →",
-    "game.wallAhead": "Wall directly ahead!",
-    "game.buildHint":
-      "Build the program on the canvas: Start block, action blocks renamed " +
-      "to Move / Turn left / Turn right, then an End block, connected with arrows.",
+    "game.runHint": "Click run to check the flowchart",
+    "game.task": "Task",
+    "game.taskFallback": "Lead the robot to the flag ⚑.",
+    "game.prevLevel": "← Prev",
     "game.win": "✔ Level complete!",
     "game.crash": "✖ The robot crashed into a wall.",
     "game.timeout": "✖ Program ran too long.",
     "game.tooShort": "✖ The robot stopped short of the flag.",
     "game.levelName": "Level {n}",
     "game.ioTitle": "Program I/O",
-    "game.ioInputHint": "Directions for `in` blocks (up/right/down/left):",
     "game.needInput": "✖ Waiting for input — add a direction above and run again.",
     "game.level.linear-1.title": "First steps",
     "game.level.linear-1.description":
@@ -222,18 +222,16 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "game.levels": "Уровни",
     "game.run": "▶ Запуск",
     "game.nextLevel": "Следующий уровень →",
-    "game.wallAhead": "Впереди стена!",
-    "game.buildHint":
-      "Соберите программу на холсте: блок «Начало», блоки действий, " +
-      "переименованные в Идти / Налево / Направо, затем блок «Конец», " +
-      "соединённые стрелками.",
+    "game.runHint": "Нажмите «Запуск», чтобы проверить блок-схему",
+    "game.task": "Задача",
+    "game.taskFallback": "Проведите робота к флагу ⚑.",
+    "game.prevLevel": "← Назад",
     "game.win": "✔ Уровень пройден!",
     "game.crash": "✖ Робот врезался в стену.",
     "game.timeout": "✖ Программа работала слишком долго.",
     "game.tooShort": "✖ Робот остановился, не дойдя до флага.",
     "game.levelName": "Уровень {n}",
     "game.ioTitle": "Ввод/вывод программы",
-    "game.ioInputHint": "Направления для блоков «ввод» (up/right/down/left):",
     "game.needInput": "✖ Ожидаю ввод — добавьте направление выше и запустите снова.",
     "game.level.linear-1.title": "Первые шаги",
     "game.level.linear-1.description":
@@ -273,6 +271,16 @@ export function t(
   return template.replace(/\{(\w+)\}/g, (m, name) =>
     name in params ? String(params[name]) : m,
   );
+}
+
+/** Translation for a dynamic key; null when the key has no translation. */
+export function tOptional(
+  lang: LanguageCode,
+  key: string,
+): string | null {
+  const dict = (TRANSLATIONS[lang as LanguageCode] ?? TRANSLATIONS.en) as
+    Record<string, string>;
+  return dict[key] ?? null;
 }
 
 /** All translation keys for the given language; used by the completeness test. */
