@@ -90,7 +90,6 @@ describe('GamePanel', () => {
 
   it('moves the robot with a transition that matches the animation speed', () => {
     const { blocks, arrows } = makeFlowchart(['move']);
-    render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
     render(
       <GamePanel
         language="en"
