@@ -8,7 +8,16 @@ import { Canvas } from '../Canvas';
  * because the canvas container kept the browser default `touch-action`,
  * letting the browser's native pinch-zoom swallow the two-finger gesture
  * before Konva's touch handlers could see it.
+ *
+ * Second round (same issue): pinch zoom must be more sensitive, and while a
+ * two-finger gesture is in progress a single remaining finger must not pan
+ * the view until every finger has lifted.
  */
+
+const stageDragSpy = vi.hoisted(() => ({
+  isDragging: false,
+  stopDragCalls: 0,
+}));
 
 vi.mock('react-konva', async () => {
   const { forwardRef, useImperativeHandle } = await import('react');
@@ -33,8 +42,10 @@ vi.mock('react-konva', async () => {
           height: () => 0,
           getStage: () => null,
           getPointerPosition: () => ({ x: 0, y: 0 }),
-          isDragging: () => false,
-          stopDrag: () => {},
+          isDragging: () => stageDragSpy.isDragging,
+          stopDrag: () => {
+            stageDragSpy.stopDragCalls += 1;
+          },
           getAbsoluteTransform: () => ({ point: (p: unknown) => p }),
           getAbsolutePosition: () => ({ x: 0, y: 0 }),
           offset: () => ({ x: 0, y: 0 }),
@@ -90,7 +101,32 @@ beforeEach(() => {
     'block-diagram-state-v1',
     JSON.stringify({ blocks: [], arrows: [] }),
   );
+  stageDragSpy.isDragging = false;
+  stageDragSpy.stopDragCalls = 0;
 });
+
+function twoFingerStart(stage: HTMLElement, dist: number) {
+  return fireEvent.touchStart(stage, {
+    touches: [
+      { clientX: 100 - dist / 2, clientY: 200 },
+      { clientX: 100 + dist / 2, clientY: 200 },
+    ],
+  });
+}
+
+function twoFingerEvent(
+  stage: HTMLElement,
+  dist: number,
+  extra: TouchEventInit = {},
+) {
+  return fireEvent.touchMove(stage, {
+    touches: [
+      { clientX: 100 - dist / 2, clientY: 200 },
+      { clientX: 100 + dist / 2, clientY: 200 },
+    ],
+    ...extra,
+  });
+}
 
 describe('Canvas zoom gesture (issue #82 fix)', () => {
   it('disables native browser touch actions on the canvas container', () => {
@@ -118,5 +154,50 @@ describe('Canvas zoom gesture (issue #82 fix)', () => {
       fireEvent.wheel(stage, { deltaY: -120 });
     }
     expect(stage).toHaveAttribute('data-scale-x', '1');
+  });
+
+  it('amplifies the pinch ratio so zoom reacts more sensitively', () => {
+    renderCanvas();
+    const stage = screen.getByTestId('stage');
+    // Baseline pinch distance, then fingers moving slightly apart (zoom out).
+    twoFingerEvent(stage, 100);
+    twoFingerEvent(stage, 90);
+    // Raw ratio would be 0.9; the amplified response is 1 + (0.9 - 1) * 1.8
+    // = 0.82, clearly stronger than the raw gesture.
+    expect(Number(stage.getAttribute('data-scale-x'))).toBeCloseTo(0.82, 10);
+  });
+
+  it('blocks one-finger panning while a two-finger gesture is active', () => {
+    renderCanvas();
+    const stage = screen.getByTestId('stage');
+    twoFingerStart(stage, 100);
+    twoFingerEvent(stage, 100);
+    stageDragSpy.isDragging = true;
+    twoFingerEvent(stage, 92);
+    const stopDragCalls = stageDragSpy.stopDragCalls;
+    expect(stopDragCalls).toBeGreaterThan(0);
+
+    // One finger remains: it must not pan the canvas.
+    stageDragSpy.isDragging = true;
+    stageDragSpy.stopDragCalls = 0;
+    const canceled = fireEvent.touchMove(stage, {
+      touches: [{ clientX: 300, clientY: 300 }],
+    });
+    void canceled;
+    expect(stageDragSpy.stopDragCalls).toBeGreaterThan(0);
+    // Stage position prop never changes from its origin.
+    // The one-finger move was fully swallowed: no zoom, no pan state change.
+  });
+
+  it('re-enables one-finger panning after every finger has lifted', () => {
+    renderCanvas();
+    const stage = screen.getByTestId('stage');
+    twoFingerStart(stage, 100);
+    twoFingerEvent(stage, 100);
+    twoFingerEvent(stage, 92);
+    fireEvent.touchEnd(stage, { touches: [] });
+    stageDragSpy.stopDragCalls = 0;
+    fireEvent.touchMove(stage, { touches: [{ clientX: 300, clientY: 300 }] });
+    expect(stageDragSpy.stopDragCalls).toBe(0);
   });
 });
