@@ -72,3 +72,35 @@ export function pasteClipboard(
 
   return { blocks: newBlocks, arrows: newArrows };
 }
+
+type ClientRectLike = {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+  width: number;
+  height: number;
+};
+
+/**
+ * Issue #104: resolve where a keyboard (Ctrl+V) paste should land.
+ * Returns the mouse position when it is inside the canvas container;
+ * otherwise the center of the visible view. `null` when the container
+ * is unavailable (caller falls back to the plain offset paste).
+ */
+export function keyboardPasteTarget(
+  mouse: { x: number; y: number } | null,
+  rect: ClientRectLike | null
+): { x: number; y: number } | null {
+  if (!rect) return null;
+  if (
+    mouse &&
+    mouse.x >= rect.left &&
+    mouse.x <= rect.right &&
+    mouse.y >= rect.top &&
+    mouse.y <= rect.bottom
+  ) {
+    return mouse;
+  }
+  return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+}

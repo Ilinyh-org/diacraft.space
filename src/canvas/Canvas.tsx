@@ -87,6 +87,7 @@ import {
 import {
   copySelection,
   pasteClipboard,
+  keyboardPasteTarget,
   type Clipboard,
 } from './utils/clipboard';
 import { ContextMenu } from './ui/ContextMenu';
@@ -182,6 +183,8 @@ export function Canvas() {
     blockId: string | null;
   } | null>(null);
   const clipboardRef = useRef<Clipboard>({ blocks: [], arrows: [] });
+  // Issue #104: last known mouse position (client coords) for Ctrl+V paste.
+  const lastMouseRef = useRef<{ x: number; y: number } | null>(null);
   const [hasClipboard, setHasClipboard] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -664,8 +667,22 @@ export function Canvas() {
     onDeleteArrow: requestDeleteArrow,
     onCopy: handleCopy,
     onCut: handleCut,
-    onPaste: () => handlePaste(),
+    onPaste: () => {
+      // Issue #104: paste at the exact mouse cursor when it is over the
+      // canvas; otherwise paste at the center of the visible view.
+      const rect = containerRef.current?.getBoundingClientRect() ?? null;
+      const target = keyboardPasteTarget(lastMouseRef.current, rect);
+      handlePaste(target ?? undefined);
+    },
   });
+
+  useEffect(() => {
+    const onPointerMove = (e: PointerEvent) => {
+      lastMouseRef.current = { x: e.clientX, y: e.clientY };
+    };
+    window.addEventListener('pointermove', onPointerMove);
+    return () => window.removeEventListener('pointermove', onPointerMove);
+  }, []);
 
   useEffect(() => {
     const onMove = (e: PointerEvent) => {
