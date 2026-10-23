@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { AlgorithmPanel, MIN_SPEED, MAX_SPEED } from '../AlgorithmPanel';
+import { AlgorithmPanel, MIN_SPEED, MAX_SPEED, stepDelayMs } from '../AlgorithmPanel';
+// Legacy mapping (#40), kept here only to pin the #109 scale migration.
+const stepDelayMsLegacy = (speed: number): number => Math.max(60, Math.round(600 / speed));
 import { lightTheme } from '../../../theme';
 
 function setup(overrides: Partial<Parameters<typeof AlgorithmPanel>[0]> = {}) {
@@ -19,6 +21,16 @@ function setup(overrides: Partial<Parameters<typeof AlgorithmPanel>[0]> = {}) {
 }
 
 describe('AlgorithmPanel', () => {
+  it('maps slider positions to real speeds per #109: 3 = legacy 1, 5 = former real speed, 10 = legacy 8', () => {
+    expect(stepDelayMs(3)).toBe(stepDelayMsLegacy(1));
+    expect(stepDelayMs(10)).toBe(stepDelayMsLegacy(8));
+    // speed 5 is the new default and plays at 200 ms/step (former real speed).
+    expect(stepDelayMs(5)).toBe(200);
+    // new slowest speeds 1 and 2 are slower than legacy 1.
+    expect(stepDelayMs(1)).toBeGreaterThan(stepDelayMsLegacy(1));
+    expect(stepDelayMs(2)).toBeGreaterThan(stepDelayMsLegacy(1));
+  });
+
   it('renders a Run button and a speed ruler', () => {
     setup();
     expect(screen.getByText('Run')).toBeInTheDocument();

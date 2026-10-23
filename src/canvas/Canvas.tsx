@@ -153,7 +153,7 @@ export function Canvas() {
   const [mode, setMode] = useState<Mode>('select');
   const [exportMode, setExportMode] = useState<ExportMode>(null);
   const [animRunning, setAnimRunning] = useState(false);
-  const [animSpeed, setAnimSpeed] = useState(3);
+  const [animSpeed, setAnimSpeed] = useState(5);
   const [gameRunSignal, setGameRunSignal] = useState(0);
   const [gameBlockSignal, setGameBlockSignal] = useState<{
     seq: number;

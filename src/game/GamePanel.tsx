@@ -22,7 +22,7 @@ type Props = {
   blockSignal?: { seq: number; blockId: string } | null;
   /** Starts the canvas diagram animation (issue #33); called on button Run only. */
   onRunDiagram?: () => void;
-  /** Diagram animation speed (1-10); drives the robot's movement speed (#40). */
+  /** Diagram animation speed (1-10, new #109 scale); drives the robot's movement speed (#40). */
   speed?: number;
 };
 
@@ -34,7 +34,7 @@ export function GamePanel({
   runSignal = 0,
   blockSignal = null,
   onRunDiagram,
-  speed = 3,
+  speed = 5,
 }: Props) {
   const [levelIndex, setLevelIndex] = useState(0);
   const [frames, setFrames] = useState<Frame[] | null>(null);
