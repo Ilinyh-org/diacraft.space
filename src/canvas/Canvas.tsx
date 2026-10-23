@@ -80,7 +80,10 @@ import { planAnimation } from './animation/planAnimation';
 import { GamePanel } from '../game/GamePanel';
 import type { AnimStep } from './animation/planAnimation';
 import { useKeyboard } from './hooks/useKeyboard';
-import { clampStageScale } from './utils/zoom';
+import {
+  clampStageScale,
+  PINCH_SENSITIVITY,
+} from './utils/zoom';
 import {
   copySelection,
   pasteClipboard,
@@ -164,6 +167,9 @@ export function Canvas() {
   const [stageScale, setStageScale] = useState(1);
   const pinchDistRef = useRef<number | null>(null);
   const pinchingRef = useRef(false);
+  // Issue #82 (round 2): stays true from the moment a second finger lands
+  // until every finger lifts, so the remaining single finger cannot pan.
+  const suppressPanRef = useRef(false);
   const [preview, setPreview] = useState<{
     fromBlockId: string;
     fromSide: Side;
@@ -410,12 +416,34 @@ export function Canvas() {
     []
   );
 
+  /** Issue #82: when a second finger lands, zoom takes over from panning. */
+  const handleStagePinchStart = useCallback(
+    (e: KonvaEventObject<TouchEvent>) => {
+      const evt = e.evt;
+      const stage = stageRef.current;
+      if (!stage || evt.touches.length < 2) return;
+      evt.preventDefault();
+      suppressPanRef.current = true;
+      pinchDistRef.current = null;
+      pinchingRef.current = true;
+      if (stage.isDragging()) stage.stopDrag();
+    },
+    []
+  );
+
   /** Issue #82: pinch-to-zoom on touch screens, anchored at the pinch center. */
   const handleStageTouchMove = useCallback(
     (e: KonvaEventObject<TouchEvent>) => {
       const evt = e.evt;
       const stage = stageRef.current;
       if (!stage) return;
+      // While a two-finger gesture is active, a remaining single finger must
+      // not pan the view until every finger has lifted.
+      if (evt.touches.length === 1 && suppressPanRef.current) {
+        evt.preventDefault();
+        if (stage.isDragging()) stage.stopDrag();
+        return;
+      }
       if (evt.touches.length !== 2) {
         pinchDistRef.current = null;
         pinchingRef.current = false;
@@ -434,7 +462,12 @@ export function Canvas() {
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
       const oldScale = stage.scaleX();
-      const newScale = clampStageScale(oldScale * (dist / lastDist));
+      // Issue #82 (round 2): amplify the raw pinch ratio so the zoom reacts
+      // more sensitively to small two-finger movements.
+      const raw = dist / lastDist;
+      const boosted = 1 + (raw - 1) * PINCH_SENSITIVITY;
+      if (boosted <= 0) return;
+      const newScale = clampStageScale(oldScale * boosted);
       if (newScale === oldScale) return;
       const centerX = (t1.clientX + t2.clientX) / 2 - rect.left;
       const centerY = (t1.clientY + t2.clientY) / 2 - rect.top;
@@ -451,10 +484,17 @@ export function Canvas() {
     []
   );
 
-  const handleStageTouchEnd = useCallback(() => {
-    pinchDistRef.current = null;
-    pinchingRef.current = false;
-  }, []);
+  const handleStageTouchEnd = useCallback(
+    (e: KonvaEventObject<TouchEvent>) => {
+      // Only release the pan suppression once every finger has lifted.
+      if (e.evt.touches.length === 0) {
+        pinchDistRef.current = null;
+        pinchingRef.current = false;
+        suppressPanRef.current = false;
+      }
+    },
+    []
+  );
 
   const trail = useGestureDraw(
     containerRef,
@@ -749,6 +789,11 @@ export function Canvas() {
     }
   };
 
+  const handleStageTouchStart = (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
+    handleStagePinchStart(e as KonvaEventObject<TouchEvent>);
+    if (!isDrawMode) handleStageClick(e);
+  };
+
   const handleHandleDragStart = (
     blockId: string,
     side: Side,
@@ -893,7 +938,7 @@ const runExport = (
           }
         }}
         onMouseDown={isDrawMode ? undefined : handleStageClick}
-        onTouchStart={isDrawMode ? undefined : handleStageClick}
+        onTouchStart={isDrawMode ? handleStagePinchStart : handleStageTouchStart}
         onTouchMove={handleStageTouchMove}
         onTouchEnd={handleStageTouchEnd}
         onWheel={handleStageWheel}
