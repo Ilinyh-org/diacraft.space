@@ -354,10 +354,6 @@ export function GamePanel({
           >
             {t(language, 'game.run')}
           </button>
-          {/* Issue #107: hint label to the right of the Run button. */}
-          <span style={{ fontSize: 10, color: theme.buttonTextDisabled }}>
-            {t(language, 'game.runHint')}
-          </span>
         </div>
 
         {/* Issue #70: program I/O field — input directions + output log.

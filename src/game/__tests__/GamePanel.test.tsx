@@ -193,13 +193,15 @@ describe('GamePanel', () => {
     expect(screen.getByTestId('game-robot')).toBeTruthy();
   });
 
-  it('shows a hint label to the right of the Run button (#107)', () => {
+  it('does not show the run hint label (#113); the level task remains', () => {
     const { blocks, arrows } = makeFlowchart(['move']);
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Levels' }));
     const runButton = screen.getByRole('button', { name: '▶ Run' });
-    expect(runButton.parentElement!.textContent).toContain(
+    expect(runButton.parentElement!.textContent).not.toContain(
       'Click run to check the flowchart',
     );
+    expect(screen.getByTestId('game-task')).toBeTruthy();
   });
 
   it('places the Program I/O label and field on one line (#107)', () => {
