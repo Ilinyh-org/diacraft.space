@@ -238,6 +238,17 @@ describe('GamePanel', () => {
     expect(screen.queryByLabelText('Program I/O')).toBeNull();
   });
 
+  it('renders no redundant divider hlines in the game panel (#130)', () => {
+    const { blocks, arrows } = makeFlowchart(['move']);
+    const { container } = render(
+      <GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />,
+    );
+    const dividers = Array.from(container.querySelectorAll('div')).filter(
+      (d) => d.style.height === '1px' && d.style.background === lightTheme.divider,
+    );
+    expect(dividers).toHaveLength(0);
+  });
+
   it('hides Program I/O on levels whose task has no input/output (#117)', () => {
     const { blocks, arrows } = makeFlowchart(['move']);
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
@@ -255,7 +266,7 @@ describe('GamePanel', () => {
     // Level 8 (conditions-8): input directions task.
     fireEvent.click(screen.getByRole('button', { name: '8' }));
     expect(screen.getByLabelText('Program I/O')).toBeTruthy();
-    // It sits after the graphical part and before the first divider below it:
+    // It sits after the graphical part and before the run area below it:
     // it must come before the flowchart errors / run area in DOM order.
     const robot = screen.getByTestId('game-robot');
     const io = screen.getByLabelText('Program I/O');
