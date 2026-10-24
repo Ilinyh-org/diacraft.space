@@ -265,23 +265,29 @@ export function GamePanel({
         {menuOpen && (
           <div data-testid="game-levels-menu" style={{ marginTop: 8 }}>
             {/* Issue #70: 5x5 numbered levels table — five concept rows.
-                Issue #107: the exact current level is not offered in the
-                menu — its cell is omitted. */}
+                Issue #127: every level is offered; the current level's
+                button is disabled and highlighted instead of omitted. */}
             {[0, 1, 2, 3, 4].map((row) => (
               <div key={row} style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
                 {LEVELS.slice(row * 5, row * 5 + 5).map((l, col) => {
                   const index = row * 5 + col;
-                  if (index === levelIndex) return null;
+                  const isCurrent = index === levelIndex;
                   return (
                     <button
                       key={l.id}
                       type="button"
                       title={`${t(language, 'game.levelName', { n: index + 1 })}`}
                       onClick={() => pickLevel(index)}
+                      disabled={isCurrent}
+                      aria-current={isCurrent ? 'true' : undefined}
+                      data-testid={`game-level-${index + 1}`}
                       style={{
                         ...buttonStyle,
                         width: 40,
                         textAlign: 'center',
+                        ...(isCurrent
+                          ? { background: theme.runHighlight, color: '#ffffff', cursor: 'default', opacity: 1 }
+                          : {}),
                       }}
                     >
                       {index + 1}
@@ -443,33 +449,10 @@ export function GamePanel({
         </div>
         )}
 
-        {/* Issue #117: the Program I/O line moved above the divider — the
+        {/* Issue #107: the Program I/O line moved above the divider — the
             space between the run buttons and the level switchers. */}
-        {/* Issue #107: previous / next level buttons at the bottom. */}
-        <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-          <button
-            type="button"
-            data-testid="game-prev-level"
-            onClick={() => pickLevel(levelIndex - 1)}
-            disabled={levelIndex === 0}
-            style={{ ...buttonStyle, flex: 1, opacity: levelIndex === 0 ? 0.5 : 1 }}
-          >
-            {t(language, 'game.prevLevel')}
-          </button>
-          <button
-            type="button"
-            data-testid="game-next-level"
-            onClick={() => pickLevel(levelIndex + 1)}
-            disabled={levelIndex === LEVELS.length - 1}
-            style={{
-              ...buttonStyle,
-              flex: 1,
-              opacity: levelIndex === LEVELS.length - 1 ? 0.5 : 1,
-            }}
-          >
-            {t(language, 'game.nextLevel')}
-          </button>
-        </div>
+        {/* Issue #127: the previous/next level buttons are removed — the
+            levels menu covers switching between all levels. */}
       </div>
     </DraggablePanel>
   );
