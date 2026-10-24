@@ -71,6 +71,7 @@ describe('GamePanel', () => {
     const { rerender } = render(
       <GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />,
     );
+    fireEvent.click(screen.getByRole('button', { name: 'Levels' }));
     fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
     let seq = 0;
     for (const id of blocks.filter((b) => b.type !== 'start').map((b) => b.id)) {
@@ -125,6 +126,7 @@ describe('GamePanel', () => {
     const { rerender } = render(
       <GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />,
     );
+    fireEvent.click(screen.getByRole('button', { name: 'Levels' }));
     fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
     let seq = 0;
     for (const id of blocks.filter((b) => b.type !== 'start').map((b) => b.id)) {
@@ -158,6 +160,7 @@ describe('GamePanel', () => {
     const start = block({ type: 'start', label: 'Start' });
     render(<GamePanel language="en" theme={lightTheme} blocks={[start]} arrows={[]} />);
     expect(screen.queryByTestId('flowchart-errors')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Levels' }));
     fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
     expect(screen.getByTestId('flowchart-errors').textContent).toContain(
       'End block',
@@ -191,6 +194,21 @@ describe('GamePanel', () => {
     expect(screen.queryByTestId('game-levels-menu')).toBeNull();
     expect(screen.getByTestId('game-task')).toBeTruthy();
     expect(screen.getByTestId('game-robot')).toBeTruthy();
+  });
+
+  it('shows neither the level line nor the Run button while the levels menu is open (#124)', () => {
+    const { blocks, arrows } = makeFlowchart(['move']);
+    render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
+    // The menu is open initially: no "Level N" header line and no Run button.
+    expect(screen.getByTestId('game-levels-menu')).toBeTruthy();
+    expect(screen.queryByText('Level 1')).toBeNull();
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.queryByRole('button', { name: '▶ Run' })).toBeNull();
+    // Closing the menu brings the level line and the Run button back.
+    fireEvent.click(screen.getByRole('button', { name: 'Levels' }));
+    expect(screen.getByText('Level 1')).toBeTruthy();
+    expect(screen.getByRole('status')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '▶ Run' })).toBeTruthy();
   });
 
   it('does not show the run hint label (#113); the level task remains', () => {
@@ -306,6 +324,7 @@ describe('GamePanel', () => {
         onRunDiagram={onRunDiagram}
       />,
     );
+    fireEvent.click(screen.getByRole('button', { name: 'Levels' }));
     fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
     expect(onRunDiagram).toHaveBeenCalledTimes(1);
   });
@@ -333,6 +352,8 @@ describe('GamePanel', () => {
       />,
     );
     expect(onRunDiagram).not.toHaveBeenCalled();
+    // The levels menu is an exclusive view: close it to read the status line.
+    fireEvent.click(screen.getByRole('button', { name: 'Levels' }));
     // The game is armed but not finished: it now advances in sync with the
     // diagram animation instead of running the whole program at once.
     expect(screen.getByRole('status').textContent).not.toContain(
@@ -464,6 +485,7 @@ describe('GamePanel', () => {
         />,
       );
     }
+    fireEvent.click(screen.getByRole('button', { name: 'Levels' }));
     expect(screen.getByRole('status').textContent).toContain('crashed');
   });
 
