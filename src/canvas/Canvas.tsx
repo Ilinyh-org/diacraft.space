@@ -1,4 +1,5 @@
 import { Stage, Layer, Rect, Line, Arrow } from 'react-konva';
+import { AlignmentGuideLine } from './AlignmentGuideLine';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Konva from 'konva';
 import { Block } from './Blocks/Block';
@@ -1052,32 +1053,6 @@ const runExport = (
               );
             })()}
 
-          {/* Issue #116: alignment guide line between block centers. */}
-          {alignmentGuide && !isExporting && (
-            <Line
-              points={
-                alignmentGuide.axis === 'vertical'
-                  ? [
-                      alignmentGuide.position,
-                      Math.min(alignmentGuide.from, alignmentGuide.to),
-                      alignmentGuide.position,
-                      Math.max(alignmentGuide.from, alignmentGuide.to),
-                    ]
-                  : [
-                      Math.min(alignmentGuide.from, alignmentGuide.to),
-                      alignmentGuide.position,
-                      Math.max(alignmentGuide.from, alignmentGuide.to),
-                      alignmentGuide.position,
-                    ]
-              }
-              stroke="#2f7cf6"
-              strokeWidth={1.5}
-              dash={[6, 4]}
-              listening={false}
-              perfectDrawEnabled={false}
-            />
-          )}
-
           {blocks.map((block) => (
             <Block
               key={block.id}
@@ -1173,6 +1148,12 @@ const runExport = (
               tension={0.3}
               listening={false}
             />
+          )}
+
+          {/* Issue #116 rework: guide line drawn in front of the blocks,
+              with animated dashes. */}
+          {alignmentGuide && !isExporting && (
+            <AlignmentGuideLine guide={alignmentGuide} />
           )}
         </Layer>
       </Stage>
