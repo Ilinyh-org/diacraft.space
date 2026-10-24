@@ -213,6 +213,9 @@ export function Canvas() {
   const clearSelection = useCallback(() => {
     setSelectedId(null);
     setSelectedIds([]);
+    // Issue #126: clicking empty canvas space must also drop the arrow
+    // selection, otherwise Delete would still remove the selected arrow.
+    setSelectedArrowId(null);
   }, []);
 
   const selectBlock = useCallback(
