@@ -57,6 +57,11 @@ const BLOCK_LABEL_BY_TYPE: Record<string, TranslationKey> = {
 import type { KonvaEventObject } from 'konva/lib/Node';
 import type { BlockData, ArrowData, DiagramState } from './types';
 import { findDropTarget, getAnchor, pickClosestSide } from './utils/blocks';
+import {
+  findAlignmentGuide,
+  snapToAlignmentGuide,
+  type AlignmentGuide,
+} from './utils/alignment';
 import { getContentBBox } from './utils/export';
 import { Grid } from './Grid';
 import { Palette } from './ui/Palette';
@@ -740,6 +745,10 @@ export function Canvas() {
   };
 
   const blockDragBeforeRef = useRef<DiagramState | null>(null);
+  // Issue #116: active alignment guide while dragging a block.
+  const [alignmentGuide, setAlignmentGuide] = useState<AlignmentGuide | null>(
+    null
+  );
 
   const handleBlockDragStart = useCallback(() => {
     blockDragBeforeRef.current = state;
@@ -776,20 +785,41 @@ export function Canvas() {
   const handleBlockDragMove = useCallback(
     (id: string, x: number, y: number) => {
       commitLive((s) => moveBlockAndRefreshArrows(s, id, x, y));
+      // Issue #116: show an alignment guide while centers match.
+      setAlignmentGuide(
+        findAlignmentGuide(blocksRef.current, id, x, y)
+      );
     },
     [commitLive]
   );
 
   const handleBlockDragEnd = useCallback(
     (id: string, x: number, y: number) => {
+      // Issue #116: dropping while a guide is visible snaps the block.
+      let finalX = x;
+      let finalY = y;
+      if (alignmentGuide) {
+        const dragged = blocksRef.current.find((b) => b.id === id);
+        if (dragged) {
+          const snapped = snapToAlignmentGuide(
+            dragged,
+            x,
+            y,
+            alignmentGuide
+          );
+          finalX = snapped.x;
+          finalY = snapped.y;
+        }
+      }
+      setAlignmentGuide(null);
       // Ensure final position matches the drop point.
-      commitLive((s) => moveBlockAndRefreshArrows(s, id, x, y));
+      commitLive((s) => moveBlockAndRefreshArrows(s, id, finalX, finalY));
       // One history entry for the whole drag.
       const before = blockDragBeforeRef.current;
       if (before) commitCheckpoint(before);
       blockDragBeforeRef.current = null;
     },
-    [commitLive, commitCheckpoint]
+    [commitLive, commitCheckpoint, alignmentGuide]
   );
 
   const handleBlockResize = useCallback(
@@ -1021,6 +1051,32 @@ const runExport = (
                 />
               );
             })()}
+
+          {/* Issue #116: alignment guide line between block centers. */}
+          {alignmentGuide && !isExporting && (
+            <Line
+              points={
+                alignmentGuide.axis === 'vertical'
+                  ? [
+                      alignmentGuide.position,
+                      Math.min(alignmentGuide.from, alignmentGuide.to),
+                      alignmentGuide.position,
+                      Math.max(alignmentGuide.from, alignmentGuide.to),
+                    ]
+                  : [
+                      Math.min(alignmentGuide.from, alignmentGuide.to),
+                      alignmentGuide.position,
+                      Math.max(alignmentGuide.from, alignmentGuide.to),
+                      alignmentGuide.position,
+                    ]
+              }
+              stroke="#2f7cf6"
+              strokeWidth={1.5}
+              dash={[6, 4]}
+              listening={false}
+              perfectDrawEnabled={false}
+            />
+          )}
 
           {blocks.map((block) => (
             <Block
