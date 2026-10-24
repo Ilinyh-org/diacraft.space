@@ -299,8 +299,9 @@ export function GamePanel({
           </div>
         )}
 
-        <div style={{ height: 1, background: theme.divider, margin: '6px 0' }} />
-
+        {/* Issue #130: the redundant hline after the levels menu is
+            removed — the header already separates the menu from the
+            level view. */}
         {/* Issue #119: the status line sits on the level header line,
             right-aligned and green when the level is complete. The inline
             "Next level" button is removed — the persistent next-level
@@ -374,7 +375,7 @@ export function GamePanel({
         </div>
 
         {/* Issue #117: the Program I/O line sits right after the graphical
-            part, before the divider, and only on I/O task levels. */}
+            part, and only on I/O task levels. */}
         {levelUsesIo && (
           <div style={{ marginTop: 8 }}>
             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -423,7 +424,9 @@ export function GamePanel({
         </>
         )}
 
-        <div style={{ height: 1, background: theme.divider, margin: '6px 0' }} />
+        {/* Issue #130: the redundant hline between the level view and the
+            run area is removed — the Run button block already has its own
+            margin. */}
 
         {/* Issue #107: the error hint appears and updates only after the
             Run click, when the animation starts. */}
@@ -449,7 +452,7 @@ export function GamePanel({
         </div>
         )}
 
-        {/* Issue #107: the Program I/O line moved above the divider — the
+        {/* Issue #107: the Program I/O line moved above the run area — the
             space between the run buttons and the level switchers. */}
         {/* Issue #127: the previous/next level buttons are removed — the
             levels menu covers switching between all levels. */}
