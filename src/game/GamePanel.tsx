@@ -4,7 +4,7 @@ import { DraggablePanel } from '../ui/DraggablePanel';
 import { stepDelayMs } from '../canvas/ui/AlgorithmPanel';
 import type { Theme } from '../theme';
 import type { ArrowData, BlockData } from '../canvas/types';
-import { LEVELS } from './levels';
+import { IO_LEVEL_IDS, LEVELS } from './levels';
 import type { Frame } from './types';
 import { compileFlowchart, isEndBlock, statementForBlock } from './flowchart';
 import { stepStatement } from './types';
@@ -49,6 +49,10 @@ export function GamePanel({
   const highlightTimer = useRef<number | null>(null);
 
   const level = LEVELS[levelIndex];
+
+  // Issue #117: the Program I/O line only exists on the level page of a
+  // level whose task uses input/output — never on the levels menu.
+  const levelUsesIo = IO_LEVEL_IDS.has(level.id);
 
   // Issue #107: a short task text above the level graphics. Levels with a
   // dedicated description use it; the rest get the generic goal text.
@@ -358,6 +362,54 @@ export function GamePanel({
             {arrowByDir}
           </div>
         </div>
+
+        {/* Issue #117: the Program I/O line sits right after the graphical
+            part, before the divider, and only on I/O task levels. */}
+        {levelUsesIo && (
+          <div style={{ marginTop: 8 }}>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <label
+                htmlFor="game-io-input"
+                style={{ fontSize: 10, whiteSpace: 'nowrap' }}
+              >
+                {t(language, 'game.ioTitle')}
+              </label>
+              <input
+                id="game-io-input"
+                type="text"
+                value={ioText}
+                onChange={(e) => setIoText(e.target.value)}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  boxSizing: 'border-box',
+                  padding: '3px 5px',
+                  fontSize: 11,
+                  border: `1px solid ${theme.buttonBorder}`,
+                  borderRadius: 4,
+                  background: theme.blockFill,
+                  color: theme.buttonText,
+                }}
+              />
+            </div>
+            {ioOutput.length > 0 && (
+              <div
+                data-testid="game-io-output"
+                role="log"
+                style={{
+                  marginTop: 4,
+                  fontSize: 10,
+                  whiteSpace: 'pre-wrap',
+                  fontFamily: 'monospace',
+                }}
+              >
+                {ioOutput.map((line, i) => (
+                  <div key={i}>› {line}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         </>
         )}
 
@@ -383,52 +435,8 @@ export function GamePanel({
           </button>
         </div>
 
-        {/* Issue #70: program I/O field — input directions + output log.
-            Issue #107: label and field share one line. */}
-        <div style={{ marginTop: 8 }}>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <label
-              htmlFor="game-io-input"
-              style={{ fontSize: 10, whiteSpace: 'nowrap' }}
-            >
-              {t(language, 'game.ioTitle')}
-            </label>
-            <input
-              id="game-io-input"
-              type="text"
-              value={ioText}
-              onChange={(e) => setIoText(e.target.value)}
-              style={{
-                flex: 1,
-                minWidth: 0,
-                boxSizing: 'border-box',
-                padding: '3px 5px',
-                fontSize: 11,
-                border: `1px solid ${theme.buttonBorder}`,
-                borderRadius: 4,
-                background: theme.blockFill,
-                color: theme.buttonText,
-              }}
-            />
-          </div>
-          {ioOutput.length > 0 && (
-            <div
-              data-testid="game-io-output"
-              role="log"
-              style={{
-                marginTop: 4,
-                fontSize: 10,
-                whiteSpace: 'pre-wrap',
-                fontFamily: 'monospace',
-              }}
-            >
-              {ioOutput.map((line, i) => (
-                <div key={i}>› {line}</div>
-              ))}
-            </div>
-          )}
-        </div>
-
+        {/* Issue #117: the Program I/O line moved above the divider — the
+            space between the run buttons and the level switchers. */}
         {/* Issue #107: previous / next level buttons at the bottom. */}
         <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
           <button
