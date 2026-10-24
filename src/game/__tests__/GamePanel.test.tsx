@@ -207,9 +207,41 @@ describe('GamePanel', () => {
   it('places the Program I/O label and field on one line (#107)', () => {
     const { blocks, arrows } = makeFlowchart(['move']);
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
+    fireEvent.click(screen.getByRole('button', { name: '5' }));
     const input = screen.getByLabelText('Program I/O');
     const label = input.closest('div')!.querySelector('label');
     expect(label).not.toBeNull();
+  });
+
+  it('hides Program I/O while the levels menu is open (#117)', () => {
+    const { blocks, arrows } = makeFlowchart(['move']);
+    render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
+    expect(screen.getByTestId('game-levels-menu')).toBeTruthy();
+    expect(screen.queryByLabelText('Program I/O')).toBeNull();
+  });
+
+  it('hides Program I/O on levels whose task has no input/output (#117)', () => {
+    const { blocks, arrows } = makeFlowchart(['move']);
+    render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
+    // Level 1 (linear-1): pure movement task — menu is open initially, so
+    // the line is absent and no menu button for 16 is blocked yet.
+    expect(screen.queryByLabelText('Program I/O')).toBeNull();
+    // Level 16 (functions-16): functions task without I/O.
+    fireEvent.click(screen.getByRole('button', { name: '16' }));
+    expect(screen.queryByLabelText('Program I/O')).toBeNull();
+  });
+
+  it('shows Program I/O on levels whose task uses input/output (#117)', () => {
+    const { blocks, arrows } = makeFlowchart(['move']);
+    render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
+    // Level 8 (conditions-8): input directions task.
+    fireEvent.click(screen.getByRole('button', { name: '8' }));
+    expect(screen.getByLabelText('Program I/O')).toBeTruthy();
+    // It sits after the graphical part and before the first divider below it:
+    // it must come before the flowchart errors / run area in DOM order.
+    const robot = screen.getByTestId('game-robot');
+    const io = screen.getByLabelText('Program I/O');
+    expect(robot.compareDocumentPosition(io) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('does not show extra hints besides the task and error hint (#107)', () => {

@@ -12,6 +12,26 @@ import type { Level } from './types';
  */
 const io = ['move', 'turnLeft', 'turnRight', 'output'] as const;
 
+/**
+ * Issue #117: levels whose task actually uses Program I/O (input directions
+ * or output lines in the reference task). Only these levels show the
+ * Program I/O line on their page.
+ */
+export const IO_LEVEL_IDS: ReadonlySet<string> = new Set([
+  'linear-5',
+  'conditions-8',
+  'conditions-9',
+  'conditions-10',
+  'loops-12',
+  'loops-14',
+  'functions-20',
+  'arrays-21',
+  'arrays-22',
+  'arrays-23',
+  'arrays-24',
+  'arrays-25',
+]);
+
 export const LEVELS: Level[] = [
   // ── Row 1 · linear (1-5) ────────────────────────────────────────────────
   {
