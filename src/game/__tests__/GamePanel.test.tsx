@@ -270,31 +270,28 @@ describe('GamePanel', () => {
     expect(screen.queryByText(/Wall directly ahead/)).toBeNull();
   });
 
-  it('does not offer the current level in the levels menu (#107)', () => {
+  it('offers every level in the levels menu, including the current one (#127)', () => {
     const { blocks, arrows } = makeFlowchart(['move']);
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
-    // Level 1 is current: no button labelled 1.
-    expect(screen.queryByRole('button', { name: '1' })).toBeNull();
+    // Level 1 is current but still offered (disabled and marked current).
+    const current = screen.getByRole('button', { name: '1' }) as HTMLButtonElement;
+    expect(current.disabled).toBe(true);
+    expect(current.textContent).toBe('1');
     expect(screen.getByRole('button', { name: '2' })).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: '2' }));
     expect(screen.getByText('Level 2')).toBeDefined();
-    // Reopen the menu (pickLevel closes it) and re-check.
+    // Reopen the menu (pickLevel closes it): now level 2 is the disabled
+    // current one; level 1 is selectable again.
     fireEvent.click(screen.getByRole('button', { name: 'Levels' }));
-    // Now level 2 is current: its button is gone, level 1 is offered.
-    expect(screen.queryByRole('button', { name: '2' })).toBeNull();
-    expect(screen.getByRole('button', { name: '1' })).toBeDefined();
+    expect((screen.getByRole('button', { name: '2' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: '1' }) as HTMLButtonElement).disabled).toBe(false);
   });
 
-  it('switches levels with previous/next buttons at the bottom (#107)', () => {
+  it('has no previous/next level buttons at the bottom (#127)', () => {
     const { blocks, arrows } = makeFlowchart(['move']);
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
-    const prev = screen.getByTestId('game-prev-level') as HTMLButtonElement;
-    const next = screen.getByTestId('game-next-level') as HTMLButtonElement;
-    expect(prev.disabled).toBe(true);
-    fireEvent.click(next);
-    expect(screen.getByText('Level 2')).toBeDefined();
-    fireEvent.click(screen.getByTestId('game-prev-level'));
-    expect(screen.getByText('Level 1')).toBeDefined();
+    expect(screen.queryByTestId('game-prev-level')).toBeNull();
+    expect(screen.queryByTestId('game-next-level')).toBeNull();
   });
 
   it('does not duplicate the program or the command count (#49)', () => {
@@ -410,10 +407,10 @@ describe('GamePanel', () => {
     // The win label shares the line with the level header.
     expect(statusRow.textContent).toContain('Level 1');
     expect(statusRow.textContent).toContain('✔ Level complete!');
-    // No inline Next level button in the status line.
+    // No inline Next level button in the status line, and no persistent
+    // next-level button anywhere (#127).
     expect(statusRow.querySelector('button')).toBeNull();
-    // The persistent next-level button still exists at the bottom.
-    expect(screen.getByTestId('game-next-level')).toBeTruthy();
+    expect(screen.queryByTestId('game-next-level')).toBeNull();
     // The win label is right-aligned and green.
     const winLabel = Array.from(statusRow.querySelectorAll('span')).find((s) =>
       s.textContent?.includes('Level complete'),
