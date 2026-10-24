@@ -3,6 +3,7 @@ import {
   buildArrowPath,
   extractBends,
   hasDoubleBack,
+  type Point2D,
 } from '../arrowPath';
 import { initialWaypoints } from '../arrowGeometry';
 import type { BlockData, ArrowData } from '../../types';

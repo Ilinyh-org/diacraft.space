@@ -155,7 +155,29 @@ export function buildArrowPath(
   }
 
   pts.push(entry, b);
-  return dedupe(pts).flatMap((p) => [p.x, p.y]);
+  return collapseCollinear(dedupe(pts)).flatMap((p) => [p.x, p.y]);
+}
+
+/**
+ * Issue #116: drop interior points that are collinear with their
+ * neighbours, so an arrow whose anchors line up renders as a single
+ * straight segment instead of redundant stub/waypoint points. The first
+ * and last points are always kept.
+ */
+export function collapseCollinear(pts: Point2D[]): Point2D[] {
+  if (pts.length <= 2) return pts;
+  const out: Point2D[] = [pts[0]];
+  for (let i = 1; i < pts.length - 1; i++) {
+    const prev = out[out.length - 1];
+    const curr = pts[i];
+    const next = pts[i + 1];
+    const cross =
+      (curr.x - prev.x) * (next.y - curr.y) -
+      (curr.y - prev.y) * (next.x - curr.x);
+    if (Math.abs(cross) > 1) out.push(curr);
+  }
+  out.push(pts[pts.length - 1]);
+  return out;
 }
 
 /**
