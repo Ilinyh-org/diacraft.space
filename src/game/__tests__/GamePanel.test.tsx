@@ -334,6 +334,45 @@ describe('GamePanel', () => {
     expect((robotAfter as HTMLElement).style.left).not.toBe(leftBefore);
   });
 
+  it('moves the win label to the header line, right-aligned and green, without an inline Next level button (#119)', () => {
+    const { blocks, arrows } = makeFlowchart(['move', 'move', 'move']);
+    const { rerender } = render(
+      <GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} runSignal={1} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Levels' }));
+    for (const id of blocks.filter((b) => b.type !== 'start').map((b) => b.id)) {
+      rerender(
+        <GamePanel
+          language="en"
+          theme={lightTheme}
+          blocks={blocks}
+          arrows={arrows}
+          runSignal={1}
+          blockSignal={{ seq: lastSeqRef.value, blockId: id }}
+        />,
+      );
+      lastSeqRef.value += 1;
+    }
+    const statusRow = screen.getByRole('status');
+    // The win label shares the line with the level header.
+    expect(statusRow.textContent).toContain('Level 1');
+    expect(statusRow.textContent).toContain('✔ Level complete!');
+    // No inline Next level button in the status line.
+    expect(statusRow.querySelector('button')).toBeNull();
+    // The persistent next-level button still exists at the bottom.
+    expect(screen.getByTestId('game-next-level')).toBeTruthy();
+    // The win label is right-aligned and green.
+    const winLabel = Array.from(statusRow.querySelectorAll('span')).find((s) =>
+      s.textContent?.includes('Level complete'),
+    ) as HTMLElement;
+    expect(winLabel.style.textAlign).toBe('right');
+    const rgb = lightTheme.runHighlight.match(/^#(..)(..)(..)$/);
+    expect(rgb).not.toBeNull();
+    expect(winLabel.style.color).toBe(
+      `rgb(${parseInt(rgb![1], 16)}, ${parseInt(rgb![2], 16)}, ${parseInt(rgb![3], 16)})`,
+    );
+  });
+
   it('highlights the game panel when the algorithm finishes successfully (#40)', () => {
     vi.useFakeTimers();
     try {

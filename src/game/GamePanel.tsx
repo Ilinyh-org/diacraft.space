@@ -291,13 +291,40 @@ export function GamePanel({
 
         <div style={{ height: 1, background: theme.divider, margin: '6px 0' }} />
 
+        {/* Issue #119: the status line sits on the level header line,
+            right-aligned and green when the level is complete. The inline
+            "Next level" button is removed — the persistent next-level
+            button below already covers advancing. Rendered also while the
+            levels menu is open, like the old status line. */}
+        <div
+          role="status"
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'baseline',
+            gap: 6,
+            fontSize: 11,
+            marginTop: 6,
+            minHeight: 16,
+          }}
+        >
+          <strong>{t(language, 'game.levelName', { n: levelIndex + 1 })}</strong>
+          {status && (
+            <span
+              style={{
+                color: solved ? theme.runHighlight : undefined,
+                textAlign: 'right',
+              }}
+            >
+              {status}
+            </span>
+          )}
+        </div>
+
         {/* Issue #107: short task text above the level graphics. Hidden
             together with the board while the levels menu is open. */}
         {!menuOpen && (
         <>
-        <div style={{ fontSize: 11, marginBottom: 4 }}>
-          <strong>{t(language, 'game.levelName', { n: levelIndex + 1 })}</strong>
-        </div>
         <div data-testid="game-task" style={{ fontSize: 11, marginBottom: 4 }}>
           <strong>{t(language, 'game.task')}:</strong> {taskText}
         </div>
@@ -399,14 +426,6 @@ export function GamePanel({
                 <div key={i}>› {line}</div>
               ))}
             </div>
-          )}
-        </div>
-
-        <div style={{ fontSize: 11, marginTop: 6, minHeight: 16 }} role="status">
-          {status} {solved && levelIndex < LEVELS.length - 1 && (
-            <button type="button" onClick={() => pickLevel(levelIndex + 1)} style={{ ...buttonStyle, marginLeft: 6 }}>
-              {t(language, 'game.nextLevel')}
-            </button>
           )}
         </div>
 
