@@ -300,6 +300,9 @@ export function GamePanel({
             "Next level" button is removed — the persistent next-level
             button below already covers advancing. Rendered also while the
             levels menu is open, like the old status line. */}
+        {/* Issue #124: the level header/status line is part of the level
+            view — the levels menu is an exclusive view without it. */}
+        {!menuOpen && (
         <div
           role="status"
           style={{
@@ -324,6 +327,7 @@ export function GamePanel({
             </span>
           )}
         </div>
+        )}
 
         {/* Issue #107: short task text above the level graphics. Hidden
             together with the board while the levels menu is open. */}
@@ -425,6 +429,9 @@ export function GamePanel({
           </div>
         )}
 
+        {/* Issue #124: the Run button belongs to the level view — hidden
+            while the levels menu is open. */}
+        {!menuOpen && (
         <div style={{ display: 'flex', gap: 6, marginTop: 8, alignItems: 'center' }}>
           <button
             type="button"
@@ -434,6 +441,7 @@ export function GamePanel({
             {t(language, 'game.run')}
           </button>
         </div>
+        )}
 
         {/* Issue #117: the Program I/O line moved above the divider — the
             space between the run buttons and the level switchers. */}
