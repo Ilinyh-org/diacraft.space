@@ -7,7 +7,7 @@ import type { ArrowData, BlockData } from '../canvas/types';
 import { IO_LEVEL_IDS, LEVELS } from './levels';
 import type { Frame } from './types';
 import { compileFlowchart, isEndBlock, statementForBlock } from './flowchart';
-import { stepStatement } from './types';
+import { isDoorAt, stepStatement } from './types';
 import { t, tOptional, type LanguageCode } from '../canvas/ui/i18n';
 
 type Props = {
@@ -43,12 +43,20 @@ export function GamePanel({
   const [highlighted, setHighlighted] = useState(false);
   const [hasRun, setHasRun] = useState(false);
   const [ioText, setIoText] = useState('');
+  // Issue #142: while the input block waits for the door password, the
+  // Program I/O field is highlighted green.
+  const [awaitingPassword, setAwaitingPassword] = useState(false);
   const [ioOutput, setIoOutput] = useState<string[]>([]);
   // Issue #139: levels the user has completed with a successful run are
   // highlighted green on the levels page.
   const [completedLevels, setCompletedLevels] = useState<ReadonlySet<number>>(new Set());
   const lastSignalSeq = useRef(0);
-  const syncState = useRef<{ frames: Frame[]; crashed: boolean } | null>(null);
+  // Issue #142: current typed text for the sync effect (which does not
+  // depend on ioText) and the per-run set of opened doors.
+  const ioTextRef = useRef('');
+  const syncState = useRef<{ frames: Frame[]; crashed: boolean; openDoors: Set<string> } | null>(
+    null,
+  );
   const highlightTimer = useRef<number | null>(null);
 
   const level = LEVELS[levelIndex];
@@ -56,6 +64,8 @@ export function GamePanel({
   // Issue #117: the Program I/O line only exists on the level page of a
   // level whose task uses input/output — never on the levels menu.
   const levelUsesIo = IO_LEVEL_IDS.has(level.id);
+  // Issue #142: door levels ask for the password written in the task text.
+  const isDoorLevel = level.password != null && (level.doors ?? []).length > 0;
 
   // Issue #107: a short task text above the level graphics. Levels with a
   // dedicated description use it; the rest get the generic goal text.
@@ -80,6 +90,7 @@ export function GamePanel({
     setHighlighted(false);
     setHasRun(false);
     setIoOutput([]);
+    setAwaitingPassword(false);
     syncState.current = null;
     lastSignalSeq.current = 0;
     if (highlightTimer.current !== null) {
@@ -108,7 +119,7 @@ export function GamePanel({
       setStatus(`✖ ${compiled.errors.join(' ')}`);
       return;
     }
-    syncState.current = { frames: [{ ...level.start }], crashed: false };
+    syncState.current = { frames: [{ ...level.start }], crashed: false, openDoors: new Set() };
     setFrames(syncState.current.frames);
     setFrameIndex(0);
   }, [compiled, level, reset]);
@@ -169,7 +180,36 @@ export function GamePanel({
     const stmt = statementForBlock(block);
     if (!stmt) return;
     const frame = sync.frames[sync.frames.length - 1];
-    const next = stepStatement(level, frame, stmt);
+    // Issue #142: the input block on a door level asks for the password —
+    // highlight the Program I/O field green until it is submitted.
+    if (stmt.kind === 'inputDir' && isDoorLevel) {
+      setAwaitingPassword(true);
+      return;
+    }
+    // Issue #142: a move into a closed door stops the robot at the door
+    // square (no crash) and asks for the password; a matching typed text
+    // opens the door on the spot.
+    if (stmt.kind === 'move' && level.password != null) {
+      const d = [
+        [0, -1],
+        [1, 0],
+        [0, 1],
+        [-1, 0],
+      ][frame.dir];
+      const nx = frame.x + d[0];
+      const ny = frame.y + d[1];
+      if (isDoorAt(level, nx, ny) && !sync.openDoors.has(`${nx},${ny}`)) {
+        if (ioTextRef.current.trim().toLowerCase() === level.password.trim().toLowerCase()) {
+          sync.openDoors.add(`${nx},${ny}`);
+          setAwaitingPassword(false);
+        } else {
+          setAwaitingPassword(true);
+          setStatus(t(language, 'game.doorLocked'));
+          return;
+        }
+      }
+    }
+    const next = stepStatement(level, frame, stmt, sync.openDoors);
     if (next.crashed) {
       sync.crashed = true;
       setStatus(t(language, 'game.crash'));
@@ -178,7 +218,27 @@ export function GamePanel({
     sync.frames = [...sync.frames, next.frame];
     setFrames(sync.frames);
     setFrameIndex(sync.frames.length - 1);
-  }, [blockSignal, blocks, level, levelIndex, speed, language]);
+  }, [blockSignal, blocks, level, levelIndex, speed, language, isDoorLevel]);
+
+  // Issue #142: Enter in the Program I/O field submits the door password:
+  // correct opens all doors, wrong reports and keeps them locked.
+  const submitPassword = useCallback(() => {
+    if (!isDoorLevel || level.password == null) return;
+    if (ioTextRef.current.trim().toLowerCase() === level.password.trim().toLowerCase()) {
+      const sync = syncState.current;
+      if (sync) {
+        for (const [dx, dy] of level.doors ?? []) sync.openDoors.add(`${dx},${dy}`);
+      }
+      setAwaitingPassword(false);
+    } else {
+      setStatus(t(language, 'game.wrongPassword'));
+    }
+  }, [isDoorLevel, level, language]);
+
+  const onIoTextChange = useCallback((value: string) => {
+    ioTextRef.current = value;
+    setIoText(value);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -206,6 +266,8 @@ export function GamePanel({
         const isWall = level.walls.some(([wx, wy]) => wx === x && wy === y);
         const isGoal = level.goal.x === x && level.goal.y === y;
         const hasItem = (level.items ?? []).some(([ix, iy]) => ix === x && iy === y);
+        // Issue #142: password doors render as their own square type.
+        const isDoor = isDoorAt(level, x, y);
         cells.push(
           <div
             key={`${x},${y}`}
@@ -217,8 +279,10 @@ export function GamePanel({
                 ? theme.blockStroke
                 : isGoal
                   ? theme.runHighlight
-                  : theme.blockFill,
-              color: isGoal ? '#ffffff' : theme.blockText,
+                  : isDoor
+                    ? theme.selection
+                    : theme.blockFill,
+              color: isGoal || isDoor ? '#ffffff' : theme.blockText,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -226,7 +290,7 @@ export function GamePanel({
               boxSizing: 'border-box',
             }}
           >
-            {isGoal ? '⚑' : hasItem ? '◆' : ''}
+            {isGoal ? '⚑' : isDoor ? '🔒' : hasItem ? '◆' : ''}
           </div>,
         );
       }
@@ -376,16 +440,20 @@ export function GamePanel({
               </label>
               <input
                 id="game-io-input"
+                data-testid="game-io-input"
                 type="text"
                 value={ioText}
-                onChange={(e) => setIoText(e.target.value)}
+                onChange={(e) => onIoTextChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') submitPassword();
+                }}
                 style={{
                   flex: 1,
                   minWidth: 0,
                   boxSizing: 'border-box',
                   padding: '3px 5px',
                   fontSize: 11,
-                  border: `1px solid ${theme.buttonBorder}`,
+                  border: `2px solid ${awaitingPassword ? theme.runHighlight : theme.buttonBorder}`,
                   borderRadius: 4,
                   background: theme.blockFill,
                   color: theme.buttonText,

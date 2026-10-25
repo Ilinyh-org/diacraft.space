@@ -129,16 +129,20 @@ export const LEVELS: Level[] = [
     goal: { x: 3, y: 1 },
     allowed: [...io, 'ifWall', 'inputDir'],
   },
+  // Issue #142: the input-field level became a password-door level — the
+  // flag sits beyond a locked door; the input block feeds the password.
   {
     id: 'conditions-8',
     title: '8',
     concept: 'conditions',
     description: '',
     width: 3,
-    height: 2,
-    walls: [[2, 1]],
-    start: { x: 1, y: 0, dir: 2 },
-    goal: { x: 0, y: 1 },
+    height: 1,
+    walls: [],
+    doors: [[1, 0]],
+    password: '1234',
+    start: { x: 0, y: 0, dir: 1 },
+    goal: { x: 2, y: 0 },
     allowed: [...io, 'ifWall', 'inputDir'],
   },
   {

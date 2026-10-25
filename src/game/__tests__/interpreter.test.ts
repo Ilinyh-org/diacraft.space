@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { runProgram } from '../types';
-import type { Dir, Statement, Subprograms } from '../types';
+import type { Dir, Level, Statement, Subprograms } from '../types';
 import { LEVELS } from '../levels';
 
 /**
@@ -29,21 +29,34 @@ describe('io statements', () => {
     expect(result.output).toContain('hello ?');
   });
 
+  // Issue #142: a plain no-door level — conditions-8 is now a password
+  // door level, so generic inputDir tests use their own level.
+  const plain: Level = {
+    id: 'io-test',
+    title: 'T',
+    concept: 'conditions',
+    description: '',
+    width: 3,
+    height: 2,
+    walls: [],
+    start: { x: 1, y: 0, dir: 1 },
+    goal: { x: 2, y: 1 },
+    allowed: ['move', 'output', 'inputDir'],
+  };
+
   it('inputDir consumes provided directions and turns the robot', () => {
-    const level = LEVELS.find((l) => l.id === 'conditions-8')!;
     const result = runProgram(
-      level,
+      plain,
       [{ kind: 'move' }, { kind: 'inputDir' }, { kind: 'move' }],
       {},
-      [D('left')],
+      [D('down')],
     );
     expect(result.status).toBe('win');
-    expect(result.frames.at(-1)).toEqual({ x: 0, y: 1, dir: 3 });
+    expect(result.frames.at(-1)).toEqual({ x: 2, y: 1, dir: 2 });
   });
 
   it('reports needInput when no direction was supplied', () => {
-    const level = LEVELS.find((l) => l.id === 'conditions-8')!;
-    const result = runProgram(level, [
+    const result = runProgram(plain, [
       { kind: 'move' },
       { kind: 'inputDir' },
     ]);

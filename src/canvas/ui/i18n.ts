@@ -72,6 +72,8 @@ export type TranslationKey =
   | "game.selectLevel"
   | "game.prevLevel"
   | "game.needInput"
+  | "game.doorLocked"
+  | "game.wrongPassword"
   | "game.level.linear-1.title"
   | "game.level.linear-1.description"
   | "game.level.linear-2.title"
@@ -82,6 +84,8 @@ export type TranslationKey =
   | "game.level.loops-1.description"
   | "game.level.combined-1.title"
   | "game.level.combined-1.description"
+  | "game.level.conditions-8.title"
+  | "game.level.conditions-8.description"
   // flowchart validation
   | "flow.noStart"
   | "flow.mustReachEnd"
@@ -157,6 +161,8 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "game.levelName": "Level {n}",
     "game.ioTitle": "Program I/O",
     "game.needInput": "✖ Waiting for input — add a direction above and run again.",
+    "game.doorLocked": "✖ The door is locked — the Input block asks for the password.",
+    "game.wrongPassword": "✖ Wrong password — the door stays locked.",
     "game.level.linear-1.title": "First steps",
     "game.level.linear-1.description":
       "Teach the robot to walk. Build a program of Move commands to reach the flag.",
@@ -172,6 +178,9 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "game.level.combined-1.title": "Serpentine",
     "game.level.combined-1.description":
       "Combine loops and conditions to snake through the corridor.",
+    "game.level.conditions-8.title": "Locked door",
+    "game.level.conditions-8.description":
+      "The flag is behind a locked door. Add an Input block, run, then type the password 1234 into Program I/O and press Enter.",
     "flow.noStart": "Add a Start block to the canvas.",
     "flow.mustReachEnd": "The flowchart must reach an End block.",
     "flow.multipleOutgoing": 'Block "{label}" has more than one outgoing arrow.',
@@ -239,6 +248,8 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "game.levelName": "Уровень {n}",
     "game.ioTitle": "Ввод/вывод программы",
     "game.needInput": "✖ Ожидаю ввод — добавьте направление выше и запустите снова.",
+    "game.doorLocked": "✖ Дверь заперта — блок «Ввод» запрашивает пароль.",
+    "game.wrongPassword": "✖ Неверный пароль — дверь остаётся запертой.",
     "game.level.linear-1.title": "Первые шаги",
     "game.level.linear-1.description":
       "Научите робота ходить. Соберите программу из команд «Идти», чтобы дойти до флага.",
@@ -254,6 +265,9 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "game.level.combined-1.title": "Змейка",
     "game.level.combined-1.description":
       "Сочетайте циклы и условия, чтобы проползти по коридору змейкой.",
+    "game.level.conditions-8.title": "Запертая дверь",
+    "game.level.conditions-8.description":
+      "Флаг за запертой дверью. Добавьте блок «Ввод», запустите, введите пароль 1234 в поле «Ввод/вывод» и нажмите Enter.",
     "flow.noStart": "Добавьте блок «Начало» на холст.",
     "flow.mustReachEnd": "Блок-схема должна заканчиваться блоком «Конец».",
     "flow.multipleOutgoing": 'У блока «{label}» более одной исходящей стрелки.',
