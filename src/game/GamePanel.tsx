@@ -302,37 +302,15 @@ export function GamePanel({
         {/* Issue #130: the redundant hline after the levels menu is
             removed — the header already separates the menu from the
             level view. */}
-        {/* Issue #119: the status line sits on the level header line,
-            right-aligned and green when the level is complete. The inline
-            "Next level" button is removed — the persistent next-level
-            button below already covers advancing. Rendered also while the
-            levels menu is open, like the old status line. */}
+        {/* Issue #119/#132: the level header line keeps only the
+            "Level N" label — the result message moved to its own line
+            between the level view and the Run button. Rendered also while
+            the levels menu is open, like the old status line. */}
         {/* Issue #124: the level header/status line is part of the level
             view — the levels menu is an exclusive view without it. */}
         {!menuOpen && (
-        <div
-          role="status"
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'baseline',
-            gap: 6,
-            fontSize: 11,
-            marginTop: 6,
-            minHeight: 16,
-          }}
-        >
+        <div style={{ fontSize: 11, marginTop: 6 }}>
           <strong>{t(language, 'game.levelName', { n: levelIndex + 1 })}</strong>
-          {status && (
-            <span
-              style={{
-                color: solved ? theme.runHighlight : undefined,
-                textAlign: 'right',
-              }}
-            >
-              {status}
-            </span>
-          )}
         </div>
         )}
 
@@ -435,6 +413,29 @@ export function GamePanel({
             {compiled.errors.map((e, i) => (
               <div key={i}>✖ {e}</div>
             ))}
+          </div>
+        )}
+
+        {/* Issue #124: the Run button belongs to the level view — hidden
+            while the levels menu is open. */}
+        {/* Issue #132: the game result message (level complete / stopped
+            short / crash) sits in its own line between the level view and
+            the Run button, green when the level is complete. Always present
+            in the level view to keep the run area layout stable. */}
+        {!menuOpen && (
+          <div
+            role="status"
+            style={{
+              fontSize: 11,
+              marginTop: 6,
+              minHeight: 16,
+            }}
+          >
+            {status && (
+              <span style={{ color: solved ? theme.runHighlight : undefined }}>
+                {status}
+              </span>
+            )}
           </div>
         )}
 
