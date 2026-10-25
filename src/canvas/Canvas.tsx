@@ -314,6 +314,18 @@ export function Canvas() {
     ? [
         { label: t(language, 'context.cut'), onSelect: handleCut },
         { label: t(language, 'context.copy'), onSelect: handleCopy },
+        {
+          label: t(language, 'context.rename'),
+          onSelect: () => {
+            if (contextMenu?.blockId) handleStartEdit(contextMenu.blockId);
+          },
+        },
+        {
+          label: t(language, 'context.delete'),
+          onSelect: () => {
+            if (contextMenu?.blockId) requestDelete(contextMenu.blockId);
+          },
+        },
       ]
     : [
         {
