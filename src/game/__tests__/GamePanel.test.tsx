@@ -281,20 +281,20 @@ describe('GamePanel', () => {
     expect(screen.queryByText(/Wall directly ahead/)).toBeNull();
   });
 
-  it('offers every level in the levels menu, including the current one (#127)', () => {
+  it('offers every level in the levels menu, none disabled (#127, reworked by #139)', () => {
     const { blocks, arrows } = makeFlowchart(['move']);
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
-    // Level 1 is current but still offered (disabled and marked current).
-    const current = screen.getByRole('button', { name: '1' }) as HTMLButtonElement;
-    expect(current.disabled).toBe(true);
-    expect(current.textContent).toBe('1');
+    // Issue #139: the "current level" logic is gone — every level button
+    // is enabled and can be opened.
+    const first = screen.getByRole('button', { name: '1' }) as HTMLButtonElement;
+    expect(first.disabled).toBe(false);
+    expect(first.textContent).toBe('1');
     expect(screen.getByRole('button', { name: '2' })).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: '2' }));
     expect(screen.getByText('Level 2')).toBeDefined();
-    // Reopen the menu (pickLevel closes it): now level 2 is the disabled
-    // current one; level 1 is selectable again.
+    // Reopen the menu (pickLevel closes it): nothing is disabled now.
     fireEvent.click(screen.getByRole('button', { name: 'Levels' }));
-    expect((screen.getByRole('button', { name: '2' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: '2' }) as HTMLButtonElement).disabled).toBe(false);
     expect((screen.getByRole('button', { name: '1' }) as HTMLButtonElement).disabled).toBe(false);
   });
 
@@ -424,10 +424,10 @@ describe('GamePanel', () => {
     const runRow = runButton.parentElement as HTMLElement;
     expect(statusRow.nextElementSibling).toBe(runRow);
     expect(statusRow.textContent).toContain('✔ Level complete!');
-    // No inline Next level button in the result line, and no persistent
-    // next-level button anywhere (#127).
+    // No inline Next level button in the result line. Issue #139 restored
+    // the persistent next-level switcher next to the Run button.
     expect(statusRow.querySelector('button')).toBeNull();
-    expect(screen.queryByTestId('game-next-level')).toBeNull();
+    expect(screen.getByTestId('game-next-level')).toBeDefined();
     // The result label is green when the level is complete.
     const winLabel = statusRow.querySelector('span') as HTMLElement;
     expect(winLabel.textContent).toContain('Level complete');

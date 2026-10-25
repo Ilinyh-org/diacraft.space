@@ -44,6 +44,9 @@ export function GamePanel({
   const [hasRun, setHasRun] = useState(false);
   const [ioText, setIoText] = useState('');
   const [ioOutput, setIoOutput] = useState<string[]>([]);
+  // Issue #139: levels the user has completed with a successful run are
+  // highlighted green on the levels page.
+  const [completedLevels, setCompletedLevels] = useState<ReadonlySet<number>>(new Set());
   const lastSignalSeq = useRef(0);
   const syncState = useRef<{ frames: Frame[]; crashed: boolean } | null>(null);
   const highlightTimer = useRef<number | null>(null);
@@ -153,6 +156,8 @@ export function GamePanel({
       );
       if (won) {
         setHighlighted(true);
+        // Issue #139: a successful run marks the level as completed.
+        setCompletedLevels((prev) => new Set(prev).add(levelIndex));
         highlightTimer.current = window.setTimeout(() => {
           highlightTimer.current = null;
           setHighlighted(false);
@@ -173,7 +178,7 @@ export function GamePanel({
     sync.frames = [...sync.frames, next.frame];
     setFrames(sync.frames);
     setFrameIndex(sync.frames.length - 1);
-  }, [blockSignal, blocks, level, speed, language]);
+  }, [blockSignal, blocks, level, levelIndex, speed, language]);
 
   useEffect(() => {
     return () => {
@@ -267,26 +272,32 @@ export function GamePanel({
             {/* Issue #70: 5x5 numbered levels table — five concept rows.
                 Issue #127: every level is offered; the current level's
                 button is disabled and highlighted instead of omitted. */}
+            {/* Issue #139: a heading above the levels table. */}
+            <div data-testid="game-select-level-label" style={{ fontSize: 11, marginBottom: 4 }}>
+              {t(language, 'game.selectLevel')}
+            </div>
             {[0, 1, 2, 3, 4].map((row) => (
               <div key={row} style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
                 {LEVELS.slice(row * 5, row * 5 + 5).map((l, col) => {
                   const index = row * 5 + col;
-                  const isCurrent = index === levelIndex;
+                  // Issue #139: no "current level" state on the levels
+                  // page — any level can be opened. Green highlighting is
+                  // reserved for completed levels.
+                  const isCompleted = completedLevels.has(index);
                   return (
                     <button
                       key={l.id}
                       type="button"
                       title={`${t(language, 'game.levelName', { n: index + 1 })}`}
                       onClick={() => pickLevel(index)}
-                      disabled={isCurrent}
-                      aria-current={isCurrent ? 'true' : undefined}
                       data-testid={`game-level-${index + 1}`}
+                      aria-current={isCompleted ? 'true' : undefined}
                       style={{
                         ...buttonStyle,
                         width: 40,
                         textAlign: 'center',
-                        ...(isCurrent
-                          ? { background: theme.runHighlight, color: '#ffffff', cursor: 'default', opacity: 1 }
+                        ...(isCompleted
+                          ? { background: theme.runHighlight, color: '#ffffff' }
                           : {}),
                       }}
                     >
@@ -450,13 +461,36 @@ export function GamePanel({
           >
             {t(language, 'game.run')}
           </button>
+          {/* Issue #139: prev/next level switchers are back on the level
+              page (not on the levels menu). */}
+          <button
+            type="button"
+            onClick={() => pickLevel(levelIndex - 1)}
+            disabled={levelIndex === 0}
+            data-testid="game-prev-level"
+            title={t(language, 'game.prevLevel')}
+            style={{ ...buttonStyle, opacity: levelIndex === 0 ? 0.5 : 1 }}
+          >
+            ←
+          </button>
+          <button
+            type="button"
+            onClick={() => pickLevel(levelIndex + 1)}
+            disabled={levelIndex === LEVELS.length - 1}
+            data-testid="game-next-level"
+            title={t(language, 'game.nextLevel')}
+            style={{
+              ...buttonStyle,
+              opacity: levelIndex === LEVELS.length - 1 ? 0.5 : 1,
+            }}
+          >
+            →
+          </button>
         </div>
         )}
 
-        {/* Issue #107: the Program I/O line moved above the run area — the
-            space between the run buttons and the level switchers. */}
-        {/* Issue #127: the previous/next level buttons are removed — the
-            levels menu covers switching between all levels. */}
+        {/* Issue #127/#139: prev/next buttons live on the level page only;
+            the levels menu offers all levels without a disabled current one. */}
       </div>
     </DraggablePanel>
   );

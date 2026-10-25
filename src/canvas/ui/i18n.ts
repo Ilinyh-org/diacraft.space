@@ -69,6 +69,7 @@ export type TranslationKey =
   | "game.ioTitle"
   | "game.task"
   | "game.taskFallback"
+  | "game.selectLevel"
   | "game.prevLevel"
   | "game.needInput"
   | "game.level.linear-1.title"
@@ -147,6 +148,7 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "game.nextLevel": "Next level →",
     "game.task": "Task",
     "game.taskFallback": "Lead the robot to the flag ⚑.",
+    "game.selectLevel": "Select a level:",
     "game.prevLevel": "← Prev",
     "game.win": "✔ Level complete!",
     "game.crash": "✖ The robot crashed into a wall.",
@@ -228,6 +230,7 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "game.nextLevel": "Следующий уровень →",
     "game.task": "Задача",
     "game.taskFallback": "Проведите робота к флагу ⚑.",
+    "game.selectLevel": "Выберите уровень:",
     "game.prevLevel": "← Назад",
     "game.win": "✔ Уровень пройден!",
     "game.crash": "✖ Робот врезался в стену.",
