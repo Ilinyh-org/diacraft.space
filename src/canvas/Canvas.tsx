@@ -101,6 +101,8 @@ import type { ContextMenuItem } from './ui/ContextMenu';
 import {
   toggleBlockSelection,
   toggleArrowSelection,
+  computeMultiDragPositions,
+  type PositionMap,
 } from './utils/selection';
 
 type Mode = 'select' | 'draw';
@@ -835,19 +837,38 @@ export function Canvas() {
     null
   );
 
-  const handleBlockDragStart = useCallback(() => {
-    blockDragBeforeRef.current = state;
-  }, [state]);
+  const handleBlockDragStart = useCallback(
+    (id: string) => {
+      blockDragBeforeRef.current = state;
+      // Issue #138: capture every selected block's position (plus the dragged
+      // one) so the whole selection can follow the dragged block.
+      const ids = new Set(
+        selectedIds.length > 0 ? selectedIds : selectedId ? [selectedId] : []
+      );
+      ids.add(id);
+      const map: PositionMap = {};
+      for (const b of state.blocks) {
+        if (ids.has(b.id)) map[b.id] = { x: b.x, y: b.y };
+      }
+      multiDragStartRef.current = map;
+    },
+    [state, selectedIds, selectedId]
+  );
 
-  const moveBlockAndRefreshArrows = (
+  const multiDragStartRef = useRef<PositionMap>({});
+
+  // Issue #138: move a whole set of blocks and refresh arrows attached to any
+  // of them (waypoints of arrows between two moved blocks translate intact).
+  const moveBlocksAndRefreshArrows = (
     s: DiagramState,
-    id: string,
-    x: number,
-    y: number
+    positions: PositionMap
   ): DiagramState => {
-    const blocks = s.blocks.map((b) => (b.id === id ? { ...b, x, y } : b));
+    const ids = new Set(Object.keys(positions));
+    const blocks = s.blocks.map((b) =>
+      ids.has(b.id) ? { ...b, ...positions[b.id] } : b
+    );
     const arrows = s.arrows.map((ar) => {
-      if (ar.fromBlockId !== id && ar.toBlockId !== id) return ar;
+      if (!ids.has(ar.fromBlockId) && !ids.has(ar.toBlockId)) return ar;
       const prevFrom = s.blocks.find((b) => b.id === ar.fromBlockId);
       const prevTo = s.blocks.find((b) => b.id === ar.toBlockId);
       const nextFrom = blocks.find((b) => b.id === ar.fromBlockId);
@@ -869,7 +890,21 @@ export function Canvas() {
 
   const handleBlockDragMove = useCallback(
     (id: string, x: number, y: number) => {
-      commitLive((s) => moveBlockAndRefreshArrows(s, id, x, y));
+      const start = multiDragStartRef.current[id];
+      if (start) {
+        // Issue #138: drag the whole selection with the dragged block.
+        const positions = computeMultiDragPositions(
+          multiDragStartRef.current,
+          id,
+          x,
+          y
+        );
+        commitLive((s) => moveBlocksAndRefreshArrows(s, positions));
+      } else {
+        commitLive((s) =>
+          moveBlocksAndRefreshArrows(s, { [id]: { x, y } })
+        );
+      }
       // Issue #116: show an alignment guide while centers match.
       setAlignmentGuide(
         findAlignmentGuide(blocksRef.current, id, x, y)
@@ -897,8 +932,37 @@ export function Canvas() {
         }
       }
       setAlignmentGuide(null);
-      // Ensure final position matches the drop point.
-      commitLive((s) => moveBlockAndRefreshArrows(s, id, finalX, finalY));
+      const start = multiDragStartRef.current[id];
+      if (start) {
+        // Issue #138: finish the whole-selection drag at the drop point
+        // (including the alignment-guide snap delta, applied to everything).
+        const snappedDrag = computeMultiDragPositions(
+          multiDragStartRef.current,
+          id,
+          finalX,
+          finalY
+        );
+        // Snap delta relative to the un-snapped drop point applies to all.
+        const dx = snappedDrag[id].x - (start.x + (finalX - start.x));
+        const dy = snappedDrag[id].y - (start.y + (finalY - start.y));
+        const positions: PositionMap = {};
+        for (const [bid, p] of Object.entries(
+          computeMultiDragPositions(
+            multiDragStartRef.current,
+            id,
+            x,
+            y
+          )
+        )) {
+          positions[bid] = { x: p.x + dx, y: p.y + dy };
+        }
+        commitLive((s) => moveBlocksAndRefreshArrows(s, positions));
+      } else {
+        // Ensure final position matches the drop point.
+        commitLive((s) =>
+          moveBlocksAndRefreshArrows(s, { [id]: { x: finalX, y: finalY } })
+        );
+      }
       // One history entry for the whole drag.
       const before = blockDragBeforeRef.current;
       if (before) commitCheckpoint(before);
@@ -1159,7 +1223,7 @@ const runExport = (
               onDelete={() => requestDelete(block.id)}
               onEdit={() => handleStartEdit(block.id)}
               onResize={(w, h) => handleBlockResize(block.id, w, h)}
-              onDragStart={handleBlockDragStart}
+              onDragStart={() => handleBlockDragStart(block.id)}
               onDragMove={(x, y) => handleBlockDragMove(block.id, x, y)}
               onDragEnd={(x, y) => handleBlockDragEnd(block.id, x, y)}
               onHandleDragStart={(side, x, y) =>

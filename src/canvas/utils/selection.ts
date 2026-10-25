@@ -23,6 +23,33 @@ function toggleIdSelection(
   return { selectedIds: [...prevIds, id], selectedId: id };
 }
 
+/** A block id with an absolute canvas position. */
+export type BlockPosition = { id: string; x: number; y: number };
+
+export type PositionMap = Record<string, { x: number; y: number }>;
+
+/**
+ * Issue #138: given the positions captured at drag start for every selected
+ * block, return the positions after moving the dragged block to (x, y) —
+ * every block in the selection translates by the dragged block's delta.
+ */
+export function computeMultiDragPositions(
+  startPositions: PositionMap,
+  dragId: string,
+  x: number,
+  y: number
+): PositionMap {
+  const start = startPositions[dragId];
+  if (!start) return {};
+  const dx = x - start.x;
+  const dy = y - start.y;
+  const result: PositionMap = {};
+  for (const [id, p] of Object.entries(startPositions)) {
+    result[id] = { x: p.x + dx, y: p.y + dy };
+  }
+  return result;
+}
+
 /**
  * Toggle-select a block. Plain click selects only that block; ctrl/meta click
  * adds it to the selection, or removes it when already selected (deselecting
