@@ -15,12 +15,14 @@ function setup(overrides: Partial<Parameters<typeof useKeyboard>[0]> = {}) {
     editingId: null,
     selectedId: null,
     selectedArrowId: null,
+    selectedArrowIds: [],
     onCommitEdit: vi.fn(),
     onCancelEdit: vi.fn(),
     onUndo: vi.fn(),
     onRedo: vi.fn(),
     onDeleteBlock: vi.fn(),
     onDeleteArrow: vi.fn(),
+    onDeleteSelection: vi.fn(),
     onCopy: vi.fn(),
     onCut: vi.fn(),
     onPaste: vi.fn(),
@@ -76,6 +78,25 @@ describe('useKeyboard', () => {
     press('Delete');
     expect(o.onDeleteBlock).not.toHaveBeenCalled();
     expect(o.onDeleteArrow).not.toHaveBeenCalled();
+    expect(o.onDeleteSelection).not.toHaveBeenCalled();
+  });
+
+  it('deletes a multi-selected arrow group via onDeleteSelection (issue #133)', () => {
+    const o = setup({ selectedArrowIds: ['a1', 'a2'] });
+    press('Delete');
+    expect(o.onDeleteSelection).toHaveBeenCalledTimes(1);
+    expect(o.onDeleteArrow).not.toHaveBeenCalled();
+    expect(o.onDeleteBlock).not.toHaveBeenCalled();
+  });
+
+  it('deletes a mixed selection via onDeleteSelection (issue #133)', () => {
+    const o = setup({
+      selectedId: 'b1',
+      selectedArrowIds: ['a1'],
+    });
+    press('Delete');
+    expect(o.onDeleteSelection).toHaveBeenCalledTimes(1);
+    expect(o.onDeleteBlock).not.toHaveBeenCalled();
   });
 
   it('commit edit on Enter while editing', () => {
@@ -151,12 +172,14 @@ describe('useKeyboard', () => {
         editingId: null,
         selectedId: null,
         selectedArrowId: null,
+        selectedArrowIds: [],
         onCommitEdit: vi.fn(),
         onCancelEdit: vi.fn(),
         onUndo,
         onRedo: vi.fn(),
         onDeleteBlock: vi.fn(),
         onDeleteArrow: vi.fn(),
+        onDeleteSelection: vi.fn(),
         onCopy: vi.fn(),
         onCut: vi.fn(),
         onPaste: vi.fn(),

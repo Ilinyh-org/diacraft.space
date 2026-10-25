@@ -1,6 +1,11 @@
 import type { BlockData, ArrowData } from '../types';
 
-/** Snapshot of copied diagram content: blocks plus arrows fully inside it. */
+/**
+ * Snapshot of copied diagram content: blocks plus arrows (those fully inside
+ * the block selection, plus explicitly selected arrows; endpoint blocks of
+ * explicitly selected arrows are always included so a pasted arrow stays
+ * valid — issue #133).
+ */
 export type Clipboard = {
   blocks: BlockData[];
   arrows: ArrowData[];
@@ -9,9 +14,19 @@ export type Clipboard = {
 export function copySelection(
   blocks: BlockData[],
   arrows: ArrowData[],
-  selectedIds: string[]
+  selectedIds: string[],
+  selectedArrowIds: string[] = []
 ): Clipboard {
   const ids = new Set(selectedIds);
+  const arrowIds = new Set(selectedArrowIds);
+  // Endpoint blocks of explicitly selected arrows are copied implicitly so
+  // that a pasted arrow always references existing blocks (issue #133).
+  for (const a of arrows) {
+    if (arrowIds.has(a.id)) {
+      ids.add(a.fromBlockId);
+      ids.add(a.toBlockId);
+    }
+  }
   const copiedBlocks = blocks.filter((b) => ids.has(b.id));
   const copiedArrows = arrows.filter(
     (a) => ids.has(a.fromBlockId) && ids.has(a.toBlockId)

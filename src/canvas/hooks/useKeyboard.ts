@@ -4,12 +4,15 @@ type Options = {
   editingId: string | null;
   selectedId: string | null;
   selectedArrowId: string | null;
+  selectedArrowIds: string[];
   onCommitEdit: () => void;
   onCancelEdit: () => void;
   onUndo: () => void;
   onRedo: () => void;
   onDeleteBlock: (id: string) => void;
   onDeleteArrow: (id: string) => void;
+  /** Delete everything currently selected (issue #133 multi-selection). */
+  onDeleteSelection: () => void;
   onCopy: () => void;
   onCut: () => void;
   onPaste: () => void;
@@ -19,12 +22,14 @@ export function useKeyboard({
   editingId,
   selectedId,
   selectedArrowId,
+  selectedArrowIds,
   onCommitEdit,
   onCancelEdit,
   onUndo,
   onRedo,
   onDeleteBlock,
   onDeleteArrow,
+  onDeleteSelection,
   onCopy,
   onCut,
   onPaste,
@@ -99,6 +104,13 @@ export function useKeyboard({
       }
 
       if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+      // Issue #133: a ctrl-selected arrow group (possibly mixed with blocks)
+      // is deleted as a whole via onDeleteSelection.
+      if (selectedArrowIds.length > 0) {
+        e.preventDefault();
+        onDeleteSelection();
+        return;
+      }
       if (selectedId) {
         e.preventDefault();
         onDeleteBlock(selectedId);
@@ -116,12 +128,14 @@ export function useKeyboard({
     editingId,
     selectedId,
     selectedArrowId,
+    selectedArrowIds,
     onCommitEdit,
     onCancelEdit,
     onUndo,
     onRedo,
     onDeleteBlock,
     onDeleteArrow,
+    onDeleteSelection,
     onCopy,
     onCut,
     onPaste,
