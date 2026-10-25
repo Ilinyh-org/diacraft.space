@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   toggleBlockSelection,
+  toggleArrowSelection,
 } from '../selection';
 
 describe('toggleBlockSelection', () => {
@@ -27,5 +28,22 @@ describe('toggleBlockSelection', () => {
   it('keeps the primary selection when it stays in the multi-selection', () => {
     const next = toggleBlockSelection(['a', 'b'], 'a', 'b', true);
     expect(next).toEqual({ selectedIds: ['a'], selectedId: 'a' });
+  });
+});
+
+describe('toggleArrowSelection (issue #133)', () => {
+  it('plain click selects only that arrow', () => {
+    const next = toggleArrowSelection(['a1', 'a2'], 'a1', 'a3', false);
+    expect(next).toEqual({ selectedIds: ['a3'], selectedId: 'a3' });
+  });
+
+  it('ctrl-click adds an arrow to the selection', () => {
+    const next = toggleArrowSelection(['a1'], 'a1', 'a2', true);
+    expect(next).toEqual({ selectedIds: ['a1', 'a2'], selectedId: 'a2' });
+  });
+
+  it('ctrl-click on a selected arrow removes it from the selection', () => {
+    const next = toggleArrowSelection(['a1', 'a2'], 'a2', 'a2', true);
+    expect(next).toEqual({ selectedIds: ['a1'], selectedId: null });
   });
 });

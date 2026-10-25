@@ -11,7 +11,7 @@ type Props = {
   isSelected: boolean;
   isHighlighted?: boolean;
   listening: boolean;
-  onClick: () => void;
+  onClick: (multi: boolean) => void;
 };
 
 export function ArrowShape({
@@ -55,11 +55,12 @@ export function ArrowShape({
       listening={listening}
       onClick={(e) => {
         e.cancelBubble = true;
-        onClick();
+        const multi = !!(e.evt && (e.evt.ctrlKey || e.evt.metaKey));
+        onClick(multi);
       }}
       onTap={(e) => {
         e.cancelBubble = true;
-        onClick();
+        onClick(false);
       }}
     />
   );

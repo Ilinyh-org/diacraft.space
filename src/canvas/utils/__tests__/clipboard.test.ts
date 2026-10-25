@@ -48,6 +48,24 @@ describe('copySelection', () => {
     const clip = copySelection(blocks, arrows, ['a', 'b']);
     expect(clip.arrows.map((a) => a.id)).toEqual(['x']);
   });
+
+  it('includes explicitly selected arrows and their endpoint blocks (issue #133)', () => {
+    const blocks = [block('a'), block('b'), block('c')];
+    const arrows = [arrow('x', 'a', 'b'), arrow('y', 'a', 'c')];
+    const clip = copySelection(blocks, arrows, ['b'], ['y']);
+    // Endpoint blocks a and c are pulled in so the pasted arrow stays valid.
+    expect(clip.blocks.map((b) => b.id)).toEqual(['a', 'b', 'c']);
+    // y is explicitly selected; x also runs between copied blocks a–b.
+    expect(clip.arrows.map((a) => a.id)).toEqual(['x', 'y']);
+  });
+
+  it('copies selected arrows even with no explicitly selected blocks (issue #133)', () => {
+    const blocks = [block('a'), block('b')];
+    const arrows = [arrow('x', 'a', 'b')];
+    const clip = copySelection(blocks, arrows, [], ['x']);
+    expect(clip.blocks.map((b) => b.id)).toEqual(['a', 'b']);
+    expect(clip.arrows.map((a) => a.id)).toEqual(['x']);
+  });
 });
 
 describe('clipboardBBox', () => {

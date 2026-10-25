@@ -100,6 +100,7 @@ import { ContextMenu } from './ui/ContextMenu';
 import type { ContextMenuItem } from './ui/ContextMenu';
 import {
   toggleBlockSelection,
+  toggleArrowSelection,
 } from './utils/selection';
 
 type Mode = 'select' | 'draw';
@@ -154,6 +155,7 @@ export function Canvas() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedArrowId, setSelectedArrowId] = useState<string | null>(null);
+  const [selectedArrowIds, setSelectedArrowIds] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [mode, setMode] = useState<Mode>('select');
@@ -216,16 +218,43 @@ export function Canvas() {
     // Issue #126: clicking empty canvas space must also drop the arrow
     // selection, otherwise Delete would still remove the selected arrow.
     setSelectedArrowId(null);
+    setSelectedArrowIds([]);
   }, []);
 
   const selectBlock = useCallback(
     (id: string, multi: boolean) => {
-      setSelectedArrowId(null);
+      // Issue #133: a ctrl-click keeps any selected arrows so blocks and
+      // arrows can be selected together; a plain click resets everything.
+      if (!multi) {
+        setSelectedArrowId(null);
+        setSelectedArrowIds([]);
+      }
       const next = toggleBlockSelection(selectedIds, selectedId, id, multi);
       setSelectedIds(next.selectedIds);
       setSelectedId(next.selectedId);
     },
     [selectedIds, selectedId]
+  );
+
+  const selectArrow = useCallback(
+    (id: string, multi: boolean) => {
+      if (!multi) {
+        setSelectedId(null);
+        setSelectedIds([]);
+        setSelectedArrowIds([]);
+        setSelectedArrowId(id);
+        return;
+      }
+      const next = toggleArrowSelection(
+        selectedArrowIds,
+        selectedArrowId,
+        id,
+        true
+      );
+      setSelectedArrowIds(next.selectedIds);
+      setSelectedArrowId(next.selectedId);
+    },
+    [selectedArrowIds, selectedArrowId]
   );
 
   /** Currently copied/cuttable selection ids (primary + ctrl-selected). */
@@ -236,33 +265,39 @@ export function Canvas() {
 
   const handleCopy = useCallback(() => {
     const ids = currentSelectionIds();
-    if (ids.length === 0) return;
+    if (ids.length === 0 && selectedArrowIds.length === 0) return;
     clipboardRef.current = copySelection(
       blocksRef.current,
       arrowsRef.current,
-      ids
+      ids,
+      selectedArrowIds
     );
     if (clipboardRef.current.blocks.length > 0) setHasClipboard(true);
-  }, [currentSelectionIds]);
+  }, [currentSelectionIds, selectedArrowIds]);
 
   const handleCut = useCallback(() => {
     const ids = currentSelectionIds();
-    if (ids.length === 0) return;
+    if (ids.length === 0 && selectedArrowIds.length === 0) return;
     clipboardRef.current = copySelection(
       blocksRef.current,
       arrowsRef.current,
-      ids
+      ids,
+      selectedArrowIds
     );
     if (clipboardRef.current.blocks.length > 0) setHasClipboard(true);
     const removed = new Set(ids);
+    const removedArrows = new Set(selectedArrowIds);
     commit((s) => ({
       blocks: s.blocks.filter((b) => !removed.has(b.id)),
       arrows: s.arrows.filter(
-        (a) => !removed.has(a.fromBlockId) && !removed.has(a.toBlockId)
+        (a) =>
+          !removedArrows.has(a.id) &&
+          !removed.has(a.fromBlockId) &&
+          !removed.has(a.toBlockId)
       ),
     }));
     clearSelection();
-  }, [currentSelectionIds, commit, clearSelection]);
+  }, [currentSelectionIds, selectedArrowIds, commit, clearSelection]);
 
   const handlePaste = useCallback(
     (cursor?: { x: number; y: number }) => {
@@ -284,6 +319,12 @@ export function Canvas() {
       }));
       setSelectedIds(pasted.blocks.map((b) => b.id));
       setSelectedId(pasted.blocks[pasted.blocks.length - 1]?.id ?? null);
+      setSelectedArrowIds(pasted.arrows.map((a) => a.id));
+      setSelectedArrowId(
+        pasted.arrows.length > 0
+          ? pasted.arrows[pasted.arrows.length - 1].id
+          : null
+      );
     },
     [commit]
   );
@@ -631,9 +672,35 @@ export function Canvas() {
         arrows: s.arrows.filter((a) => a.id !== arrowId),
       }));
       setSelectedArrowId(null);
+      setSelectedArrowIds((prev) => prev.filter((a) => a !== arrowId));
     },
     [commit]
   );
+
+  /** Issue #133: delete the whole mixed block+arrow selection at once. */
+  const handleDeleteSelection = useCallback(() => {
+    const ids = currentSelectionIds();
+    if (selectedArrowIds.length > 0) {
+      const removed = new Set(selectedArrowIds);
+      commit((s) => ({
+        ...s,
+        arrows: s.arrows.filter((a) => !removed.has(a.id)),
+      }));
+      setSelectedArrowId(null);
+      setSelectedArrowIds([]);
+    }
+    if (ids.length > 0) {
+      setFadingOut((prev) => {
+        const next = new Set(prev);
+        for (const id of ids) {
+          next.add(id);
+        }
+        return next;
+      });
+      setSelectedId(null);
+      setSelectedIds((prev) => prev.filter((b) => !ids.includes(b)));
+    }
+  }, [selectedArrowIds, currentSelectionIds, commit]);
 
   const handleBlockRemoved = useCallback(
     (id: string) => {
@@ -680,12 +747,14 @@ export function Canvas() {
     editingId,
     selectedId,
     selectedArrowId,
+    selectedArrowIds,
     onCommitEdit: handleCommitEdit,
     onCancelEdit: () => setEditingId(null),
     onUndo: undo,
     onRedo: redo,
     onDeleteBlock: requestDelete,
     onDeleteArrow: requestDeleteArrow,
+    onDeleteSelection: handleDeleteSelection,
     onCopy: handleCopy,
     onCut: handleCut,
     onPaste: () => {
@@ -1037,18 +1106,18 @@ const runExport = (
               arrow={arrow}
               blocks={blocks}
               theme={theme}
-              isSelected={selectedArrowId === arrow.id}
+              isSelected={
+                selectedArrowId === arrow.id ||
+                selectedArrowIds.includes(arrow.id)
+              }
               isHighlighted={animRunning && activeArrowIds.has(arrow.id)}
               listening={!isExporting}
-              onClick={() => {
-                setSelectedArrowId(arrow.id);
-                setSelectedId(null);
-                setSelectedIds([]);
-              }}
+              onClick={(multi) => selectArrow(arrow.id, multi)}
             />
           ))}
 
           {selectedArrowId &&
+            selectedArrowIds.length <= 1 &&
             !isExporting &&
             (() => {
               const arrow = arrows.find((a) => a.id === selectedArrowId);
