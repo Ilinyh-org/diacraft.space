@@ -99,4 +99,43 @@ export function absoluteToWorld(node: {
   };
 }
 
+/**
+ * Converts a raw drag position reported by Konva's dragBoundFunc (absolute,
+ * screen space — includes the Stage's pan offset and scale) into world
+ * (layer) coordinates. Issue #144: comparing this directly against a block's
+ * world x/y made the bottom-right resize handle compute a wrong height from
+ * the pan offset and teleport during a purely horizontal drag.
+ */
+export function dragPosToWorld(
+  pos: { x: number; y: number },
+  stage:
+    | { x: () => number; y: () => number; scaleX?: () => number }
+    | null,
+): { x: number; y: number } {
+  if (!stage) return pos;
+  const scale = stage.scaleX?.() ?? 1;
+  return {
+    x: (pos.x - stage.x()) / scale,
+    y: (pos.y - stage.y()) / scale,
+  };
+}
+
+/**
+ * Inverse of dragPosToWorld: converts a world point into the absolute
+ * (screen) position Konva's dragBoundFunc must return.
+ */
+export function worldToAbsolute(
+  point: { x: number; y: number },
+  stage:
+    | { x: () => number; y: () => number; scaleX?: () => number }
+    | null,
+): { x: number; y: number } {
+  if (!stage) return point;
+  const scale = stage.scaleX?.() ?? 1;
+  return {
+    x: point.x * scale + stage.x(),
+    y: point.y * scale + stage.y(),
+  };
+}
+
 const SIDES: Side[] = ['top', 'right', 'bottom', 'left'];

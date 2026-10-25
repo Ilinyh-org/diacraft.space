@@ -10,7 +10,7 @@ import { useLayoutEffect, useRef, useEffect, useState } from 'react';
 import Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 import type { Theme } from '../../theme';
-import { absoluteToWorld } from '../utils/blocks';
+import { absoluteToWorld, dragPosToWorld, worldToAbsolute } from '../utils/blocks';
 
 export type BlockType =
   | 'action'
@@ -79,6 +79,7 @@ export function Block({
   onRemoved,
 }: BlockProps) {
   const contentRef = useRef<Konva.Group>(null);
+  const resizeHandleRef = useRef<Konva.Rect>(null);
   const spawnDoneRef = useRef(false);
   const removeStartedRef = useRef(false);
 
@@ -450,6 +451,7 @@ export function Block({
 
       {selected && !removing && (
         <Rect
+          ref={resizeHandleRef}
           x={x + w - RESIZE_HANDLE_SIZE / 2}
           y={y + h - RESIZE_HANDLE_SIZE / 2}
           width={RESIZE_HANDLE_SIZE}
@@ -463,15 +465,25 @@ export function Block({
             e.cancelBubble = true;
           }}
           dragBoundFunc={(pos) => {
-            const desiredCornerX = pos.x + RESIZE_HANDLE_SIZE / 2;
-            const desiredCornerY = pos.y + RESIZE_HANDLE_SIZE / 2;
+            // dragBoundFunc reports and expects ABSOLUTE (screen) positions,
+            // which include the Stage pan/scale transform; the block geometry
+            // lives in world coordinates. Without the conversion, a purely
+            // horizontal drag picked up the pan offset as extra height and
+            // the handle could jump away (issue #144).
+            const stage = resizeHandleRef.current?.getStage() ?? null;
+            const world = dragPosToWorld(pos, stage);
+            const desiredCornerX = world.x + RESIZE_HANDLE_SIZE / 2;
+            const desiredCornerY = world.y + RESIZE_HANDLE_SIZE / 2;
             const newW = Math.max(MIN_WIDTH, desiredCornerX - x);
             const newH = Math.max(MIN_HEIGHT, desiredCornerY - y);
             setLiveSize({ w: newW, h: newH });
-            return {
-              x: x + newW - RESIZE_HANDLE_SIZE / 2,
-              y: y + newH - RESIZE_HANDLE_SIZE / 2,
-            };
+            return worldToAbsolute(
+              {
+                x: x + newW - RESIZE_HANDLE_SIZE / 2,
+                y: y + newH - RESIZE_HANDLE_SIZE / 2,
+              },
+              stage,
+            );
           }}
           onDragEnd={(e) => {
             const desiredCornerX = e.target.x() + RESIZE_HANDLE_SIZE / 2;
