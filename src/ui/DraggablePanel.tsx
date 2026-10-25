@@ -247,6 +247,7 @@ export function DraggablePanel({ theme, initialPosition, width, storageKey, cent
     panelY: number;
   } | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const adjustedRef = useRef(false);
 
   // Clamp the initial position inside the window and shift it out of overlap
@@ -290,7 +291,24 @@ export function DraggablePanel({ theme, initialPosition, width, storageKey, cent
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const onHandlePointerDown = (e: React.PointerEvent) => {
+  const shouldDragFrom = (e: React.PointerEvent): boolean => {
+    // Issue #143: the panel can be dragged from any empty space — the panel
+    // background, the content wrapper's padding/gaps, or the top handle — but
+    // never from interactive elements or content inside them (buttons, text
+    // nodes, inputs, etc.).
+    const target = e.target as HTMLElement;
+    if (target.closest('button, input, textarea, select, a, label, [data-no-drag]')) {
+      return false;
+    }
+    return (
+      target === panelRef.current ||
+      target === contentRef.current ||
+      target.closest('[data-drag-handle]') !== null
+    );
+  };
+
+  const onPanelPointerDown = (e: React.PointerEvent) => {
+    if (!shouldDragFrom(e)) return;
     e.preventDefault();
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     dragRef.current = {
@@ -302,7 +320,7 @@ export function DraggablePanel({ theme, initialPosition, width, storageKey, cent
     setDragging(true);
   };
 
-  const onHandlePointerMove = (e: React.PointerEvent) => {
+  const onPanelPointerMove = (e: React.PointerEvent) => {
     if (!dragRef.current) return;
     const dx = e.clientX - dragRef.current.startX;
     const dy = e.clientY - dragRef.current.startY;
@@ -344,7 +362,7 @@ export function DraggablePanel({ theme, initialPosition, width, storageKey, cent
     setPos(next);
   };
 
-  const onHandlePointerUp = (e: React.PointerEvent) => {
+  const onPanelPointerUp = (e: React.PointerEvent) => {
     if (!dragRef.current) return;
     dragRef.current = null;
     setDragging(false);
@@ -386,16 +404,17 @@ export function DraggablePanel({ theme, initialPosition, width, storageKey, cent
     borderTopLeftRadius: 6,
     borderTopRightRadius: 6,
   };
-
   return (
-    <div ref={panelRef} className={PANEL_CLASS} style={style}>
-      <div
-        style={handleStyle}
-        onPointerDown={onHandlePointerDown}
-        onPointerMove={onHandlePointerMove}
-        onPointerUp={onHandlePointerUp}
-        onPointerCancel={onHandlePointerUp}
-      >
+    <div
+      ref={panelRef}
+      className={PANEL_CLASS}
+      style={{ ...style, cursor: dragging ? 'grabbing' : style.cursor }}
+      onPointerDown={onPanelPointerDown}
+      onPointerMove={onPanelPointerMove}
+      onPointerUp={onPanelPointerUp}
+      onPointerCancel={onPanelPointerUp}
+    >
+      <div data-drag-handle style={handleStyle}>
         <div
           style={{
             width: 32,
@@ -407,11 +426,13 @@ export function DraggablePanel({ theme, initialPosition, width, storageKey, cent
         />
       </div>
       <div
+        ref={contentRef}
         style={{
           padding: '0 8px 8px 8px',
           display: 'flex',
           flexDirection: 'column',
           gap: 4,
+          cursor: 'default',
         }}
       >
         {children}
