@@ -127,6 +127,50 @@ beforeEach(() => {
   seedBlocks('Alpha', 'Beta');
 });
 
+describe('Canvas block context menu delete/rename (issue #131)', () => {
+  it('right-clicking a block offers Delete and Rename alongside Cut/Copy', () => {
+    renderCanvas();
+    fireEvent.contextMenu(blockNode('Alpha'), { clientX: 30, clientY: 40 });
+
+    const menu = screen.getByTestId('context-menu');
+    expect(within(menu).getByText('Delete')).toBeTruthy();
+    expect(within(menu).getByText('Rename')).toBeTruthy();
+    expect(within(menu).getByText('Cut')).toBeTruthy();
+    expect(within(menu).getByText('Copy')).toBeTruthy();
+  });
+
+  it('Delete removes the right-clicked block', () => {
+    renderCanvas();
+    fireEvent.contextMenu(blockNode('Beta'), { clientX: 30, clientY: 40 });
+    fireEvent.click(within(screen.getByTestId('context-menu')).getByText('Delete'));
+
+    expect(screen.queryByText('Beta')).toBeNull();
+    const saved = JSON.parse(
+      localStorage.getItem(STORAGE_KEY) ?? '{"blocks":[]}',
+    );
+    expect(saved.blocks.map((b: { label: string }) => b.label)).toEqual([
+      'Alpha',
+    ]);
+  });
+
+  it('Rename opens the edit input for the right-clicked block', () => {
+    renderCanvas();
+    fireEvent.contextMenu(blockNode('Alpha'), { clientX: 30, clientY: 40 });
+    fireEvent.click(within(screen.getByTestId('context-menu')).getByText('Rename'));
+
+    const textarea = screen.getByDisplayValue('Alpha') as HTMLTextAreaElement;
+    expect(textarea.tagName).toBe('TEXTAREA');
+  });
+
+  it('Delete keeps other blocks intact', () => {
+    renderCanvas();
+    fireEvent.contextMenu(blockNode('Beta'), { clientX: 30, clientY: 40 });
+    fireEvent.click(within(screen.getByTestId('context-menu')).getByText('Delete'));
+
+    expect(screen.getByText('Alpha')).toBeTruthy();
+  });
+});
+
 describe('Canvas copy/cut/paste (issue #42)', () => {
   it('Ctrl+C copies the selected block and Ctrl+V pastes a duplicate', () => {
     renderCanvas();

@@ -54,6 +54,8 @@ export type TranslationKey =
   | "context.cut"
   | "context.copy"
   | "context.paste"
+  | "context.delete"
+  | "context.rename"
   // game panel
   | "game.title"
   | "game.levels"
@@ -137,6 +139,8 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "context.cut": "Cut",
     "context.copy": "Copy",
     "context.paste": "Paste",
+    "context.delete": "Delete",
+    "context.rename": "Rename",
     "game.title": "Algorithm Game",
     "game.levels": "Levels",
     "game.run": "▶ Run",
@@ -216,6 +220,8 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "context.cut": "Вырезать",
     "context.copy": "Копировать",
     "context.paste": "Вставить",
+    "context.delete": "Удалить",
+    "context.rename": "Переименовать",
     "game.title": "Игра «Алгоритм»",
     "game.levels": "Уровни",
     "game.run": "▶ Запуск",
