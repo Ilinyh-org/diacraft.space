@@ -26,7 +26,7 @@ const SOLUTIONS: Record<string, Statement[]> = {
   'conditions-7': [
     { kind: 'ifWall', then: [tr, ...mv(1), tl, ...mv(3)], else: [] },
   ],
-  'conditions-8': [...mv(1), { kind: 'inputDir' }, ...mv(1)],
+  'conditions-8': [{ kind: 'inputDir' }, ...mv(2)],
   'conditions-9': [
     ...mv(1),
     { kind: 'inputDir' },
@@ -105,9 +105,13 @@ const SOLUTIONS: Record<string, Statement[]> = {
 };
 
 const INPUTS: Record<string, string[]> = {
-  'conditions-8': ['left'],
   'conditions-9': ['right', 'down'],
   'functions-20': ['down'],
+};
+
+/** Issue #142: passwords typed into the input block on door levels. */
+const PASSWORDS: Record<string, string[]> = {
+  'conditions-8': ['1234'],
 };
 
 /** Subprogram flowcharts used by row 4 reference solutions. */
@@ -193,6 +197,7 @@ describe('levels (#70: 5x5 table)', () => {
         solution,
         SUBS[level.id] ?? {},
         inputs,
+        PASSWORDS[level.id] ?? [],
       );
       expect(result.status, level.id).toBe('win');
     }

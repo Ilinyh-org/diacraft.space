@@ -46,6 +46,10 @@ export type Level = {
   height: number;
   /** Wall cells as [x, y] pairs. */
   walls: [number, number][];
+  /** Issue #142: door cells as [x, y] pairs — closed until the password is entered. */
+  doors?: [number, number][];
+  /** Issue #142: the password that opens this level's doors (level task text). */
+  password?: string;
   start: Pos & { dir: Dir };
   goal: Pos;
   allowed: StatementKind[];
@@ -79,6 +83,26 @@ export function isWallAt(level: Level, x: number, y: number): boolean {
   return level.walls.some(([wx, wy]) => wx === x && wy === y);
 }
 
+/** Issue #142: is the cell one of the level's password doors? */
+export function isDoorAt(level: Level, x: number, y: number): boolean {
+  return (level.doors ?? []).some(([dx, dy]) => dx === x && dy === y);
+}
+
+/**
+ * Issue #142: a cell blocks the robot when it is a wall, or a door that is
+ * not (yet) open. Open doors are tracked as "x,y" keys.
+ */
+export function isBlockedAt(
+  level: Level,
+  x: number,
+  y: number,
+  openDoors: ReadonlySet<string> = new Set(),
+): boolean {
+  if (isWallAt(level, x, y)) return true;
+  if (isDoorAt(level, x, y) && !openDoors.has(`${x},${y}`)) return true;
+  return false;
+}
+
 export function wallAhead(level: Level, frame: Frame): boolean {
   const d = DELTA[frame.dir];
   return isWallAt(level, frame.x + d.x, frame.y + d.y);
@@ -94,13 +118,14 @@ export function stepStatement(
   level: Level,
   frame: Frame,
   stmt: Statement,
+  openDoors: ReadonlySet<string> = new Set(),
 ): { frame: Frame; crashed: boolean } {
   switch (stmt.kind) {
     case 'move': {
       const d = DELTA[frame.dir];
       const nx = frame.x + d.x;
       const ny = frame.y + d.y;
-      if (isWallAt(level, nx, ny)) {
+      if (isBlockedAt(level, nx, ny, openDoors)) {
         return { frame, crashed: true };
       }
       return { frame: { x: nx, y: ny, dir: frame.dir }, crashed: false };
@@ -123,12 +148,16 @@ export function runProgram(
   program: Statement[],
   subprograms: Subprograms = {},
   inputs: Dir[] = [],
+  passwords: string[] = [],
 ): RunResult {
   let frame: Frame = { ...level.start };
   const frames: Frame[] = [{ ...frame }];
   const output: string[] = [];
   const inventory: (string | null)[] = Array(8).fill(null);
   let inputIndex = 0;
+  let passwordIndex = 0;
+  // Issue #142: doors start closed; the correct password opens all of them.
+  const openDoors = new Set<string>();
   let needInput = false;
   let steps = 0;
   let crashed = false;
@@ -153,7 +182,7 @@ export function runProgram(
           const d = DELTA[frame.dir];
           const nx = frame.x + d.x;
           const ny = frame.y + d.y;
-          if (isWallAt(level, nx, ny)) {
+          if (isBlockedAt(level, nx, ny, openDoors)) {
             crashed = true;
             return;
           }
@@ -182,6 +211,19 @@ export function runProgram(
           output.push(resolveOut(stmt.text));
           break;
         case 'inputDir':
+          // Issue #142: on password-door levels the input block feeds the
+          // door password instead of a direction.
+          if (level.password != null) {
+            const pw = (passwords[passwordIndex] ?? '').trim().toLowerCase();
+            passwordIndex += 1;
+            if (pw === level.password.trim().toLowerCase()) {
+              for (const [dx, dy] of level.doors ?? []) openDoors.add(`${dx},${dy}`);
+            } else {
+              crashed = true;
+              return;
+            }
+            break;
+          }
           if (inputIndex >= inputs.length) {
             needInput = true;
             return;
