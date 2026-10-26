@@ -6,7 +6,7 @@ import type { Theme } from '../theme';
 import type { ArrowData, BlockData } from '../canvas/types';
 import { IO_LEVEL_IDS, LEVELS } from './levels';
 import type { Frame } from './types';
-import { compileFlowchart, isEndBlock, statementForBlock } from './flowchart';
+import { compileFlowchart, isEndBlock, safeLabel, statementForBlock } from './flowchart';
 import { isDoorAt, stepStatement } from './types';
 import { t, tOptional, type LanguageCode } from '../canvas/ui/i18n';
 
@@ -197,6 +197,19 @@ export function GamePanel({
     const stmt = statementForBlock(block);
     if (!stmt) return;
     const frame = sync.frames[sync.frames.length - 1];
+    // Issue #155 (rework): an input block named differently from the task's
+    // required input name stops the run with an explicit error the moment
+    // it activates — the level can no longer be completed with the wrong
+    // input block name.
+    if (
+      stmt.kind === 'inputDir' &&
+      level.inputName != null &&
+      safeLabel(block).trim().toLowerCase() !== level.inputName.trim().toLowerCase()
+    ) {
+      sync.crashed = true;
+      setStatus(t(language, 'flow.wrongInputName', { name: level.inputName }));
+      return;
+    }
     // Issue #142: the input block on a door level asks for the password —
     // highlight the Program I/O field green until it is submitted.
     if (stmt.kind === 'inputDir' && isDoorLevel) {

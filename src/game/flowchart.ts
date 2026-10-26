@@ -22,7 +22,7 @@ const MOVE_WORDS = new Set(['move', 'left', 'turn left', 'right', 'turn right'])
 
 // Issue #87: text blocks created before the `block.text` translation key
 // existed can carry an undefined label; never crash the compiler on it.
-const safeLabel = (block: BlockData): string => block.label ?? '';
+export const safeLabel = (block: BlockData): string => block.label ?? '';
 
 const parseAction = (label: string): Statement | null => {
   const low = label.trim().toLowerCase();
