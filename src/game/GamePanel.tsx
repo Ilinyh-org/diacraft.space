@@ -21,6 +21,9 @@ type Props = {
   blockSignal?: { seq: number; blockId: string } | null;
   /** Starts the canvas diagram animation (issue #33); called on button Run only. */
   onRunDiagram?: () => void;
+  /** Issue #155 (rework 2): aborts the running diagram animation — the run
+   * stops dead at the block that caused the error. */
+  onAbortDiagram?: () => void;
   /** Issue #142 (fix): paused=true stops the diagram animation at the input
    * block until the password is submitted; paused=false resumes it. */
   onAwaitInput?: (paused: boolean) => void;
@@ -36,6 +39,7 @@ export function GamePanel({
   runSignal = 0,
   blockSignal = null,
   onRunDiagram,
+  onAbortDiagram,
   onAwaitInput,
   speed = 5,
 }: Props) {
@@ -50,6 +54,10 @@ export function GamePanel({
   // Issue #142: while the input block waits for the door password, the
   // Program I/O field is highlighted green.
   const [awaitingPassword, setAwaitingPassword] = useState(false);
+  // Issue #155 (rework 2): once the run is stopped on a wrongly named input
+  // block, the pre-run warning hint disappears — the stop message below is
+  // the single hint, so the same text is never shown twice.
+  const [inputRejected, setInputRejected] = useState(false);
   const [ioOutput, setIoOutput] = useState<string[]>([]);
   // Issue #139: levels the user has completed with a successful run are
   // highlighted green on the levels page.
@@ -68,6 +76,10 @@ export function GamePanel({
   useEffect(() => {
     onAwaitInputRef.current = onAwaitInput;
   }, [onAwaitInput]);
+  const onAbortDiagramRef = useRef(onAbortDiagram);
+  useEffect(() => {
+    onAbortDiagramRef.current = onAbortDiagram;
+  }, [onAbortDiagram]);
   useEffect(() => {
     onAwaitInputRef.current?.(awaitingPassword);
   }, [awaitingPassword]);
@@ -104,6 +116,7 @@ export function GamePanel({
     setHasRun(false);
     setIoOutput([]);
     setAwaitingPassword(false);
+    setInputRejected(false);
     syncState.current = null;
     lastSignalSeq.current = 0;
     if (highlightTimer.current !== null) {
@@ -207,7 +220,12 @@ export function GamePanel({
       safeLabel(block).trim().toLowerCase() !== level.inputName.trim().toLowerCase()
     ) {
       sync.crashed = true;
-      setStatus(t(language, 'flow.wrongInputName', { name: level.inputName }));
+      // Issue #155 (rework 2): the run stops DEAD on the wrongly named
+      // input block — the diagram animation is aborted, so the algorithm
+      // can never run through the block to the End.
+      setInputRejected(true);
+      onAbortDiagramRef.current?.();
+      setStatus(t(language, 'flow.wrongInputStopped', { name: level.inputName }));
       return;
     }
     // Issue #142: the input block on a door level asks for the password —
@@ -519,7 +537,7 @@ export function GamePanel({
             Run click, when the animation starts. Issue #155: compile
             warnings (e.g. input-block name mismatch) are non-blocking and
             shown in the same hint area while the run proceeds. */}
-        {hasRun && (!compiled.ok || compiled.warnings.length > 0) && (
+        {hasRun && !inputRejected && (!compiled.ok || compiled.warnings.length > 0) && (
           <div data-testid="flowchart-errors" style={{ fontSize: 11, color: theme.deleteButton }}>
             {!compiled.ok &&
               compiled.errors.map((e, i) => (
