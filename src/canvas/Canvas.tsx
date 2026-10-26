@@ -173,6 +173,21 @@ export function Canvas() {
   const [activeBlockIds, setActiveBlockIds] = useState<Set<string>>(new Set());
   const [activeArrowIds, setActiveArrowIds] = useState<Set<string>>(new Set());
   const animTimerRef = useRef<number | null>(null);
+  // Issue #142 (fix): the diagram animation pauses at the input block on a
+  // password-door level and resumes once the password is submitted.
+  const animPausedRef = useRef(false);
+  const animResumeRef = useRef<(() => void) | null>(null);
+
+  const setAnimationPaused = useCallback((paused: boolean) => {
+    animPausedRef.current = paused;
+    if (!paused) {
+      const cont = animResumeRef.current;
+      if (cont) {
+        animResumeRef.current = null;
+        animTimerRef.current = window.setTimeout(cont, 50);
+      }
+    }
+  }, []);
   const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
   // Issue #82: zoomed-out view. Default view is scale 1; zoom-out only.
   const [stageScale, setStageScale] = useState(1);
@@ -592,6 +607,8 @@ export function Canvas() {
       window.clearTimeout(animTimerRef.current);
       animTimerRef.current = null;
     }
+    animPausedRef.current = false;
+    animResumeRef.current = null;
     setAnimRunning(false);
     setActiveBlockIds(new Set());
     setActiveArrowIds(new Set());
@@ -625,6 +642,12 @@ export function Canvas() {
 
     const stepDelay = stepDelayMs(animSpeed);
     const runStep = (index: number, blocksOn: Set<string>, arrowsOn: Set<string>) => {
+      // Issue #142 (fix): while paused at the input block, park the next
+      // step and wait until the game reports the password was submitted.
+      if (index < steps.length && animPausedRef.current) {
+        animResumeRef.current = () => runStep(index, blocksOn, arrowsOn);
+        return;
+      }
       if (index >= steps.length) {
         animTimerRef.current = window.setTimeout(() => {
           animTimerRef.current = null;
@@ -1419,6 +1442,7 @@ const runExport = (
           blockSignal={gameBlockSignal}
               speed={animSpeed}
           onRunDiagram={runAnimation}
+          onAwaitInput={setAnimationPaused}
         />
       )}
 
