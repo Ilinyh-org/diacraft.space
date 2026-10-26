@@ -46,7 +46,7 @@ function arrow(fromBlockId: string, toBlockId: string): ArrowData {
 
 function makeDoorFlowchart() {
   const start = block({ type: 'start', label: 'Start' });
-  const input = block({ type: 'io', label: 'in' });
+  const input = block({ type: 'io', label: 'Input Password' }); // #149: exact task name
   const move = block({ label: 'move' });
   const end = block({ label: 'End' });
   const arrows = [

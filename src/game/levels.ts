@@ -141,6 +141,8 @@ export const LEVELS: Level[] = [
     walls: [],
     doors: [[1, 0]],
     password: '1234',
+    // Issue #149: the input block must be named exactly as the task says.
+    inputName: 'Input Password',
     start: { x: 0, y: 0, dir: 1 },
     goal: { x: 2, y: 0 },
     allowed: [...io, 'ifWall', 'inputDir'],
