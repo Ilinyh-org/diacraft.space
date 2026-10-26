@@ -60,6 +60,7 @@ export type TranslationKey =
   | "game.title"
   | "game.levels"
   | "game.run"
+  | "game.stop"
   | "game.nextLevel"
   | "game.win"
   | "game.crash"
@@ -150,6 +151,7 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "game.title": "Algorithm Game",
     "game.levels": "Levels",
     "game.run": "▶ Run",
+    "game.stop": "■ Stop",
     "game.nextLevel": "Next level →",
     "game.task": "Task",
     "game.taskFallback": "Lead the robot to the flag ⚑.",
@@ -239,6 +241,7 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "game.title": "Игра «Алгоритм»",
     "game.levels": "Уровни",
     "game.run": "▶ Запуск",
+    "game.stop": "■ Стоп",
     "game.nextLevel": "Следующий уровень →",
     "game.task": "Задача",
     "game.taskFallback": "Проведите робота к флагу ⚑.",

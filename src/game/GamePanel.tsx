@@ -21,6 +21,8 @@ type Props = {
   blockSignal?: { seq: number; blockId: string } | null;
   /** Starts the canvas diagram animation (issue #33); called on button Run only. */
   onRunDiagram?: () => void;
+  /** Issue #160: stops the canvas diagram animation; called on button Stop. */
+  onStopDiagram?: () => void;
   /** Issue #142 (fix): paused=true stops the diagram animation at the input
    * block until the password is submitted; paused=false resumes it. */
   onAwaitInput?: (paused: boolean) => void;
@@ -36,6 +38,7 @@ export function GamePanel({
   runSignal = 0,
   blockSignal = null,
   onRunDiagram,
+  onStopDiagram,
   onAwaitInput,
   speed = 5,
 }: Props) {
@@ -151,6 +154,13 @@ export function GamePanel({
     setHasRun(true);
     onRunDiagram?.();
   }, [armSync, onRunDiagram]);
+
+  // Issue #160: the ■ Stop button stops a stuck run — it clears the game
+  // state (same as reset) and stops the diagram animation in the canvas.
+  const stop = useCallback(() => {
+    reset();
+    onStopDiagram?.();
+  }, [reset, onStopDiagram]);
 
   const armSyncRef = useRef(armSync);
   useEffect(() => {
@@ -555,6 +565,15 @@ export function GamePanel({
             style={buttonStyle}
           >
             {t(language, 'game.run')}
+          </button>
+          {/* Issue #160: Stop next to Run so the user can stop a stuck run. */}
+          <button
+            type="button"
+            onClick={stop}
+            data-testid="game-stop"
+            style={buttonStyle}
+          >
+            {t(language, 'game.stop')}
           </button>
           {/* Issue #139: prev/next level switchers are back on the level
               page (not on the levels menu). */}
