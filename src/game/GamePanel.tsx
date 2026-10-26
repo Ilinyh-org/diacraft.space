@@ -122,8 +122,10 @@ export function GamePanel({
   );
 
   const compiled = useMemo(
-    () => compileFlowchart(blocks, arrows, language),
-    [blocks, arrows, language],
+    // Issue #155: pass the level's expected input block name so the
+    // name-mismatch warning can be shown (the run itself is not blocked).
+    () => compileFlowchart(blocks, arrows, language, { inputName: level.inputName }),
+    [blocks, arrows, language, level],
   );
 
   const armSync = useCallback(() => {
@@ -192,7 +194,7 @@ export function GamePanel({
       return;
     }
 
-    const stmt = statementForBlock(block, level);
+    const stmt = statementForBlock(block);
     if (!stmt) return;
     const frame = sync.frames[sync.frames.length - 1];
     // Issue #142: the input block on a door level asks for the password —
@@ -501,12 +503,19 @@ export function GamePanel({
             margin. */}
 
         {/* Issue #107: the error hint appears and updates only after the
-            Run click, when the animation starts. */}
-        {hasRun && !compiled.ok && (
+            Run click, when the animation starts. Issue #155: compile
+            warnings (e.g. input-block name mismatch) are non-blocking and
+            shown in the same hint area while the run proceeds. */}
+        {hasRun && (!compiled.ok || compiled.warnings.length > 0) && (
           <div data-testid="flowchart-errors" style={{ fontSize: 11, color: theme.deleteButton }}>
-            {compiled.errors.map((e, i) => (
-              <div key={i}>✖ {e}</div>
-            ))}
+            {!compiled.ok &&
+              compiled.errors.map((e, i) => (
+                <div key={i}>✖ {e}</div>
+              ))}
+            {compiled.ok &&
+              compiled.warnings.map((w, i) => (
+                <div key={i}>⚠ {w}</div>
+              ))}
           </div>
         )}
 

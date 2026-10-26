@@ -48,9 +48,10 @@ const linear = (inputLabel: string): { blocks: BlockData[]; arrows: ArrowData[] 
 };
 
 /**
- * Issue #149: the game must check not just the input block's type and
- * default name, but that its name is exactly the one given by the level
- * task (e.g. "Input Password" on the locked-door level).
+ * Issue #149 (refined by #155): the game must check the input block's name
+ * against the one given by the level task (e.g. "Input Password" on the
+ * locked-door level). Issue #155: the mismatch is a non-blocking warning —
+ * the algorithm still stops on the input block and waits for input.
  */
 describe('issue #149: input block name must match the level task', () => {
   it('accepts the exact task name "Input Password" as an input block', () => {
@@ -70,23 +71,22 @@ describe('issue #149: input block name must match the level task', () => {
     expect(result.ok).toBe(true);
   });
 
-  it('rejects a plain default name "Input" when the task requires "Input Password"', () => {
+  it('warns about a plain default name "Input" when the task requires "Input Password" (#155)', () => {
     const { blocks, arrows } = linear('Input');
     const result = compileFlowchart(blocks, arrows, 'en', {
       inputName: passwordLevel.inputName,
     });
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.errors.join(' ')).toContain('Input Password');
-    }
+    expect(result.ok).toBe(true);
+    expect(result.warnings.join(' ')).toContain('Input Password');
   });
 
-  it('rejects an arbitrary differently named input block', () => {
+  it('warns about an arbitrary differently named input block (#155)', () => {
     const { blocks, arrows } = linear('Input Secret');
     const result = compileFlowchart(blocks, arrows, 'en', {
       inputName: passwordLevel.inputName,
     });
-    expect(result.ok).toBe(false);
+    expect(result.ok).toBe(true);
+    expect(result.warnings.length).toBeGreaterThan(0);
   });
 
   it('still accepts default input names when the level has no name requirement', () => {
@@ -96,11 +96,11 @@ describe('issue #149: input block name must match the level task', () => {
     if (result.ok) expect(result.program).toEqual([{ kind: 'inputDir' }]);
   });
 
-  it('statementForBlock returns null for a mismatched input name on the level', () => {
+  it('statementForBlock still returns inputDir for a mismatched input name (#155)', () => {
     const mismatched = block('Input', 'io');
-    expect(statementForBlock(mismatched, passwordLevel)).toBeNull();
+    expect(statementForBlock(mismatched)).toEqual({ kind: 'inputDir' });
     const matching = block('Input Password', 'io');
-    expect(statementForBlock(matching, passwordLevel)).toEqual({ kind: 'inputDir' });
+    expect(statementForBlock(matching)).toEqual({ kind: 'inputDir' });
   });
 });
 
