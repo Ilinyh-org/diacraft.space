@@ -165,7 +165,17 @@ describe('GamePanel', () => {
     expect(screen.getByTestId('flowchart-errors').textContent).toContain(
       'End block',
     );
-    expect(screen.getByRole('status').textContent).toContain('✖');
+  });
+
+  it('shows a compile error only once, not duplicated in the status line (#153)', () => {
+    const start = block({ type: 'start', label: 'Start' });
+    render(<GamePanel language="en" theme={lightTheme} blocks={[start]} arrows={[]} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Levels' }));
+    fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
+    const panel = screen.getByTestId('game-panel');
+    const occurrences = panel.textContent?.split('End block').length ?? 1;
+    // The error text appears exactly once (in the errors hint), never twice.
+    expect(occurrences).toBe(2); // split yields n_occurrences + 1
   });
 
   it('shows the task text above the level graphics (#107)', () => {
