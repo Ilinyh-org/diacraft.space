@@ -128,8 +128,10 @@ export function GamePanel({
 
   const armSync = useCallback(() => {
     reset();
+    // Issue #153: compile errors are already shown once in the dedicated
+    // flowchart-errors hint after Run — do not duplicate them in the
+    // status line.
     if (!compiled.ok) {
-      setStatus(`✖ ${compiled.errors.join(' ')}`);
       return;
     }
     syncState.current = { frames: [{ ...level.start }], crashed: false, openDoors: new Set() };
