@@ -94,7 +94,6 @@ export type TranslationKey =
   | "flow.noLoops"
   | "flow.unknownAction"
   | "flow.wrongInputName"
-  | "flow.wrongInputStopped"
   | "flow.notPartOfFlowchart";
 
 export const LANGUAGES = [
@@ -191,9 +190,7 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "flow.unknownAction":
       'Unknown action "{label}". Rename the block to Move, Turn left or Turn right.',
     "flow.wrongInputName":
-      'The task expects an input block named exactly "{name}" — rename your input block to "{name}".',
-    "flow.wrongInputStopped":
-      'Run stopped: the task expects an input block named exactly "{name}" — rename your input block to "{name}".',
+      'The task expects an input block named exactly "{name}" — rename your input block to "{name}". The run still proceeds through the block.',
     "flow.notPartOfFlowchart": 'Block "{label}" is not part of the flowchart.',
   },
   ru: {
@@ -282,9 +279,7 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "flow.unknownAction":
       'Неизвестное действие «{label}». Переименуйте блок в Идти, Налево или Направо.',
     "flow.wrongInputName":
-      'Задача ждёт блок ввода с точным названием «{name}» — переименуйте ваш блок ввода в «{name}».',
-    "flow.wrongInputStopped":
-      'Запуск остановлен: задача ждёт блок ввода с точным названием «{name}» — переименуйте ваш блок ввода в «{name}».',
+      'Задача ждёт блок ввода с точным названием «{name}» — переименуйте ваш блок ввода в «{name}». Запуск всё равно продолжится через блок.',
     "flow.notPartOfFlowchart": 'Блок «{label}» не является частью блок-схемы.',
   },
 };
