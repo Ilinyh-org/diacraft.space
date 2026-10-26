@@ -21,6 +21,9 @@ type Props = {
   blockSignal?: { seq: number; blockId: string } | null;
   /** Starts the canvas diagram animation (issue #33); called on button Run only. */
   onRunDiagram?: () => void;
+  /** Issue #142 (fix): paused=true stops the diagram animation at the input
+   * block until the password is submitted; paused=false resumes it. */
+  onAwaitInput?: (paused: boolean) => void;
   /** Diagram animation speed (1-10, new #109 scale); drives the robot's movement speed (#40). */
   speed?: number;
 };
@@ -33,6 +36,7 @@ export function GamePanel({
   runSignal = 0,
   blockSignal = null,
   onRunDiagram,
+  onAwaitInput,
   speed = 5,
 }: Props) {
   const [levelIndex, setLevelIndex] = useState(0);
@@ -58,6 +62,15 @@ export function GamePanel({
     null,
   );
   const highlightTimer = useRef<number | null>(null);
+  // Issue #142 (fix): report the awaiting state so the diagram animation
+  // stops at the input block and resumes after the password is submitted.
+  const onAwaitInputRef = useRef(onAwaitInput);
+  useEffect(() => {
+    onAwaitInputRef.current = onAwaitInput;
+  }, [onAwaitInput]);
+  useEffect(() => {
+    onAwaitInputRef.current?.(awaitingPassword);
+  }, [awaitingPassword]);
 
   const level = LEVELS[levelIndex];
 
