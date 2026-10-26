@@ -50,6 +50,11 @@ export type Level = {
   doors?: [number, number][];
   /** Issue #142: the password that opens this level's doors (level task text). */
   password?: string;
+  /**
+   * Issue #149: the exact name the level task demands for the input block
+   * (e.g. "Input Password" instead of the default "Input").
+   */
+  inputName?: string;
   start: Pos & { dir: Dir };
   goal: Pos;
   allowed: StatementKind[];

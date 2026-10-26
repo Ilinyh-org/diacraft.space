@@ -190,7 +190,7 @@ export function GamePanel({
       return;
     }
 
-    const stmt = statementForBlock(block);
+    const stmt = statementForBlock(block, level);
     if (!stmt) return;
     const frame = sync.frames[sync.frames.length - 1];
     // Issue #142: the input block on a door level asks for the password —

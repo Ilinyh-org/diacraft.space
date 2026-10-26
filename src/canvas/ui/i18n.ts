@@ -93,6 +93,7 @@ export type TranslationKey =
   | "flow.arrowMissing"
   | "flow.noLoops"
   | "flow.unknownAction"
+  | "flow.wrongInputName"
   | "flow.notPartOfFlowchart";
 
 export const LANGUAGES = [
@@ -180,7 +181,7 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
       "Combine loops and conditions to snake through the corridor.",
     "game.level.conditions-8.title": "Locked door",
     "game.level.conditions-8.description":
-      "The flag is behind a locked door. Add an Input block, run, then type the password 1234 into Program I/O and press Enter.",
+      "The flag is behind a locked door. Add an Input block named exactly \"Input Password\", run, then type the password 1234 into Program I/O and press Enter.",
     "flow.noStart": "Add a Start block to the canvas.",
     "flow.mustReachEnd": "The flowchart must reach an End block.",
     "flow.multipleOutgoing": 'Block "{label}" has more than one outgoing arrow.',
@@ -188,6 +189,8 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "flow.noLoops": "The flowchart must not contain loops.",
     "flow.unknownAction":
       'Unknown action "{label}". Rename the block to Move, Turn left or Turn right.',
+    "flow.wrongInputName":
+      'The input block must be named exactly "{name}" for this task.',
     "flow.notPartOfFlowchart": 'Block "{label}" is not part of the flowchart.',
   },
   ru: {
@@ -267,7 +270,7 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
       "Сочетайте циклы и условия, чтобы проползти по коридору змейкой.",
     "game.level.conditions-8.title": "Запертая дверь",
     "game.level.conditions-8.description":
-      "Флаг за запертой дверью. Добавьте блок «Ввод», запустите, введите пароль 1234 в поле «Ввод/вывод» и нажмите Enter.",
+      "Флаг за запертой дверью. Добавьте блок «Ввод» с точным названием «Ввод пароля», запустите, введите пароль 1234 в поле «Ввод/вывод» и нажмите Enter.",
     "flow.noStart": "Добавьте блок «Начало» на холст.",
     "flow.mustReachEnd": "Блок-схема должна заканчиваться блоком «Конец».",
     "flow.multipleOutgoing": 'У блока «{label}» более одной исходящей стрелки.',
@@ -275,6 +278,8 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "flow.noLoops": "Блок-схема не должна содержать циклов.",
     "flow.unknownAction":
       'Неизвестное действие «{label}». Переименуйте блок в Идти, Налево или Направо.',
+    "flow.wrongInputName":
+      'Блок ввода должен называться точно «{name}» для этой задачи.',
     "flow.notPartOfFlowchart": 'Блок «{label}» не является частью блок-схемы.',
   },
 };

@@ -38,7 +38,9 @@ const parseAction = (label: string): Statement | null => {
 
 const parseIo = (label: string): Statement | null => {
   const low = label.trim().toLowerCase();
-  if (/^(in|input|ввод)$/.test(low) || low.startsWith('in ') || low.startsWith('ввод ')) {
+  // Issue #149: an input block may carry a task-specific name after the
+  // default word, e.g. "Input Password" on the locked-door level.
+  if (/^(in|input|ввод)(\s|$)/.test(low)) {
     return { kind: 'inputDir' };
   }
   const out = low.match(/^(out|output|вывод)\s*([\s\S]*)$/);
@@ -63,12 +65,24 @@ export const isStartBlock = (block: BlockData): boolean =>
 /**
  * Maps an activated diagram block to the game statement it triggers
  * (issue #40). Start and End blocks trigger nothing; unknown action labels
- * return null.
+ * return null. Issue #149: when the level demands an exact input block
+ * name (`level.inputName`), an input block with any other name triggers
+ * nothing.
  */
-export function statementForBlock(block: BlockData): Statement | null {
+export function statementForBlock(
+  block: BlockData,
+  level?: { inputName?: string },
+): Statement | null {
   if (isStartBlock(block) || isEndBlock(block)) return null;
-  if (block.type === 'io') return parseIo(block.label);
-  return parseAction(block.label);
+  const stmt = block.type === 'io' ? parseIo(block.label) : parseAction(block.label);
+  if (
+    stmt?.kind === 'inputDir' &&
+    level?.inputName != null &&
+    safeLabel(block).trim().toLowerCase() !== level.inputName.trim().toLowerCase()
+  ) {
+    return null;
+  }
+  return stmt;
 }
 
 type Ctx = {
@@ -79,6 +93,8 @@ type Ctx = {
   loopHeaders: Set<string>;
   /** Every block that any compilation path reached. */
   reachable: Set<string>;
+  /** Issue #149: the exact input block name the level task demands. */
+  inputName?: string;
 };
 
 const err = (ctx: Ctx, key: Parameters<typeof t>[1], params?: Record<string, string>) =>
@@ -179,6 +195,16 @@ function compileFrom(
       err(ctx, 'flow.unknownAction', { label: safeLabel(current) });
       return program;
     } else {
+      // Issue #149: the input block's name must be exactly the one the
+      // level task demands, not just the default "Input".
+      if (
+        stmt.kind === 'inputDir' &&
+        ctx.inputName != null &&
+        safeLabel(current).trim().toLowerCase() !== ctx.inputName.trim().toLowerCase()
+      ) {
+        err(ctx, 'flow.wrongInputName', { name: ctx.inputName });
+        return program;
+      }
       program.push(stmt);
     }
     current = next;
@@ -221,6 +247,7 @@ export function compileFlowchart(
   blocks: BlockData[],
   arrows: ArrowData[],
   language: LanguageCode = 'en',
+  opts: { inputName?: string } = {},
 ): FlowchartResult {
   const errors: string[] = [];
   const ctx: Ctx = {
@@ -230,6 +257,7 @@ export function compileFlowchart(
     language,
     loopHeaders: new Set(),
     reachable: new Set(),
+    inputName: opts.inputName,
   };
 
   const starts = blocks.filter(isStartBlock);
@@ -266,7 +294,11 @@ export function compileFlowchart(
     }
   }
 
-  return errors.length === 0
+  // Issue #149: the game menu must never show the same error hint twice —
+  // different compile paths can report the same problem; deduplicate while
+  // keeping the first-seen order.
+  const uniqueErrors = [...new Set(errors)];
+  return uniqueErrors.length === 0
     ? { ok: true, program, subprograms }
-    : { ok: false, errors };
+    : { ok: false, errors: uniqueErrors };
 }
