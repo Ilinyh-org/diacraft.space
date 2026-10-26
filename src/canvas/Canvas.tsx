@@ -957,28 +957,16 @@ export function Canvas() {
       setAlignmentGuide(null);
       const start = multiDragStartRef.current[id];
       if (start) {
-        // Issue #138: finish the whole-selection drag at the drop point
-        // (including the alignment-guide snap delta, applied to everything).
-        const snappedDrag = computeMultiDragPositions(
+        // Issue #138: finish the whole-selection drag at the drop point.
+        // Issue #151: computeMultiDragPositions already applies the
+        // alignment-guide snap delta to the dragged block and propagates it
+        // to every block in the selection.
+        const positions = computeMultiDragPositions(
           multiDragStartRef.current,
           id,
           finalX,
           finalY
         );
-        // Snap delta relative to the un-snapped drop point applies to all.
-        const dx = snappedDrag[id].x - (start.x + (finalX - start.x));
-        const dy = snappedDrag[id].y - (start.y + (finalY - start.y));
-        const positions: PositionMap = {};
-        for (const [bid, p] of Object.entries(
-          computeMultiDragPositions(
-            multiDragStartRef.current,
-            id,
-            x,
-            y
-          )
-        )) {
-          positions[bid] = { x: p.x + dx, y: p.y + dy };
-        }
         commitLive((s) => moveBlocksAndRefreshArrows(s, positions));
       } else {
         // Ensure final position matches the drop point.
