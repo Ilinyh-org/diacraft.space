@@ -1430,7 +1430,6 @@ const runExport = (
           blockSignal={gameBlockSignal}
               speed={animSpeed}
           onRunDiagram={runAnimation}
-          onAbortDiagram={stopAnimation}
           onAwaitInput={setAnimationPaused}
         />
       )}
