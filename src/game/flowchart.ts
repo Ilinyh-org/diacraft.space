@@ -15,8 +15,8 @@ import { t, type LanguageCode } from '../canvas/ui/i18n';
  *   for now.
  */
 export type FlowchartResult =
-  | { ok: true; program: Statement[]; subprograms: Subprograms }
-  | { ok: false; errors: string[] };
+  | { ok: true; program: Statement[]; subprograms: Subprograms; warnings: string[] }
+  | { ok: false; errors: string[]; warnings: string[] };
 
 const MOVE_WORDS = new Set(['move', 'left', 'turn left', 'right', 'turn right']);
 
@@ -40,7 +40,9 @@ const parseIo = (label: string): Statement | null => {
   const low = label.trim().toLowerCase();
   // Issue #149: an input block may carry a task-specific name after the
   // default word, e.g. "Input Password" on the locked-door level.
-  if (/^(in|input|ввод)(\s|$)/.test(low)) {
+  // Issue #155: "i/o" is the default label of the palette's I/O block —
+  // treat it as an input block instead of rejecting it as an unknown action.
+  if (/^(in|input|ввод|i\/o)(\s|$)/.test(low)) {
     return { kind: 'inputDir' };
   }
   const out = low.match(/^(out|output|вывод)\s*([\s\S]*)$/);
@@ -65,23 +67,15 @@ export const isStartBlock = (block: BlockData): boolean =>
 /**
  * Maps an activated diagram block to the game statement it triggers
  * (issue #40). Start and End blocks trigger nothing; unknown action labels
- * return null. Issue #149: when the level demands an exact input block
- * name (`level.inputName`), an input block with any other name triggers
- * nothing.
- */
-export function statementForBlock(
-  block: BlockData,
-  level?: { inputName?: string },
-): Statement | null {
+ * return null. Issue #155: every input block triggers an input regardless
+ * of its exact name — a mismatch with `level.inputName` is reported as a
+ * compile warning, and the algorithm still stops on the block. */
+export function statementForBlock(block: BlockData): Statement | null {
   if (isStartBlock(block) || isEndBlock(block)) return null;
   const stmt = block.type === 'io' ? parseIo(block.label) : parseAction(block.label);
-  if (
-    stmt?.kind === 'inputDir' &&
-    level?.inputName != null &&
-    safeLabel(block).trim().toLowerCase() !== level.inputName.trim().toLowerCase()
-  ) {
-    return null;
-  }
+  // Issue #155: any input block stops the algorithm and waits for the
+  // player's input, whatever its exact name — a name mismatch is surfaced
+  // as a compile warning, not as a skipped block.
   return stmt;
 }
 
@@ -93,8 +87,10 @@ type Ctx = {
   loopHeaders: Set<string>;
   /** Every block that any compilation path reached. */
   reachable: Set<string>;
-  /** Issue #149: the exact input block name the level task demands. */
+  /** Issue #149/#155: the exact input block name the level task demands. */
   inputName?: string;
+  /** Issue #155: non-blocking hints (e.g. input-name mismatch). */
+  warnings: string[];
 };
 
 const err = (ctx: Ctx, key: Parameters<typeof t>[1], params?: Record<string, string>) =>
@@ -195,15 +191,15 @@ function compileFrom(
       err(ctx, 'flow.unknownAction', { label: safeLabel(current) });
       return program;
     } else {
-      // Issue #149: the input block's name must be exactly the one the
-      // level task demands, not just the default "Input".
+      // Issue #155: a differently named input block still compiles as an
+      // input — the algorithm must stop on it and wait for input. The
+      // mismatch becomes a warning that names the block the task expects.
       if (
         stmt.kind === 'inputDir' &&
         ctx.inputName != null &&
         safeLabel(current).trim().toLowerCase() !== ctx.inputName.trim().toLowerCase()
       ) {
-        err(ctx, 'flow.wrongInputName', { name: ctx.inputName });
-        return program;
+        ctx.warnings.push(t(ctx.language, 'flow.wrongInputName', { name: ctx.inputName }));
       }
       program.push(stmt);
     }
@@ -250,10 +246,12 @@ export function compileFlowchart(
   opts: { inputName?: string } = {},
 ): FlowchartResult {
   const errors: string[] = [];
+  const warnings: string[] = [];
   const ctx: Ctx = {
     blocks,
     arrows,
     errors,
+    warnings,
     language,
     loopHeaders: new Set(),
     reachable: new Set(),
@@ -263,7 +261,7 @@ export function compileFlowchart(
   const starts = blocks.filter(isStartBlock);
   const main = starts.find((s) => safeLabel(s).trim().toLowerCase() === 'start');
   if (!main) {
-    return { ok: false, errors: [t(language, 'flow.noStart')] };
+    return { ok: false, errors: [t(language, 'flow.noStart')], warnings: [] };
   }
 
   const visited = new Set<string>([main.id, ...blocks.filter(isEndBlock).map((b) => b.id)]);
@@ -298,7 +296,8 @@ export function compileFlowchart(
   // different compile paths can report the same problem; deduplicate while
   // keeping the first-seen order.
   const uniqueErrors = [...new Set(errors)];
+  const uniqueWarnings = [...new Set(warnings)];
   return uniqueErrors.length === 0
-    ? { ok: true, program, subprograms }
-    : { ok: false, errors: uniqueErrors };
+    ? { ok: true, program, subprograms, warnings: uniqueWarnings }
+    : { ok: false, errors: uniqueErrors, warnings: uniqueWarnings };
 }

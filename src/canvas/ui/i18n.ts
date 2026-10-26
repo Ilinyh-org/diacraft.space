@@ -190,7 +190,7 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "flow.unknownAction":
       'Unknown action "{label}". Rename the block to Move, Turn left or Turn right.',
     "flow.wrongInputName":
-      'The input block must be named exactly "{name}" for this task.',
+      'The task expects an input block named exactly "{name}" — rename your input block to "{name}". The algorithm will still stop on the input block and wait for your input.',
     "flow.notPartOfFlowchart": 'Block "{label}" is not part of the flowchart.',
   },
   ru: {
@@ -279,7 +279,7 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "flow.unknownAction":
       'Неизвестное действие «{label}». Переименуйте блок в Идти, Налево или Направо.',
     "flow.wrongInputName":
-      'Блок ввода должен называться точно «{name}» для этой задачи.',
+      'Задача ждёт блок ввода с точным названием «{name}» — переименуйте ваш блок ввода в «{name}». Алгоритм всё равно остановится на блоке ввода и будет ждать ввода.',
     "flow.notPartOfFlowchart": 'Блок «{label}» не является частью блок-схемы.',
   },
 };

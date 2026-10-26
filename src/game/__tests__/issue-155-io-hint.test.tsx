@@ -90,9 +90,9 @@ describe('issue #155: I/O block hint and stop-for-input behaviour', () => {
 
   it('statementForBlock treats any input block as an input, regardless of name', () => {
     const mismatched = block('Input', 'io');
-    expect(statementForBlock(mismatched, passwordLevel)).toEqual({ kind: 'inputDir' });
+    expect(statementForBlock(mismatched)).toEqual({ kind: 'inputDir' });
     const matching = block('Input Password', 'io');
-    expect(statementForBlock(matching, passwordLevel)).toEqual({ kind: 'inputDir' });
+    expect(statementForBlock(matching)).toEqual({ kind: 'inputDir' });
   });
 
   it('GamePanel shows the "Input Password" hint after Run and still starts the run', () => {
