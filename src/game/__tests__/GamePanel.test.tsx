@@ -291,14 +291,13 @@ describe('GamePanel', () => {
     fireEvent.click(screen.getByRole('button', { name: '8' }));
     const label = screen.getByText('Program I/O');
     const input = screen.getByLabelText('Program I/O');
-    // The label and the input no longer share one flex row: each lives in
-    // its own block-level container, so the input starts on a new line.
-    expect(input.parentElement).not.toBe(label.parentElement);
-    expect(label.parentElement).toBeTruthy();
-    expect(input.parentElement).toBeTruthy();
-    // The label's row must not be a horizontal flex row containing the input.
-    const row = label.parentElement as HTMLElement;
-    expect(row.contains(input)).toBe(false);
+    // The label is a block element, so the input starts on a new line
+    // below it instead of sharing one flex row (#165).
+    const labelEl = label.parentElement!.querySelector('label')! as HTMLElement;
+    expect(labelEl.style.display).toBe('block');
+    // And the input is not inside a flex row wrapper.
+    const row = input.parentElement as HTMLElement;
+    expect(row.style.display).not.toBe('flex');
     expect(container).toBeTruthy();
   });
 
