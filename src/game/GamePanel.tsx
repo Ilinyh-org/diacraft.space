@@ -469,35 +469,35 @@ export function GamePanel({
             part, and only on I/O task levels. */}
         {levelUsesIo && (
           <div style={{ marginTop: 8 }}>
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              <label
-                htmlFor="game-io-input"
-                style={{ fontSize: 10, whiteSpace: 'nowrap' }}
-              >
-                {t(language, 'game.ioTitle')}
-              </label>
-              <input
-                id="game-io-input"
-                data-testid="game-io-input"
-                type="text"
-                value={ioText}
-                onChange={(e) => onIoTextChange(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') submitPassword();
-                }}
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  boxSizing: 'border-box',
-                  padding: '3px 5px',
-                  fontSize: 11,
-                  border: `2px solid ${awaitingPassword ? theme.runHighlight : theme.buttonBorder}`,
-                  borderRadius: 4,
-                  background: theme.blockFill,
-                  color: theme.buttonText,
-                }}
-              />
-            </div>
+            {/* Issue #165: the input field sits on its own line below the
+                label instead of sharing one flex row with it. */}
+            <label
+              htmlFor="game-io-input"
+              style={{ fontSize: 10, whiteSpace: 'nowrap', display: 'block' }}
+            >
+              {t(language, 'game.ioTitle')}
+            </label>
+            <input
+              id="game-io-input"
+              data-testid="game-io-input"
+              type="text"
+              value={ioText}
+              onChange={(e) => onIoTextChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') submitPassword();
+              }}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                marginTop: 2,
+                padding: '3px 5px',
+                fontSize: 11,
+                border: `2px solid ${awaitingPassword ? theme.runHighlight : theme.buttonBorder}`,
+                borderRadius: 4,
+                background: theme.blockFill,
+                color: theme.buttonText,
+              }}
+            />
             {ioOutput.length > 0 && (
               <div
                 data-testid="game-io-output"
