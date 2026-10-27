@@ -283,6 +283,25 @@ describe('GamePanel', () => {
     expect(robot.compareDocumentPosition(io) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it('renders the Program I/O input on its own line below the label (#165)', () => {
+    const { blocks, arrows } = makeFlowchart(['move']);
+    const { container } = render(
+      <GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: '8' }));
+    const label = screen.getByText('Program I/O');
+    const input = screen.getByLabelText('Program I/O');
+    // The label and the input no longer share one flex row: each lives in
+    // its own block-level container, so the input starts on a new line.
+    expect(input.parentElement).not.toBe(label.parentElement);
+    expect(label.parentElement).toBeTruthy();
+    expect(input.parentElement).toBeTruthy();
+    // The label's row must not be a horizontal flex row containing the input.
+    const row = label.parentElement as HTMLElement;
+    expect(row.contains(input)).toBe(false);
+    expect(container).toBeTruthy();
+  });
+
   it('does not show extra hints besides the task and error hint (#107)', () => {
     const { blocks, arrows } = makeFlowchart(['move']);
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
