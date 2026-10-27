@@ -143,6 +143,9 @@ export const LEVELS: Level[] = [
     password: '1234',
     // Issue #149: the input block must be named exactly as the task says.
     inputName: 'Input Password',
+    // Issue #167: the same task speaks every interface language — a Russian
+    // player may name the block «Ввод пароля» instead of "Input Password".
+    inputNames: { en: 'Input Password', ru: 'Ввод пароля' },
     start: { x: 0, y: 0, dir: 1 },
     goal: { x: 2, y: 0 },
     allowed: [...io, 'ifWall', 'inputDir'],
