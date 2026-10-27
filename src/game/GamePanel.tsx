@@ -373,7 +373,10 @@ export function GamePanel({
               {t(language, 'game.selectLevel')}
             </div>
             {[0, 1, 2, 3, 4].map((row) => (
-              <div key={row} style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
+              <div
+                key={row}
+                style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 4 }}
+              >
                 {LEVELS.slice(row * 5, row * 5 + 5).map((l, col) => {
                   const index = row * 5 + col;
                   // Issue #139: no "current level" state on the levels
@@ -391,7 +394,7 @@ export function GamePanel({
                       style={{
                         ...buttonStyle,
                         flex: '1 1 0',
-                        minWidth: 0,
+                        minWidth: 24,
                         textAlign: 'center',
                         ...(isCompleted
                           ? { background: theme.runHighlight, color: '#ffffff' }
@@ -563,7 +566,10 @@ export function GamePanel({
         {/* Issue #124: the Run button belongs to the level view — hidden
             while the levels menu is open. */}
         {!menuOpen && (
-        <div style={{ display: 'flex', gap: 6, marginTop: 8, alignItems: 'center' }}>
+        <div
+          data-testid="game-run-row"
+          style={{ display: 'flex', gap: 6, marginTop: 8, alignItems: 'center', flexWrap: 'wrap' }}
+        >
           <button
             type="button"
             onClick={run}
