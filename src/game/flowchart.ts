@@ -89,6 +89,8 @@ type Ctx = {
   reachable: Set<string>;
   /** Issue #149/#155: the exact input block name the level task demands. */
   inputName?: string;
+  /** Issue #167: the input block name accepted for each language. */
+  inputNames?: Partial<Record<LanguageCode, string>>;
   /** Issue #155: non-blocking hints (e.g. input-name mismatch). */
   warnings: string[];
 };
@@ -196,10 +198,24 @@ function compileFrom(
       // mismatch becomes a warning that names the block the task expects.
       if (
         stmt.kind === 'inputDir' &&
-        ctx.inputName != null &&
-        safeLabel(current).trim().toLowerCase() !== ctx.inputName.trim().toLowerCase()
+        (ctx.inputName != null || ctx.inputNames != null)
       ) {
-        ctx.warnings.push(t(ctx.language, 'flow.wrongInputName', { name: ctx.inputName }));
+        // Issue #167: the level's expected name depends on the interface
+        // language — any localized variant satisfies the task.
+        const expectedNames = [
+          ...new Set(
+            [
+              ...(ctx.inputNames ? Object.values(ctx.inputNames) : []),
+              ctx.inputName,
+            ].filter((n): n is string => n != null),
+          ),
+        ];
+        const given = safeLabel(current).trim().toLowerCase();
+        if (!expectedNames.some((n) => n.trim().toLowerCase() === given)) {
+          const shown =
+            ctx.inputNames?.[ctx.language] ?? ctx.inputName ?? expectedNames[0];
+          ctx.warnings.push(t(ctx.language, 'flow.wrongInputName', { name: shown }));
+        }
       }
       program.push(stmt);
     }
@@ -243,7 +259,7 @@ export function compileFlowchart(
   blocks: BlockData[],
   arrows: ArrowData[],
   language: LanguageCode = 'en',
-  opts: { inputName?: string } = {},
+  opts: { inputName?: string; inputNames?: Partial<Record<LanguageCode, string>> } = {},
 ): FlowchartResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -256,6 +272,7 @@ export function compileFlowchart(
     loopHeaders: new Set(),
     reachable: new Set(),
     inputName: opts.inputName,
+    inputNames: opts.inputNames,
   };
 
   const starts = blocks.filter(isStartBlock);

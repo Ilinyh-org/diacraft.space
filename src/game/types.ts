@@ -1,3 +1,5 @@
+import type { LanguageCode } from '../canvas/ui/i18n';
+
 export type Dir = 0 | 1 | 2 | 3; // 0 = up, 1 = right, 2 = down, 3 = left
 
 export type StatementKind =
@@ -55,6 +57,12 @@ export type Level = {
    * (e.g. "Input Password" instead of the default "Input").
    */
   inputName?: string;
+  /**
+   * Issue #167: the expected input-block name for each interface language
+   * (e.g. "Input Password" in English, «Ввод пароля» in Russian). Any of
+   * the listed names satisfies the level task.
+   */
+  inputNames?: Partial<Record<LanguageCode, string>>;
   start: Pos & { dir: Dir };
   goal: Pos;
   allowed: StatementKind[];

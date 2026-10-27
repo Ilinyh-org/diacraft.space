@@ -127,7 +127,12 @@ export function GamePanel({
   const compiled = useMemo(
     // Issue #155: pass the level's expected input block name so the
     // name-mismatch warning can be shown (the run itself is not blocked).
-    () => compileFlowchart(blocks, arrows, language, { inputName: level.inputName }),
+    // Issue #167: accept the localized variant for the interface language.
+    () =>
+      compileFlowchart(blocks, arrows, language, {
+        inputName: level.inputName,
+        inputNames: level.inputNames,
+      }),
     [blocks, arrows, language, level],
   );
 
