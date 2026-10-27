@@ -7,7 +7,7 @@ import type { ArrowData, BlockData } from '../canvas/types';
 import { IO_LEVEL_IDS, LEVELS } from './levels';
 import type { Frame } from './types';
 import { compileFlowchart, isEndBlock, statementForBlock } from './flowchart';
-import { isDoorAt, stepStatement } from './types';
+import { isDoorAt, boxAt, signAt, stepStatement } from './types';
 import { t, tOptional, type LanguageCode } from '../canvas/ui/i18n';
 
 type Props = {
@@ -303,6 +303,9 @@ export function GamePanel({
         const hasItem = (level.items ?? []).some(([ix, iy]) => ix === x && iy === y);
         // Issue #142: password doors render as their own square type.
         const isDoor = isDoorAt(level, x, y);
+        // Issue #171: signs and boxes render as their own square types.
+        const isSign = signAt(level, x, y) != null;
+        const isBox = boxAt(level, x, y) != null;
         cells.push(
           <div
             key={`${x},${y}`}
@@ -316,7 +319,9 @@ export function GamePanel({
                   ? theme.runHighlight
                   : isDoor
                     ? theme.selection
-                    : theme.blockFill,
+                    : isSign || isBox
+                      ? theme.buttonBg
+                      : theme.blockFill,
               color: isGoal || isDoor ? '#ffffff' : theme.blockText,
               display: 'flex',
               alignItems: 'center',
@@ -325,7 +330,7 @@ export function GamePanel({
               boxSizing: 'border-box',
             }}
           >
-            {isGoal ? '⚑' : isDoor ? '🔒' : hasItem ? '◆' : ''}
+            {isGoal ? '⚑' : isDoor ? '🔒' : isSign ? '🪧' : isBox ? '📦' : hasItem ? '◆' : ''}
           </div>,
         );
       }

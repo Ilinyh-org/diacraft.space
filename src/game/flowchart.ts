@@ -33,6 +33,9 @@ const parseAction = (label: string): Statement | null => {
   }
   const inv = low.match(/^inv\[(\d+)\]\s*=/);
   if (inv) return { kind: 'setInv', index: Number(inv[1]) };
+  // Issue #171: read a sign / open a box on the current cell.
+  if (/^(read|читать)(\s|$)/.test(low)) return { kind: 'read' };
+  if (/^(open|открыть)(\s|$)/.test(low)) return { kind: 'open' };
   return null;
 };
 

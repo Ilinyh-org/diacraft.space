@@ -28,6 +28,8 @@ import type { Dir, Level, LevelConcept, StatementKind } from './types';
  *   - `password <text>`                   door password
  *   - `inputName <text>`                  expected input-block name (issue #149)
  *   - `inputNames <code>=<name> | ...`    per-language input names (issue #167)
+ *   - `sign <x>,<y> <text...>`            readable sign cell + text (issue #171)
+ *   - `box <x>,<y> <item...>`             box cell + its item (issue #171)
  */
 
 const DIR_NAMES: Record<Dir, string> = {
@@ -155,6 +157,24 @@ export function parseLevels(source: string): Level[] {
         current.inputNames = names;
         break;
       }
+      case 'sign': {
+        const m = /^(\d+),(\d+) (.*)$/.exec(rest);
+        if (!m) fail(line, 'expected: sign <x>,<y> <text>');
+        current.signs = [
+          ...(current.signs ?? []),
+          { at: [Number(m[1]), Number(m[2])] as [number, number], text: m[3] },
+        ];
+        break;
+      }
+      case 'box': {
+        const m = /^(\d+),(\d+) (.*)$/.exec(rest);
+        if (!m) fail(line, 'expected: box <x>,<y> <item>');
+        current.boxes = [
+          ...(current.boxes ?? []),
+          { at: [Number(m[1]), Number(m[2])] as [number, number], item: m[3] },
+        ];
+        break;
+      }
       default:
         fail(line, `unknown field "${key}"`);
     }
@@ -217,6 +237,14 @@ export function serializeLevels(levels: readonly Level[]): string {
         .map(([code, name]) => `${code}=${name}`)
         .join(' | ');
       lines.push(`  inputNames ${names}`);
+    }
+    for (const sign of level.signs ?? []) {
+      assertOneLine(sign.text, 'sign text', level.id);
+      lines.push(`  sign ${sign.at[0]},${sign.at[1]} ${sign.text}`);
+    }
+    for (const box of level.boxes ?? []) {
+      assertOneLine(box.item, 'box item', level.id);
+      lines.push(`  box ${box.at[0]},${box.at[1]} ${box.item}`);
     }
     lines.push('');
   }

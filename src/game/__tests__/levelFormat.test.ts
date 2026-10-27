@@ -65,14 +65,14 @@ level test-level "42" concept=loops
     expect(parseLevels(serializeLevels(LEVELS))).toEqual(LEVELS);
   });
 
-  it('ships 25 levels from levels.data.txt with the expected ids', () => {
-    expect(LEVELS).toHaveLength(25);
+  it('ships 27 levels from levels.data.txt with the expected ids', () => {
+    expect(LEVELS).toHaveLength(27);
     expect(LEVELS.map((l) => l.id)).toEqual([
       ...Array.from({ length: 5 }, (_, i) => `linear-${i + 1}`),
       ...Array.from({ length: 5 }, (_, i) => `conditions-${i + 6}`),
       ...Array.from({ length: 5 }, (_, i) => `loops-${i + 11}`),
       ...Array.from({ length: 5 }, (_, i) => `functions-${i + 16}`),
-      ...Array.from({ length: 5 }, (_, i) => `arrays-${i + 21}`),
+      ...Array.from({ length: 7 }, (_, i) => `arrays-${i + 21}`),
     ]);
   });
 

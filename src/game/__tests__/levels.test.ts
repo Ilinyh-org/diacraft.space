@@ -102,6 +102,21 @@ const SOLUTIONS: Record<string, Statement[]> = {
     { kind: 'output', text: 'inv[0]' },
     { kind: 'output', text: 'inv[1]' },
   ],
+  // Issue #171 — new elements: signs and boxes.
+  'arrays-26': [
+    ...mv(1),
+    { kind: 'read' },
+    { kind: 'output', text: 'sign' },
+    ...mv(2),
+  ],
+  'arrays-27': [
+    ...mv(1),
+    { kind: 'open' },
+    { kind: 'setInv', index: 0 },
+    ...mv(2),
+    tr,
+    ...mv(1),
+  ],
 };
 
 const INPUTS: Record<string, string[]> = {
@@ -141,12 +156,12 @@ const ALLOWED_BY_ROW: string[][] = [
   ['move', 'turnLeft', 'turnRight', 'output', 'ifWall', 'inputDir'],
   ['move', 'turnLeft', 'turnRight', 'output', 'ifWall', 'inputDir', 'repeat'],
   ['move', 'turnLeft', 'turnRight', 'output', 'ifWall', 'inputDir', 'repeat', 'call'],
-  ['move', 'turnLeft', 'turnRight', 'output', 'ifWall', 'inputDir', 'repeat', 'call', 'setInv'],
+  ['move', 'turnLeft', 'turnRight', 'output', 'ifWall', 'inputDir', 'repeat', 'call', 'setInv', 'read', 'open'],
 ];
 
-describe('levels (#70: 5x5 table)', () => {
-  it('contain exactly 25 levels, five per concept row', () => {
-    expect(LEVELS).toHaveLength(25);
+describe('levels (#70: 5x5 table + #171 elements)', () => {
+  it('contain exactly 27 levels, five per concept row', () => {
+    expect(LEVELS).toHaveLength(27);
     for (let row = 0; row < 5; row += 1) {
       const slice = LEVELS.slice(row * 5, row * 5 + 5);
       for (const level of slice) {
@@ -158,7 +173,7 @@ describe('levels (#70: 5x5 table)', () => {
   it('respect the allowed command set of their row', () => {
     LEVELS.forEach((level, i) => {
       for (const kind of level.allowed) {
-        expect(ALLOWED_BY_ROW[Math.floor(i / 5)], level.id).toContain(kind);
+        expect(ALLOWED_BY_ROW[Math.min(4, Math.floor(i / 5))], level.id).toContain(kind);
       }
     });
   });
@@ -180,7 +195,8 @@ describe('levels (#70: 5x5 table)', () => {
   });
 
   it('array rows carry items for the robot to collect', () => {
-    for (const level of LEVELS.slice(20)) {
+    // Issue #171: levels 26-27 use signs/boxes instead of floor items.
+    for (const level of LEVELS.slice(20, 25)) {
       expect((level.items ?? []).length, level.id).toBeGreaterThan(0);
     }
   });
