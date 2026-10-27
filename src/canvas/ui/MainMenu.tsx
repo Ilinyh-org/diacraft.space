@@ -63,6 +63,7 @@ export function MainMenu({
       theme={theme}
       initialPosition={{ x: 10, y: 10 }}
       storageKey="diacraft-panel-pos-main"
+      fitTwoPanels
     >
       <div
         data-testid="main-menu"

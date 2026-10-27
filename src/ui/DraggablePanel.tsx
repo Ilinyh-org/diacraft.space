@@ -142,6 +142,19 @@ export function isPcScreen(windowSize: WindowSize): boolean {
   return windowSize.width >= PC_MIN_WIDTH;
 }
 
+
+/**
+ * Issue #162: on a narrow (non-PC) screen the two widest menus (the main menu
+ * and the game menu) must both fit on the screen. Participating panels are
+ * capped at half the viewport width (minus shared margins) so the pair always
+ * fits side by side; on PC screens and for non-participating panels the
+ * regular full-viewport cap applies.
+ */
+export function panelMaxWidth(fitTwoPanels: boolean, windowSize: WindowSize): string {
+  if (fitTwoPanels && !isPcScreen(windowSize)) return 'calc(50vw - 12px)';
+  return 'calc(100vw - 16px)';
+}
+
 /** Position that places a panel of the given size in the window center, clamped inside the window. */
 export function centeredPosition(
   size: Size,
@@ -200,6 +213,12 @@ type Props = {
    * placed even after being hidden and reshown. Issue #75.
    */
   storageKey?: string;
+  /**
+   * Issue #162: when true, the panel participates in the two-widest-menus
+   * rule — on a narrow screen it is capped at half the viewport width so
+   * that it and the other participating panel always fit on the screen.
+   */
+  fitTwoPanels?: boolean;
   children: ReactNode;
 };
 
@@ -232,7 +251,7 @@ function savePosition(key: string, pos: { x: number; y: number }) {
   }
 }
 
-export function DraggablePanel({ theme, initialPosition, width, storageKey, center, children }: Props) {
+export function DraggablePanel({ theme, initialPosition, width, storageKey, center, fitTwoPanels, children }: Props) {
   const saved = storageKey ? loadSavedPosition(storageKey) : null;
   const [pos, setPos] = useState(() => saved ?? initialPosition);
   // Issue #100: the panel stays hidden until its first-appearance adjustment
@@ -379,7 +398,10 @@ export function DraggablePanel({ theme, initialPosition, width, storageKey, cent
     left: pos.x,
     top: pos.y,
     width,
-    maxWidth: 'calc(100vw - 16px)',
+    maxWidth: panelMaxWidth(fitTwoPanels === true, {
+      width: window.innerWidth,
+      height: window.innerHeight,
+    }),
     background: theme.panelBg,
     borderRadius: 6,
     boxShadow: dragging

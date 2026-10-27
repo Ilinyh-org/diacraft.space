@@ -336,11 +336,13 @@ export function GamePanel({
       initialPosition={{ x: Math.max(10, window.innerWidth - 270), y: 10 }}
       storageKey="diacraft-panel-pos-game"
       center
+      fitTwoPanels
     >
       <div
         data-testid="game-panel"
         style={{
           width: 244,
+          maxWidth: '100%',
           padding: 8,
           fontFamily: 'inherit',
           color: theme.buttonText,
@@ -388,7 +390,8 @@ export function GamePanel({
                       aria-current={isCompleted ? 'true' : undefined}
                       style={{
                         ...buttonStyle,
-                        width: 40,
+                        flex: '1 1 0',
+                        minWidth: 0,
                         textAlign: 'center',
                         ...(isCompleted
                           ? { background: theme.runHighlight, color: '#ffffff' }
@@ -432,6 +435,8 @@ export function GamePanel({
             display: 'grid',
             gridTemplateColumns: `repeat(${level.width}, ${cellPx}px)`,
             width: level.width * cellPx,
+            maxWidth: '100%',
+            overflowX: 'auto',
             position: 'relative',
           }}
         >
