@@ -11,7 +11,11 @@ export type StatementKind =
   | 'output'
   | 'inputDir'
   | 'setInv'
-  | 'call';
+  | 'call'
+  /** Issue #171: action block `read`: prints the sign text on the current cell. */
+  | 'read'
+  /** Issue #171: action block `open`: opens the box on the current cell. */
+  | 'open';
 
 export type Statement =
   | { kind: 'move' }
@@ -26,7 +30,18 @@ export type Statement =
   /** Action block `inv[n] = item`: picks up the item at the current cell. */
   | { kind: 'setInv'; index: number }
   /** Function block: calls a named subprogram flowchart. */
-  | { kind: 'call'; name: string };
+  | { kind: 'call'; name: string }
+  /** Issue #171: action block `read`: prints the sign text on the current cell. */
+  | { kind: 'read' }
+  /** Issue #171: action block `open`: opens the box on the current cell so
+   * its item can be picked up with `inv[n] = item`. */
+  | { kind: 'open' };
+
+/** Issue #171: a readable sign placed on a cell. */
+export type Sign = { at: [number, number]; text: string };
+
+/** Issue #171: a box placed on a cell; opening it reveals its item. */
+export type Box = { at: [number, number]; item: string };
 
 export type Subprograms = Record<string, Statement[]>;
 
@@ -68,6 +83,10 @@ export type Level = {
   allowed: StatementKind[];
   /** Collectible items as [x, y] pairs (inventory rows). */
   items?: [number, number][];
+  /** Issue #171: readable signs (`read` action block prints their text). */
+  signs?: Sign[];
+  /** Issue #171: boxes (`open` action block reveals their item). */
+  boxes?: Box[];
 };
 
 export type Frame = Pos & { dir: Dir };
@@ -94,6 +113,16 @@ const DELTA: Record<Dir, Pos> = {
 export function isWallAt(level: Level, x: number, y: number): boolean {
   if (x < 0 || y < 0 || x >= level.width || y >= level.height) return true;
   return level.walls.some(([wx, wy]) => wx === x && wy === y);
+}
+
+/** Issue #171: the sign placed on this cell, if any. */
+export function signAt(level: Level, x: number, y: number): Sign | undefined {
+  return (level.signs ?? []).find((s) => s.at[0] === x && s.at[1] === y);
+}
+
+/** Issue #171: the box placed on this cell, if any. */
+export function boxAt(level: Level, x: number, y: number): Box | undefined {
+  return (level.boxes ?? []).find((b) => b.at[0] === x && b.at[1] === y);
 }
 
 /** Issue #142: is the cell one of the level's password doors? */
@@ -176,15 +205,25 @@ export function runProgram(
   let crashed = false;
   const callStack = new Set<string>();
 
+  const openedBoxes = new Set<string>();
+  /** Issue #171: the text of the last sign read with a `read` block. */
+  let lastSign = '';
+
   const itemAt = (x: number, y: number): string | null => {
-    const found = (level.items ?? []).some(([ix, iy]) => ix === x && iy === y);
-    return found ? `item(${x},${y})` : null;
+    if ((level.items ?? []).some(([ix, iy]) => ix === x && iy === y)) {
+      return `item(${x},${y})`;
+    }
+    // Issue #171: an opened box's item becomes collectible like a floor item.
+    if (openedBoxes.has(`${x},${y}`)) return boxAt(level, x, y)?.item ?? null;
+    return null;
   };
 
   const resolveOut = (text: string): string =>
     text
       .replace(/inv\[(\d+)\]/g, (_, i) => inventory[Number(i)] ?? '?')
-      .replace(/\bpos\b/g, `(${frame.x}, ${frame.y})`);
+      .replace(/\bpos\b/g, `(${frame.x}, ${frame.y})`)
+      // Issue #171: `sign` resolves to the last text read with a read block.
+      .replace(/\bsign\b/g, lastSign);
 
   const exec = (stmts: Statement[]): void => {
     for (const stmt of stmts) {
@@ -248,6 +287,22 @@ export function runProgram(
         case 'setInv':
           inventory[stmt.index] = itemAt(frame.x, frame.y);
           break;
+        case 'read': {
+          // Issue #171: reading a sign prints its text; the text is kept so
+          // later output blocks can reference it as `sign`.
+          const sign = signAt(level, frame.x, frame.y);
+          if (sign) {
+            lastSign = sign.text;
+            output.push(sign.text);
+          }
+          break;
+        }
+        case 'open': {
+          // Issue #171: opening a box makes its item collectible with
+          // `inv[n] = item` on the same cell.
+          if (boxAt(level, frame.x, frame.y)) openedBoxes.add(`${frame.x},${frame.y}`);
+          break;
+        }
         case 'call': {
           const body = subprograms[stmt.name];
           if (!body) break;

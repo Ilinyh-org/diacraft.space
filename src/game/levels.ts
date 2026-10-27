@@ -31,6 +31,8 @@ export const IO_LEVEL_IDS: ReadonlySet<string> = new Set([
   'arrays-23',
   'arrays-24',
   'arrays-25',
+  'arrays-26',
+  'arrays-27',
 ]);
 
 /**

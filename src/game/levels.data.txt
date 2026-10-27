@@ -173,3 +173,19 @@ level arrays-25 "25" concept=arrays
   allowed move turnLeft turnRight output ifWall inputDir repeat call setInv
   walls 2,0 2,1
   items 1,2 3,2
+
+level arrays-26 "26" concept=arrays
+  grid 4x1
+  start 0 0 right
+  goal 3 0
+  allowed move turnLeft turnRight output read
+  description Read the sign and report its text.
+  sign 1,0 The key is hidden in the box
+
+level arrays-27 "27" concept=arrays
+  grid 4x2
+  start 0 0 right
+  goal 3 1
+  allowed move turnLeft turnRight output setInv open
+  description Open the box, take the key and reach the flag.
+  box 1,0 key
