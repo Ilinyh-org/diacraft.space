@@ -32,6 +32,7 @@ level linear-5 "5" concept=linear
   grid 4x1
   start 0 0 right
   goal 3 0
+  usesIo true
   allowed move turnLeft turnRight output
 
 level conditions-6 "6" concept=conditions
@@ -52,6 +53,7 @@ level conditions-8 "8" concept=conditions
   grid 3x1
   start 0 0 right
   goal 2 0
+  usesIo true
   allowed move turnLeft turnRight output ifWall inputDir
   doors 1,0
   password 1234
@@ -62,6 +64,7 @@ level conditions-9 "9" concept=conditions
   grid 5x3
   start 2 0 down
   goal 4 2
+  usesIo true
   allowed move turnLeft turnRight output ifWall inputDir
   walls 0,1
 
@@ -69,6 +72,7 @@ level conditions-10 "10" concept=conditions
   grid 3x3
   start 0 0 right
   goal 2 2
+  usesIo true
   allowed move turnLeft turnRight output ifWall inputDir
   walls 2,0 2,1
 
@@ -82,6 +86,7 @@ level loops-12 "12" concept=loops
   grid 4x1
   start 0 0 right
   goal 3 0
+  usesIo true
   allowed move turnLeft turnRight output ifWall inputDir repeat
 
 level loops-13 "13" concept=loops
@@ -95,6 +100,7 @@ level loops-14 "14" concept=loops
   grid 7x2
   start 0 0 right
   goal 6 1
+  usesIo true
   allowed move turnLeft turnRight output ifWall inputDir repeat
   walls 1,0 3,0 5,0
 
@@ -134,6 +140,7 @@ level functions-20 "20" concept=functions
   grid 5x3
   start 0 0 right
   goal 2 2
+  usesIo true
   allowed move turnLeft turnRight output ifWall inputDir repeat call
   walls 4,2
 
@@ -141,6 +148,7 @@ level arrays-21 "21" concept=arrays
   grid 5x1
   start 0 0 right
   goal 4 0
+  usesIo true
   allowed move turnLeft turnRight output ifWall inputDir repeat call setInv
   items 1,0 3,0
 
@@ -148,6 +156,7 @@ level arrays-22 "22" concept=arrays
   grid 4x2
   start 0 0 right
   goal 3 1
+  usesIo true
   allowed move turnLeft turnRight output ifWall inputDir repeat call setInv
   items 1,0 1,1
 
@@ -155,6 +164,7 @@ level arrays-23 "23" concept=arrays
   grid 4x2
   start 0 0 right
   goal 3 1
+  usesIo true
   allowed move turnLeft turnRight output ifWall inputDir repeat call setInv
   walls 1,0
   items 0,1
@@ -163,6 +173,7 @@ level arrays-24 "24" concept=arrays
   grid 5x1
   start 0 0 right
   goal 4 0
+  usesIo true
   allowed move turnLeft turnRight output ifWall inputDir repeat call setInv
   items 1,0 2,0 3,0
 
@@ -170,6 +181,7 @@ level arrays-25 "25" concept=arrays
   grid 5x3
   start 0 0 right
   goal 4 2
+  usesIo true
   allowed move turnLeft turnRight output ifWall inputDir repeat call setInv
   walls 2,0 2,1
   items 1,2 3,2
@@ -178,6 +190,7 @@ level arrays-26 "26" concept=arrays
   grid 4x1
   start 0 0 right
   goal 3 0
+  usesIo true
   allowed move turnLeft turnRight output read
   description Read the sign and report its text.
   sign 1,0 The key is hidden in the box
@@ -186,6 +199,7 @@ level arrays-27 "27" concept=arrays
   grid 4x2
   start 0 0 right
   goal 3 1
+  usesIo true
   allowed move turnLeft turnRight output setInv open
   description Open the box, take the key and reach the flag.
   box 1,0 key

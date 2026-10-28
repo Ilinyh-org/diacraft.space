@@ -78,6 +78,11 @@ export type Level = {
    * the listed names satisfies the level task.
    */
   inputNames?: Partial<Record<LanguageCode, string>>;
+  /**
+   * Issue #174: whether the level task uses Program I/O (input directions or
+   * output lines). Configured in the level data file, not in TypeScript.
+   */
+  usesIo?: boolean;
   start: Pos & { dir: Dir };
   goal: Pos;
   allowed: StatementKind[];

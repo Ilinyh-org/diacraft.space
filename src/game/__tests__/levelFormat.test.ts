@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Level } from '../types';
 import { parseLevels, serializeLevels } from '../levelFormat';
-import { LEVELS } from '../levels';
+import { LEVELS, IO_LEVEL_IDS } from '../levels';
 import levelsSource from '../levels.data.txt?raw';
 
 describe('levelFormat (issue #169)', () => {
@@ -113,5 +113,46 @@ level test-level "42" concept=loops
   it('refuses to serialize strings that would corrupt the format', () => {
     const bad = { ...LEVELS[0], password: 'has "quotes"' } as Level;
     expect(() => serializeLevels([bad])).toThrow(/password/);
+  });
+
+  // Issue #174: Program I/O flag is configuration data, not code.
+  it('parses usesIo flags and round-trips them', () => {
+    const withIo = parseLevels(
+      'level io-level "1" concept=linear\n  grid 2x1\n  start 0 0 right\n  goal 1 0\n  allowed move\n  usesIo true',
+    );
+    expect(withIo[0].usesIo).toBe(true);
+    expect(parseLevels(serializeLevels(withIo))).toEqual(withIo);
+    const withoutIo = parseLevels(
+      'level plain-level "1" concept=linear\n  grid 2x1\n  start 0 0 right\n  goal 1 0\n  allowed move',
+    );
+    expect(withoutIo[0].usesIo).toBeUndefined();
+    expect(parseLevels(serializeLevels(withoutIo))).toEqual(withoutIo);
+  });
+
+  it('rejects invalid usesIo values', () => {
+    const src =
+      'level x "x" concept=linear\n  grid 1x1\n  usesIo maybe';
+    expect(() => parseLevels(src)).toThrow(/usesIo/);
+  });
+
+  it('derives the shipped IO levels entirely from levels.data.txt', () => {
+    const expected = new Set([
+      'linear-5',
+      'conditions-8',
+      'conditions-9',
+      'conditions-10',
+      'loops-12',
+      'loops-14',
+      'functions-20',
+      'arrays-21',
+      'arrays-22',
+      'arrays-23',
+      'arrays-24',
+      'arrays-25',
+      'arrays-26',
+      'arrays-27',
+    ]);
+    expect(IO_LEVEL_IDS).toEqual(expected);
+    expect(levelsSource).toContain('usesIo true');
   });
 });
