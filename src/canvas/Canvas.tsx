@@ -150,9 +150,17 @@ export function Canvas() {
   const { blocks, arrows } = state;
 
   const [menus, setMenus] = useState<MenuVisibility>(INITIAL_MENU_VISIBILITY);
-  const toggleMenu = useCallback((id: MenuId) => {
-    setMenus((m) => ({ ...m, [id]: !m[id] }));
-  }, []);
+  // Issue #176: the game panel stays mounted once first shown and is only
+  // hidden with CSS afterwards, so its internal page state (levels menu vs
+  // level page, current level, run state) survives hide/show cycles.
+  const [gameEverShown, setGameEverShown] = useState(menus.game);
+  const toggleMenu = useCallback(
+    (id: MenuId) => {
+      if (id === 'game' && !menus.game) setGameEverShown(true);
+      setMenus((m) => ({ ...m, [id]: !m[id] }));
+    },
+    [menus.game],
+  );
   const [fadingOut, setFadingOut] = useState<Set<string>>(new Set());
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -1420,19 +1428,21 @@ const runExport = (
         />
       )}
 
-      {menus.game && (
-        <GamePanel
-          theme={theme}
-          language={language}
-          blocks={blocks}
-          arrows={arrows}
-          runSignal={gameRunSignal}
-          blockSignal={gameBlockSignal}
-              speed={animSpeed}
-          onRunDiagram={runAnimation}
-          onStopDiagram={stopAnimation}
-          onAwaitInput={setAnimationPaused}
-        />
+      {gameEverShown && (
+        <div style={menus.game ? undefined : { display: 'none' }}>
+          <GamePanel
+            theme={theme}
+            language={language}
+            blocks={blocks}
+            arrows={arrows}
+            runSignal={gameRunSignal}
+            blockSignal={gameBlockSignal}
+            speed={animSpeed}
+            onRunDiagram={runAnimation}
+            onStopDiagram={stopAnimation}
+            onAwaitInput={setAnimationPaused}
+          />
+        </div>
       )}
 
       {menus.feedback && <FeedbackPanel theme={theme} language={language} />}
