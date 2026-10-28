@@ -382,7 +382,9 @@ export function GamePanel({
             <div data-testid="game-select-level-label" style={{ fontSize: 11, marginBottom: 4 }}>
               {t(language, 'game.selectLevel')}
             </div>
-            {[0, 1, 2, 3, 4].map((row) => (
+            {/* Issue #171 (rework): rows derive from LEVELS.length so the
+                menu also offers the sign/box levels 26-27. */}
+            {Array.from({ length: Math.ceil(LEVELS.length / 5) }, (_, row) => (
               <div
                 key={row}
                 style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 4 }}

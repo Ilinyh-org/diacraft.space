@@ -87,6 +87,8 @@ export type TranslationKey =
   | "game.level.combined-1.description"
   | "game.level.conditions-8.title"
   | "game.level.conditions-8.description"
+  | "game.level.arrays-26.description"
+  | "game.level.arrays-27.description"
   // flowchart validation
   | "flow.noStart"
   | "flow.mustReachEnd"
@@ -184,6 +186,10 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "game.level.conditions-8.title": "Locked door",
     "game.level.conditions-8.description":
       "The flag is behind a locked door. Add an Input block named exactly \"Input Password\", run, then type the password 1234 into Program I/O and press Enter.",
+    "game.level.arrays-26.description":
+      "There is a sign on the board. Walk to its cell and use the Read block — the user must read what the sign says, then report it with Output.",
+    "game.level.arrays-27.description":
+      "There is a box on the board. Walk to its cell and use the Open block, take the item inside with the inventory block, then reach the flag.",
     "flow.noStart": "Add a Start block to the canvas.",
     "flow.mustReachEnd": "The flowchart must reach an End block.",
     "flow.multipleOutgoing": 'Block "{label}" has more than one outgoing arrow.',
@@ -274,6 +280,10 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "game.level.conditions-8.title": "Запертая дверь",
     "game.level.conditions-8.description":
       "Флаг за запертой дверью. Добавьте блок «Ввод» с точным названием «Ввод пароля», запустите, введите пароль 1234 в поле «Ввод/вывод» и нажмите Enter.",
+    "game.level.arrays-26.description":
+      "На поле есть табличка. Дойдите до её клетки и используйте блок «Читать» — пользователь должен прочитать надпись, а затем передать её через блок «Вывод».",
+    "game.level.arrays-27.description":
+      "На поле есть коробка. Дойдите до её клетки и используйте блок «Открыть», заберите предмет блоком инвентаря и дойдите до флага.",
     "flow.noStart": "Добавьте блок «Начало» на холст.",
     "flow.mustReachEnd": "Блок-схема должна заканчиваться блоком «Конец».",
     "flow.multipleOutgoing": 'У блока «{label}» более одной исходящей стрелки.',
