@@ -14,30 +14,20 @@ import type { Level } from './types';
  */
 
 /**
- * Issue #117: levels whose task actually uses Program I/O (input directions
- * or output lines in the reference task). Only these levels show the
- * Program I/O line on their page.
- */
-export const IO_LEVEL_IDS: ReadonlySet<string> = new Set([
-  'linear-5',
-  'conditions-8',
-  'conditions-9',
-  'conditions-10',
-  'loops-12',
-  'loops-14',
-  'functions-20',
-  'arrays-21',
-  'arrays-22',
-  'arrays-23',
-  'arrays-24',
-  'arrays-25',
-  'arrays-26',
-  'arrays-27',
-]);
-
-/**
- * Issue #169: the 25 shipped levels are stored in `levels.data.txt` — a
+ * Issue #169: the 27 shipped levels are stored in `levels.data.txt` — a
  * plain, human-readable text format that can be edited without touching
  * TypeScript. See levelFormat.ts for the format and its parser.
  */
 export const LEVELS: Level[] = parseLevels(levelsSource);
+
+/**
+ * Issue #117: levels whose task actually uses Program I/O (input directions
+ * or output lines in the reference task). Only these levels show the
+ * Program I/O line on their page.
+ *
+ * Issue #174: derived from the `usesIo` flags in `levels.data.txt` instead
+ * of a hardcoded TypeScript list.
+ */
+export const IO_LEVEL_IDS: ReadonlySet<string> = new Set(
+  LEVELS.filter((level) => level.usesIo === true).map((level) => level.id),
+);

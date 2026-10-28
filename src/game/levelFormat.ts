@@ -28,6 +28,7 @@ import type { Dir, Level, LevelConcept, StatementKind } from './types';
  *   - `password <text>`                   door password
  *   - `inputName <text>`                  expected input-block name (issue #149)
  *   - `inputNames <code>=<name> | ...`    per-language input names (issue #167)
+ *   - `usesIo <true|false>`               level task uses Program I/O (issue #174)
  *   - `sign <x>,<y> <text...>`            readable sign cell + text (issue #171)
  *   - `box <x>,<y> <item...>`             box cell + its item (issue #171)
  */
@@ -147,6 +148,12 @@ export function parseLevels(source: string): Level[] {
       case 'inputName':
         current[key] = rest;
         break;
+      case 'usesIo':
+        if (rest !== 'true' && rest !== 'false') {
+          fail(line, 'expected: usesIo <true|false>');
+        }
+        current.usesIo = rest === 'true';
+        break;
       case 'inputNames': {
         const names: Partial<Record<string, string>> = {};
         for (const pair of rest.split(' | ')) {
@@ -226,6 +233,7 @@ export function serializeLevels(levels: readonly Level[]): string {
     );
     lines.push(`  goal ${level.goal.x} ${level.goal.y}`);
     lines.push(`  allowed ${level.allowed.join(' ')}`);
+    if (level.usesIo === true) lines.push('  usesIo true');
     if (level.description !== '') lines.push(`  description ${level.description}`);
     if (level.walls.length > 0) lines.push(`  walls ${cells(level.walls)}`);
     if (level.doors?.length) lines.push(`  doors ${cells(level.doors)}`);
