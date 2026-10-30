@@ -57,9 +57,9 @@ function makeDoorFlowchart() {
   return { blocks: [start, input, move, end], arrows, input, move };
 }
 
-/** conditions-8 is the password-door level (#142): level 13 in the menu. */
+/** conditions-8 is the password-door level (#142): 4th in the menu. */
 function pickDoorLevel() {
-  fireEvent.click(screen.getByTestId('game-level-8'));
+  fireEvent.click(screen.getByTestId('game-level-4'));
   // Run arms the sync, exactly like the diagram animation's Run button.
   fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
 }

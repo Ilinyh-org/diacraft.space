@@ -34,13 +34,13 @@ describe('issue #171 rework: sign/box level descriptions', () => {
   });
 
   it('arrays-26 task tells the user to read the sign (en)', () => {
-    const task = openLevel(26);
+    const task = openLevel(6);
     expect(task).toMatch(/read/i);
     expect(task).toMatch(/sign/i);
   });
 
   it('arrays-27 task tells the user to open the box (en)', () => {
-    const task = openLevel(27);
+    const task = openLevel(7);
     expect(task).toMatch(/open/i);
     expect(task).toMatch(/box/i);
   });

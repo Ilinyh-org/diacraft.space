@@ -65,14 +65,16 @@ level test-level "42" concept=loops
     expect(parseLevels(serializeLevels(LEVELS))).toEqual(LEVELS);
   });
 
-  it('ships 27 levels from levels.data.txt with the expected ids', () => {
-    expect(LEVELS).toHaveLength(27);
+  it('ships 7 levels from levels.data.txt with the expected ids (issue #178)', () => {
+    expect(LEVELS).toHaveLength(7);
     expect(LEVELS.map((l) => l.id)).toEqual([
-      ...Array.from({ length: 5 }, (_, i) => `linear-${i + 1}`),
-      ...Array.from({ length: 5 }, (_, i) => `conditions-${i + 6}`),
-      ...Array.from({ length: 5 }, (_, i) => `loops-${i + 11}`),
-      ...Array.from({ length: 5 }, (_, i) => `functions-${i + 16}`),
-      ...Array.from({ length: 7 }, (_, i) => `arrays-${i + 21}`),
+      'linear-1',
+      'linear-2',
+      'linear-3',
+      'conditions-8',
+      'arrays-22',
+      'arrays-26',
+      'arrays-27',
     ]);
   });
 
@@ -137,18 +139,8 @@ level test-level "42" concept=loops
 
   it('derives the shipped IO levels entirely from levels.data.txt', () => {
     const expected = new Set([
-      'linear-5',
       'conditions-8',
-      'conditions-9',
-      'conditions-10',
-      'loops-12',
-      'loops-14',
-      'functions-20',
-      'arrays-21',
       'arrays-22',
-      'arrays-23',
-      'arrays-24',
-      'arrays-25',
       'arrays-26',
       'arrays-27',
     ]);

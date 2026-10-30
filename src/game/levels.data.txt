@@ -21,34 +21,6 @@ level linear-3 "3" concept=linear
   allowed move turnLeft turnRight output
   walls 0,1 1,1
 
-level linear-4 "4" concept=linear
-  grid 5x3
-  start 0 0 right
-  goal 4 0
-  allowed move turnLeft turnRight output
-  walls 2,0 2,1
-
-level linear-5 "5" concept=linear
-  grid 4x1
-  start 0 0 right
-  goal 3 0
-  usesIo true
-  allowed move turnLeft turnRight output
-
-level conditions-6 "6" concept=conditions
-  grid 3x2
-  start 0 0 right
-  goal 2 1
-  allowed move turnLeft turnRight output ifWall inputDir
-  walls 2,0
-
-level conditions-7 "7" concept=conditions
-  grid 4x2
-  start 0 0 right
-  goal 3 1
-  allowed move turnLeft turnRight output ifWall inputDir
-  walls 1,0 3,0
-
 level conditions-8 "8" concept=conditions
   grid 3x1
   start 0 0 right
@@ -60,98 +32,6 @@ level conditions-8 "8" concept=conditions
   inputName Input Password
   inputNames en=Input Password | ru=Ввод пароля
 
-level conditions-9 "9" concept=conditions
-  grid 5x3
-  start 2 0 down
-  goal 4 2
-  usesIo true
-  allowed move turnLeft turnRight output ifWall inputDir
-  walls 0,1
-
-level conditions-10 "10" concept=conditions
-  grid 3x3
-  start 0 0 right
-  goal 2 2
-  usesIo true
-  allowed move turnLeft turnRight output ifWall inputDir
-  walls 2,0 2,1
-
-level loops-11 "11" concept=loops
-  grid 8x1
-  start 0 0 right
-  goal 7 0
-  allowed move turnLeft turnRight output ifWall inputDir repeat
-
-level loops-12 "12" concept=loops
-  grid 4x1
-  start 0 0 right
-  goal 3 0
-  usesIo true
-  allowed move turnLeft turnRight output ifWall inputDir repeat
-
-level loops-13 "13" concept=loops
-  grid 4x2
-  start 0 0 right
-  goal 3 1
-  allowed move turnLeft turnRight output ifWall inputDir repeat
-  walls 1,0 3,0
-
-level loops-14 "14" concept=loops
-  grid 7x2
-  start 0 0 right
-  goal 6 1
-  usesIo true
-  allowed move turnLeft turnRight output ifWall inputDir repeat
-  walls 1,0 3,0 5,0
-
-level loops-15 "15" concept=loops
-  grid 4x3
-  start 0 0 right
-  goal 2 2
-  allowed move turnLeft turnRight output ifWall inputDir repeat
-  walls 2,0 2,1
-
-level functions-16 "16" concept=functions
-  grid 5x1
-  start 0 0 right
-  goal 3 0
-  allowed move turnLeft turnRight output ifWall inputDir repeat call
-
-level functions-17 "17" concept=functions
-  grid 3x3
-  start 0 0 right
-  goal 2 2
-  allowed move turnLeft turnRight output ifWall inputDir repeat call
-
-level functions-18 "18" concept=functions
-  grid 4x2
-  start 0 0 right
-  goal 2 1
-  allowed move turnLeft turnRight output ifWall inputDir repeat call
-  walls 1,0
-
-level functions-19 "19" concept=functions
-  grid 3x3
-  start 0 0 right
-  goal 2 2
-  allowed move turnLeft turnRight output ifWall inputDir repeat call
-
-level functions-20 "20" concept=functions
-  grid 5x3
-  start 0 0 right
-  goal 2 2
-  usesIo true
-  allowed move turnLeft turnRight output ifWall inputDir repeat call
-  walls 4,2
-
-level arrays-21 "21" concept=arrays
-  grid 5x1
-  start 0 0 right
-  goal 4 0
-  usesIo true
-  allowed move turnLeft turnRight output ifWall inputDir repeat call setInv
-  items 1,0 3,0
-
 level arrays-22 "22" concept=arrays
   grid 4x2
   start 0 0 right
@@ -159,32 +39,6 @@ level arrays-22 "22" concept=arrays
   usesIo true
   allowed move turnLeft turnRight output ifWall inputDir repeat call setInv
   items 1,0 1,1
-
-level arrays-23 "23" concept=arrays
-  grid 4x2
-  start 0 0 right
-  goal 3 1
-  usesIo true
-  allowed move turnLeft turnRight output ifWall inputDir repeat call setInv
-  walls 1,0
-  items 0,1
-
-level arrays-24 "24" concept=arrays
-  grid 5x1
-  start 0 0 right
-  goal 4 0
-  usesIo true
-  allowed move turnLeft turnRight output ifWall inputDir repeat call setInv
-  items 1,0 2,0 3,0
-
-level arrays-25 "25" concept=arrays
-  grid 5x3
-  start 0 0 right
-  goal 4 2
-  usesIo true
-  allowed move turnLeft turnRight output ifWall inputDir repeat call setInv
-  walls 2,0 2,1
-  items 1,2 3,2
 
 level arrays-26 "26" concept=arrays
   grid 4x1

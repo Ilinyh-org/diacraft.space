@@ -11,7 +11,7 @@ const D = (d: string): Dir =>
 
 describe('io statements', () => {
   it('output records the robot position for `pos`', () => {
-    const level = LEVELS.find((l) => l.id === 'linear-5')!;
+    const level = LEVELS.find((l) => l.id === 'linear-1')!;
     const program: Statement[] = [
       { kind: 'move' },
       { kind: 'move' },
@@ -66,13 +66,15 @@ describe('io statements', () => {
 
 describe('inventory array', () => {
   it('setInv picks up the item at the current cell into a slot', () => {
-    const level = LEVELS.find((l) => l.id === 'arrays-21')!;
+    const level = LEVELS.find((l) => l.id === 'arrays-22')!;
     const result = runProgram(level, [
       { kind: 'move' },
       { kind: 'setInv', index: 0 },
-      { kind: 'move' },
+      { kind: 'turnRight' },
       { kind: 'move' },
       { kind: 'setInv', index: 1 },
+      { kind: 'turnLeft' },
+      { kind: 'move' },
       { kind: 'move' },
       { kind: 'output', text: 'got inv[0]' },
     ]);
@@ -92,9 +94,22 @@ describe('inventory array', () => {
 });
 
 describe('function calls', () => {
-  const level = LEVELS.find((l) => l.id === 'functions-17')!;
+  // Issue #178: no shipped level keeps `call` in its allowed set anymore,
+  // so the semantics tests use a local level instead.
+  const level: Level = {
+    id: 'call-test',
+    title: 'T',
+    concept: 'functions',
+    description: '',
+    width: 4,
+    height: 2,
+    walls: [],
+    start: { x: 0, y: 0, dir: 1 },
+    goal: { x: 1, y: 1 },
+    allowed: ['move', 'turnRight', 'call'],
+  };
   const subs: Subprograms = {
-    leg: [{ kind: 'move' }, { kind: 'move' }],
+    leg: [{ kind: 'move' }],
   };
 
   it('a call runs the named subprogram', () => {

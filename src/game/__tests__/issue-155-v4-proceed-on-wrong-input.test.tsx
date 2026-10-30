@@ -57,7 +57,7 @@ describe('issue #155 rework 3: wrong input name does not stop the run', () => {
         arrows={arrows}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: '8' }));
+    fireEvent.click(screen.getByRole('button', { name: '4' }));
     // The door needs the password typed in the Program I/O field.
     fireEvent.change(screen.getByTestId('game-io-input'), {
       target: { value: '1234' },
@@ -92,7 +92,7 @@ describe('issue #155 rework 3: wrong input name does not stop the run', () => {
     const { rerender } = render(
       <GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />,
     );
-    fireEvent.click(screen.getByRole('button', { name: '8' }));
+    fireEvent.click(screen.getByRole('button', { name: '4' }));
     fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
     rerender(
       <GamePanel
