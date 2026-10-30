@@ -6,6 +6,8 @@ import type { Level } from './types';
  * Issue #70: a 5x5 levels table — five concept rows of five numbered levels,
  * robot theme, one reference solution per level (see __tests__/levels.test.ts).
  *
+ * Issue #178: the table was trimmed to 7 shipped levels (1-3, 8, 22, 26, 27).
+ *
  * Row 1 (1-5)   linear algorithms
  * Row 2 (6-10)  algorithms with conditions
  * Row 3 (11-15) algorithms with loops

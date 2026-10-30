@@ -98,7 +98,7 @@ describe('issue #155: I/O block hint and stop-for-input behaviour', () => {
   it('GamePanel shows the "Input Password" hint after Run and still starts the run', () => {
     const { blocks, arrows } = linear('I/O');
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
-    fireEvent.click(screen.getByRole('button', { name: '8' }));
+    fireEvent.click(screen.getByRole('button', { name: '4' }));
     fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
     const hint = screen.getByTestId('flowchart-errors');
     expect(hint.textContent).toContain('Input Password');

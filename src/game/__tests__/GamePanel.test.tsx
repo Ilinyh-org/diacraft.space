@@ -263,18 +263,18 @@ describe('GamePanel', () => {
     const { blocks, arrows } = makeFlowchart(['move']);
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
     // Level 1 (linear-1): pure movement task — menu is open initially, so
-    // the line is absent and no menu button for 16 is blocked yet.
+    // the line is absent and no menu button for 3 is blocked yet.
     expect(screen.queryByLabelText('Program I/O')).toBeNull();
-    // Level 16 (functions-16): functions task without I/O.
-    fireEvent.click(screen.getByRole('button', { name: '16' }));
+    // Level 3 (linear-3): movement task without I/O.
+    fireEvent.click(screen.getByRole('button', { name: '3' }));
     expect(screen.queryByLabelText('Program I/O')).toBeNull();
   });
 
   it('shows Program I/O on levels whose task uses input/output (#117)', () => {
     const { blocks, arrows } = makeFlowchart(['move']);
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
-    // Level 8 (conditions-8): input directions task.
-    fireEvent.click(screen.getByRole('button', { name: '8' }));
+    // Level 4 (conditions-8): input directions task.
+    fireEvent.click(screen.getByRole('button', { name: '4' }));
     expect(screen.getByLabelText('Program I/O')).toBeTruthy();
     // It sits after the graphical part and before the run area below it:
     // it must come before the flowchart errors / run area in DOM order.
@@ -288,7 +288,7 @@ describe('GamePanel', () => {
     const { container } = render(
       <GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />,
     );
-    fireEvent.click(screen.getByRole('button', { name: '8' }));
+    fireEvent.click(screen.getByRole('button', { name: '4' }));
     const label = screen.getByText('Program I/O');
     const input = screen.getByLabelText('Program I/O');
     // The label is a block element, so the input starts on a new line
