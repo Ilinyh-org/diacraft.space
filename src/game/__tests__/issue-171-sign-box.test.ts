@@ -9,6 +9,7 @@ import type { Level, Statement } from '../types';
  */
 const base: Level = {
   id: 'sign-box-test',
+  name: 'Test',
   title: 't',
   concept: 'linear',
   description: '',

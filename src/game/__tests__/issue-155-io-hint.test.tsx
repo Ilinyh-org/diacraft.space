@@ -26,6 +26,7 @@ const arrow = (fromBlockId: string, toBlockId: string): ArrowData => {
 
 const passwordLevel: Level = {
   id: 'conditions-8',
+  name: 'Test',
   title: '8',
   concept: 'conditions',
   description: '',

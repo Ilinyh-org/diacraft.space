@@ -1,4 +1,4 @@
-import levelsSource from './levels.data.txt?raw';
+import levelsSource from './levels.data.yml?raw';
 import { parseLevels } from './levelFormat';
 import type { Level } from './types';
 
@@ -16,9 +16,11 @@ import type { Level } from './types';
  */
 
 /**
- * Issue #169: the 27 shipped levels are stored in `levels.data.txt` — a
- * plain, human-readable text format that can be edited without touching
- * TypeScript. See levelFormat.ts for the format and its parser.
+ * Issue #169: the levels are stored in a plain, human-readable data file
+ * that can be edited without touching TypeScript.
+ *
+ * Issue #181: the file is now `levels.data.yml` (YAML) and every level
+ * carries a `name` and a `description`. See levelFormat.ts for the format.
  */
 export const LEVELS: Level[] = parseLevels(levelsSource);
 

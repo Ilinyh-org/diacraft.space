@@ -56,6 +56,8 @@ export type LevelConcept =
 
 export type Level = {
   id: string;
+  /** Issue #181: human-readable level name, stored in levels.data.yml. */
+  name: string;
   title: string;
   concept: LevelConcept;
   description: string;

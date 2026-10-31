@@ -1,0 +1,87 @@
+# Levels data — YAML (issue #181).
+# Edit freely: blank lines and # comments are ignored; each level entry is a
+# list item under `levels:` (see levelFormat.ts). Every level carries a
+# human-readable `name` and `description` next to its geometry.
+
+levels:
+  - id: linear-1
+    name: First steps
+    title: "1"
+    concept: linear
+    description: "Teach the robot to walk. Build a program of Move commands to reach the flag."
+    grid: 5x1
+    start: "0 0 right"
+    goal: "3 0"
+    allowed: move turnLeft turnRight output
+
+  - id: linear-2
+    name: The corner
+    title: "2"
+    concept: linear
+    description: "A straight line is not enough. Turn the robot with Turn Left / Turn Right."
+    grid: 4x2
+    start: "0 0 right"
+    goal: "2 1"
+    allowed: move turnLeft turnRight output
+
+  - id: linear-3
+    name: Wall in the way
+    title: "3"
+    concept: linear
+    description: "A brick blocks the straight path — walk around it to reach the flag."
+    grid: 3x3
+    start: "0 0 right"
+    goal: "0 2"
+    allowed: move turnLeft turnRight output
+    walls: "0,1 1,1"
+
+  - id: conditions-8
+    name: Locked door
+    title: "8"
+    concept: conditions
+    description: "The flag is behind a locked door. Add an Input block named exactly \"Input Password\", run, then type the password 1234 into Program I/O and press Enter."
+    grid: 3x1
+    start: "0 0 right"
+    goal: "2 0"
+    usesIo: true
+    allowed: move turnLeft turnRight output ifWall inputDir
+    doors: "1,0"
+    password: "1234"
+    inputName: "Input Password"
+    inputNames: "en=Input Password | ru=Ввод пароля"
+
+  - id: arrays-22
+    name: Collect the items
+    title: "22"
+    concept: arrays
+    description: "Walk over the item cells to collect them into the inventory, then reach the flag."
+    grid: 4x2
+    start: "0 0 right"
+    goal: "3 1"
+    usesIo: true
+    allowed: move turnLeft turnRight output ifWall inputDir repeat call setInv
+    items: "1,0 1,1"
+
+  - id: arrays-26
+    name: Read the sign
+    title: "26"
+    concept: arrays
+    description: "There is a sign on the board. Walk to its cell and use the Read block — the user must read what the sign says, then report it with Output."
+    grid: 4x1
+    start: "0 0 right"
+    goal: "3 0"
+    usesIo: true
+    allowed: move turnLeft turnRight output read
+    sign: "1,0 The key is hidden in the box"
+
+  - id: arrays-27
+    name: Key and box
+    title: "27"
+    concept: arrays
+    description: "There is a box on the board. Walk to its cell and use the Open block, take the item inside with the inventory block, then reach the flag."
+    grid: 4x2
+    start: "0 0 right"
+    goal: "3 1"
+    usesIo: true
+    allowed: move turnLeft turnRight output setInv open
+    box: "1,0 key"
