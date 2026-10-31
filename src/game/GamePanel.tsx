@@ -364,11 +364,42 @@ export function GamePanel({
           boxSizing: 'border-box',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <strong style={{ fontSize: 13 }}>{t(language, 'game.title')}</strong>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <strong style={{ fontSize: 13, flex: 1 }}>{t(language, 'game.title')}</strong>
           <button type="button" onClick={() => setMenuOpen((o) => !o)} style={buttonStyle}>
             {t(language, 'game.levels')}
           </button>
+
+        {/* Issue #180: the prev/next switchers moved up onto the header
+            row, on one line with the Levels button, to its right. They
+            belong to the level view only (issue #127/#139). */}
+        {!menuOpen && (
+          <>
+            <button
+              type="button"
+              onClick={() => pickLevel(levelIndex - 1)}
+              disabled={levelIndex === 0}
+              data-testid="game-prev-level"
+              title={t(language, 'game.prevLevel')}
+              style={{ ...buttonStyle, opacity: levelIndex === 0 ? 0.5 : 1 }}
+            >
+              ←
+            </button>
+            <button
+              type="button"
+              onClick={() => pickLevel(levelIndex + 1)}
+              disabled={levelIndex === LEVELS.length - 1}
+              data-testid="game-next-level"
+              title={t(language, 'game.nextLevel')}
+              style={{
+                ...buttonStyle,
+                opacity: levelIndex === LEVELS.length - 1 ? 0.5 : 1,
+              }}
+            >
+              →
+            </button>
+          </>
+        )}
         </div>
 
         {/* Issue #107 (rework): the levels menu is an exclusive view —
@@ -597,31 +628,6 @@ export function GamePanel({
             style={buttonStyle}
           >
             {t(language, 'game.stop')}
-          </button>
-          {/* Issue #139: prev/next level switchers are back on the level
-              page (not on the levels menu). */}
-          <button
-            type="button"
-            onClick={() => pickLevel(levelIndex - 1)}
-            disabled={levelIndex === 0}
-            data-testid="game-prev-level"
-            title={t(language, 'game.prevLevel')}
-            style={{ ...buttonStyle, opacity: levelIndex === 0 ? 0.5 : 1 }}
-          >
-            ←
-          </button>
-          <button
-            type="button"
-            onClick={() => pickLevel(levelIndex + 1)}
-            disabled={levelIndex === LEVELS.length - 1}
-            data-testid="game-next-level"
-            title={t(language, 'game.nextLevel')}
-            style={{
-              ...buttonStyle,
-              opacity: levelIndex === LEVELS.length - 1 ? 0.5 : 1,
-            }}
-          >
-            →
           </button>
         </div>
         )}
