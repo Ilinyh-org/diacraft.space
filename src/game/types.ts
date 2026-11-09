@@ -60,7 +60,7 @@ export type Level = {
   name: string;
   title: string;
   concept: LevelConcept;
-  description: string;
+  description: Partial<Record<string, string>>;
   width: number;
   height: number;
   /** Wall cells as [x, y] pairs. */

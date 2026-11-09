@@ -2,8 +2,8 @@ import type { Dir, Level, LevelConcept, StatementKind } from './types';
 
 /**
  * Issue #181: levels are stored in `levels.data.yml` — a YAML document with
- * a `name` and `description` for every level, replacing the previous
- * line-based `levels.data.txt` (issue #169).
+ * a `name` and bilingual `description` for every level, replacing the
+ * previous line-based `levels.data.txt` (issue #169).
  *
  * The file uses a small, deliberately strict YAML subset so it parses
  * without a runtime dependency:
@@ -14,7 +14,9 @@ import type { Dir, Level, LevelConcept, StatementKind } from './types';
  *         name: First steps
  *         title: "1"
  *         concept: linear
- *         description: "Teach the robot to walk."
+ *         description:
+ *           en: "Teach the robot to walk."
+ *           ru: "Научите робота ходить."
  *         grid: 5x1
  *         start: "0 0 right"
  *         goal: "3 0"
@@ -27,7 +29,7 @@ import type { Dir, Level, LevelConcept, StatementKind } from './types';
  *   - `name`              human-readable level name (issue #181)
  *   - `title`             short label shown in menus (usually the number)
  *   - `concept`           linear | conditions | loops | functions | arrays
- *   - `description`       task text (issue #181: required for every level)
+ *   - `description`       nested `<lang>: <text>` map (required, e.g. en/ru)
  *   - `grid`              `<width>x<height>` board size in cells
  *   - `start`             `"<x> <y> <up|right|down|left>"` robot start
  *   - `goal`              `"<x> <y>"` goal cell
@@ -64,6 +66,9 @@ const CONCEPTS: readonly LevelConcept[] = [
   'functions',
   'arrays',
 ];
+
+/** Language-code shape accepted inside a `description:` block. */
+const LANG_CODE = /^[A-Za-z][\w-]*$/;
 
 /** Fails with a useful message instead of silently producing a broken level. */
 function fail(value: string, why: string): never {
@@ -111,9 +116,38 @@ export function parseLevels(source: string): Level[] {
   const levels: Level[] = [];
   let current: Level | null = null;
 
+  // Nested `description:` block state: entered when a bare `description:`
+  // header is seen, exited when a line at the same-or-lower indent appears.
+  let inDescription = false;
+  let descriptionIndent = -1;
+
   for (const raw of source.split(/\r?\n/)) {
     const line = raw.trim();
     if (line === '' || line.startsWith('#')) continue;
+
+    const indent = raw.length - raw.trimStart().length;
+
+    // Consume nested `<lang>: <text>` sub-keys while we are still indented
+    // deeper than the `description:` header line.
+    if (inDescription) {
+      if (indent <= descriptionIndent) {
+        inDescription = false;
+      } else {
+        if (!current) fail(line, 'description sub-key outside of a level entry');
+        const sep = line.indexOf(': ');
+        if (sep === -1) {
+          fail(line, 'expected "<lang>: <text>" inside description');
+        }
+        const subKey = line.slice(0, sep).trim();
+        const subValue = unquote(line.slice(sep + 2).trim());
+        if (!LANG_CODE.test(subKey)) {
+          fail(line, `invalid language code "${subKey}" in description`);
+        }
+        current.description[subKey] = subValue;
+        continue;
+      }
+    }
+
     if (line === 'levels:') continue; // container key
 
     if (/^-\s/.test(line)) {
@@ -125,7 +159,7 @@ export function parseLevels(source: string): Level[] {
         name: '',
         title: '',
         concept: 'linear',
-        description: '',
+        description: {},
         width: 0,
         height: 0,
         walls: [],
@@ -138,6 +172,14 @@ export function parseLevels(source: string): Level[] {
     }
 
     if (!current) fail(line, 'field line outside of a level entry');
+
+    // Bare `description:` header opens the nested block.
+    if (line === 'description:') {
+      inDescription = true;
+      descriptionIndent = indent;
+      continue;
+    }
+
     const { key, rest } = splitField(line, current.id);
 
     switch (key) {
@@ -157,7 +199,15 @@ export function parseLevels(source: string): Level[] {
         break;
       }
       case 'description':
-        current.description = unquote(rest);
+        // A scalar `description: "..."` is no longer supported — the data
+        // uses the nested form so every language lives on its own line.
+        fail(
+          line,
+          'description must use the nested form:\\n' +
+            '    description:\\n' +
+            '      en: "..."\\n' +
+            '      ru: "..."',
+        );
         break;
       case 'grid': {
         const m = /^(\d+)x(\d+)$/.exec(unquote(rest));
@@ -240,7 +290,10 @@ export function parseLevels(source: string): Level[] {
     if (!level.name.trim()) {
       throw new Error(`levelFormat: level "${level.id}" is missing its name`);
     }
-    if (!level.description.trim()) {
+    const hasDescription = Object.values(level.description).some(
+      (text) => typeof text === 'string' && text.trim() !== '',
+    );
+    if (!hasDescription) {
       throw new Error(
         `levelFormat: level "${level.id}" is missing its description`,
       );
@@ -273,7 +326,7 @@ export function serializeLevels(levels: readonly Level[]): string {
     '# Levels data — YAML (issue #181).',
     '# Edit freely: blank lines and # comments are ignored; each level entry is a',
     '# list item under `levels:` (see levelFormat.ts). Every level carries a',
-    '# human-readable `name` and `description` next to its geometry.',
+    '# human-readable `name` and a bilingual `description` (en/ru).',
     '',
     'levels:',
   ];
@@ -283,7 +336,13 @@ export function serializeLevels(levels: readonly Level[]): string {
     lines.push(`    name: ${yaml(level.name)}`);
     lines.push(`    title: ${yaml(level.title)}`);
     lines.push(`    concept: ${level.concept}`);
-    lines.push(`    description: ${yaml(level.description)}`);
+    lines.push(`    description:`);
+    for (const lang of Object.keys(level.description).sort()) {
+      const text = level.description[lang];
+      if (typeof text === 'string') {
+        lines.push(`      ${lang}: ${yaml(text)}`);
+      }
+    }
     lines.push(`    grid: ${level.width}x${level.height}`);
     lines.push(
       `    start: ${yaml(`${level.start.x} ${level.start.y} ${DIR_NAMES[level.start.dir]}`)}`,

@@ -8,7 +8,7 @@ import { IO_LEVEL_IDS, LEVELS } from './levels';
 import type { Frame } from './types';
 import { compileFlowchart, isEndBlock, statementForBlock } from './flowchart';
 import { isDoorAt, boxAt, signAt, stepStatement } from './types';
-import { t, tOptional, type LanguageCode } from '../canvas/ui/i18n';
+import { t, type LanguageCode } from '../canvas/ui/i18n';
 
 type Props = {
   theme: Theme;
@@ -83,10 +83,13 @@ export function GamePanel({
   // Issue #142: door levels ask for the password written in the task text.
   const isDoorLevel = level.password != null && (level.doors ?? []).length > 0;
 
-  // Issue #107: a short task text above the level graphics. Levels with a
-  // dedicated description use it; the rest get the generic goal text.
+  // Issue #107 / #181: a short task text above the level graphics. The
+  // description now lives in levels.data.yml as a bilingual map, so pick
+  // the text for the current UI language, fall back to English if that
+  // language is missing on this level, and finally to the generic goal.
   const taskText =
-    tOptional(language, `game.level.${level.id}.description`) ??
+    level.description[language] ??
+    level.description.en ??
     t(language, 'game.taskFallback');
 
   const buttonStyle: CSSProperties = {

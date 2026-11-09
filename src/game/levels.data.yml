@@ -1,14 +1,17 @@
 # Levels data — YAML (issue #181).
 # Edit freely: blank lines and # comments are ignored; each level entry is a
 # list item under `levels:` (see levelFormat.ts). Every level carries a
-# human-readable `name` and `description` next to its geometry.
+# human-readable `name` and a bilingual `description` (en/ru) next to its
+# geometry.
 
 levels:
   - id: linear-1
     name: First steps
     title: "1"
     concept: linear
-    description: "Teach the robot to walk. Build a program of Move commands to reach the flag."
+    description:
+      en: "Teach the robot to walk. Build a program of Move commands to reach the flag."
+      ru: "Научите робота ходить. Соберите программу из команд «Идти», чтобы дойти до флага."
     grid: 5x1
     start: "0 0 right"
     goal: "3 0"
@@ -18,7 +21,9 @@ levels:
     name: The corner
     title: "2"
     concept: linear
-    description: "A straight line is not enough. Turn the robot with Turn Left / Turn Right."
+    description:
+      en: "A straight line is not enough. Turn the robot with Turn Left / Turn Right."
+      ru: "Прямой линии недостаточно. Поворачивайте робота командами «Налево» / «Направо»."
     grid: 4x2
     start: "0 0 right"
     goal: "2 1"
@@ -28,7 +33,9 @@ levels:
     name: Wall in the way
     title: "3"
     concept: linear
-    description: "A brick blocks the straight path — walk around it to reach the flag."
+    description:
+      en: "A brick blocks the straight path — walk around it to reach the flag."
+      ru: "Кирпич преграждает прямой путь — обойдите его, чтобы добраться до флага."
     grid: 3x3
     start: "0 0 right"
     goal: "0 2"
@@ -39,7 +46,9 @@ levels:
     name: Locked door
     title: "8"
     concept: conditions
-    description: "The flag is behind a locked door. Add an Input block named exactly \"Input Password\", run, then type the password 1234 into Program I/O and press Enter."
+    description:
+      en: "The flag is behind a locked door. Add an Input block named exactly \"Input Password\", run, then type the password 1234 into Program I/O and press Enter."
+      ru: "Флаг за запертой дверью. Добавьте блок «Ввод» с точным названием «Ввод пароля», запустите, введите пароль 1234 в поле «Ввод/вывод» и нажмите Enter."
     grid: 3x1
     start: "0 0 right"
     goal: "2 0"
@@ -54,7 +63,9 @@ levels:
     name: Collect the items
     title: "22"
     concept: arrays
-    description: "Walk over the item cells to collect them into the inventory, then reach the flag."
+    description:
+      en: "Walk over the item cells to collect them into the inventory, then reach the flag."
+      ru: "Пройдите по клеткам с предметами, чтобы собрать их в инвентарь, затем доберитесь до флага."
     grid: 4x2
     start: "0 0 right"
     goal: "3 1"
@@ -66,7 +77,9 @@ levels:
     name: Read the sign
     title: "26"
     concept: arrays
-    description: "There is a sign on the board. Walk to its cell and use the Read block — the user must read what the sign says, then report it with Output."
+    description:
+      en: "There is a sign on the board. Walk to its cell and use the Read block — the user must read what the sign says, then report it with Output."
+      ru: "На поле есть табличка. Дойдите до её клетки и используйте блок «Читать» — пользователь должен прочитать надпись, а затем передать её через блок «Вывод»."
     grid: 4x1
     start: "0 0 right"
     goal: "3 0"
@@ -78,7 +91,9 @@ levels:
     name: Key and box
     title: "27"
     concept: arrays
-    description: "There is a box on the board. Walk to its cell and use the Open block, take the item inside with the inventory block, then reach the flag."
+    description:
+      en: "There is a box on the board. Walk to its cell and use the Open block, take the item inside with the inventory block, then reach the flag."
+      ru: "На поле есть коробка. Дойдите до её клетки и используйте блок «Открыть», заберите предмет блоком инвентаря и дойдите до флага."
     grid: 4x2
     start: "0 0 right"
     goal: "3 1"
