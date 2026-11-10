@@ -13,7 +13,7 @@ beforeEach(() => {
   window.localStorage.clear();
 });
 
-vi.mock('../../canvas/AlgorithmPanel', async () => ({ stepDelayMs: () => 0 }));
+vi.mock('../../canvas/ui/algorithmTiming', async () => ({ stepDelayMs: () => 0 }));
 
 function openLevel(n: number) {
   render(

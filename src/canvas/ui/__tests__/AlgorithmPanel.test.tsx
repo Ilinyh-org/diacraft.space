@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { AlgorithmPanel, MIN_SPEED, MAX_SPEED, stepDelayMs } from '../AlgorithmPanel';
+import { AlgorithmPanel, MIN_SPEED, MAX_SPEED } from '../AlgorithmPanel';
+import { stepDelayMs } from '../algorithmTiming';
 // Legacy mapping (#40), kept here only to pin the #109 scale migration.
 const stepDelayMsLegacy = (speed: number): number => Math.max(60, Math.round(600 / speed));
 import { lightTheme } from '../../../theme';

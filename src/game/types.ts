@@ -1,4 +1,3 @@
-import type { LanguageCode } from '../canvas/ui/i18n';
 
 export type Dir = 0 | 1 | 2 | 3; // 0 = up, 1 = right, 2 = down, 3 = left
 

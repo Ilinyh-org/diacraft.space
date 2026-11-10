@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { GamePanel } from '../GamePanel';
 import { lightTheme } from '../../theme';
-import { stepDelayMs } from '../../canvas/ui/AlgorithmPanel';
+import { stepDelayMs } from '../canvas/ui/algorithmTiming'
 import type { BlockData, ArrowData } from '../../canvas/types';
 
 beforeEach(() => {

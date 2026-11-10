@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { DraggablePanel } from '../ui/DraggablePanel';
-import { stepDelayMs } from '../canvas/ui/AlgorithmPanel';
+import { stepDelayMs } from '../canvas/ui/algorithmTiming';
 import type { Theme } from '../theme';
 import type { ArrowData, BlockData } from '../canvas/types';
 import { IO_LEVEL_IDS, LEVELS } from './levels';

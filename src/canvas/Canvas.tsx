@@ -78,10 +78,10 @@ import { FeedbackPanel } from './ui/FeedbackPanel';
 import { BlockEditInput } from './ui/BlockEditInput';
 import {
   AlgorithmPanel,
-  stepDelayMs,
   MIN_SPEED,
   MAX_SPEED,
 } from './ui/AlgorithmPanel';
+import { stepDelayMs } from '../canvas/ui/algorithmTiming'
 import { planAnimation } from './animation/planAnimation';
 import { GamePanel } from '../game/GamePanel';
 import type { AnimStep } from './animation/planAnimation';
