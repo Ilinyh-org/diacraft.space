@@ -1,10 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import {
-  DraggablePanel,
-  PANEL_CLASS,
   panelMaxWidth,
   PC_MIN_WIDTH,
+} from '../panelPositioning';
+import {
+  PANEL_CLASS,
+  DraggablePanel,
 } from '../DraggablePanel';
 import type { Theme } from '../../theme';
 

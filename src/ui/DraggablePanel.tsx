@@ -1,7 +1,13 @@
 import { useState, useRef, useLayoutEffect } from 'react';
 import type { ReactNode, CSSProperties } from 'react';
 import type { Theme } from '../theme';
-import { centeredPosition, isPcScreen, panelMaxWidth, moveWithCollision, resolveInitialPosition } from './panelPositioning';
+import {
+  centeredPosition,
+  isPcScreen,
+  panelMaxWidth,
+  moveWithCollision,
+  resolveInitialPosition
+} from './panelPositioning';
 
 /** Shared class so panels can detect each other for collision. */
 export const PANEL_CLASS = 'draggable-panel';

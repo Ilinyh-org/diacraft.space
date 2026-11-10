@@ -1,6 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { DraggablePanel, centeredPosition, isPcScreen, moveWithCollision, resolveInitialPosition } from '../DraggablePanel';
+import {
+  DraggablePanel,
+
+} from '../DraggablePanel';
+import {
+  resolveInitialPosition,
+  moveWithCollision,
+  isPcScreen,
+  centeredPosition,
+} from '../panelPositioning';
+
 import { lightTheme } from '../../theme';
 
 const rect = (left: number, top: number, w: number, h: number) => ({
