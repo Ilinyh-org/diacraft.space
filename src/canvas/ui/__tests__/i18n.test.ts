@@ -33,7 +33,7 @@ describe("i18n (issue #62)", () => {
       "feedback.submit",
       "context.cut",
       "game.title",
-      "game.level.linear-1.title",
+      "game.ioTitle",
       "flow.mustReachEnd",
     ] as const) {
       expect(t("ru", key)).not.toBe(t("en", key));

@@ -66,7 +66,6 @@ export type TranslationKey =
   | "game.crash"
   | "game.timeout"
   | "game.tooShort"
-  | "game.levelName"
   | "game.ioTitle"
   | "game.task"
   | "game.taskFallback"
@@ -75,12 +74,6 @@ export type TranslationKey =
   | "game.needInput"
   | "game.doorLocked"
   | "game.wrongPassword"
-  | "game.level.linear-1.title"
-  | "game.level.linear-2.title"
-  | "game.level.conditions-1.title"
-  | "game.level.loops-1.title"
-  | "game.level.combined-1.title"
-  | "game.level.conditions-8.title"
   // flowchart validation
   | "flow.noStart"
   | "flow.mustReachEnd"
@@ -155,17 +148,10 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "game.crash": "✖ The robot crashed into a wall.",
     "game.timeout": "✖ Program ran too long.",
     "game.tooShort": "✖ The robot stopped short of the flag.",
-    "game.levelName": "Level {n}",
     "game.ioTitle": "Program I/O",
     "game.needInput": "✖ Waiting for input — add a direction above and run again.",
     "game.doorLocked": "✖ The door is locked — the Input block asks for the password.",
     "game.wrongPassword": "✖ Wrong password — the door stays locked.",
-    "game.level.linear-1.title": "First steps",
-    "game.level.linear-2.title": "The corner",
-    "game.level.conditions-1.title": "Brick ahead",
-    "game.level.loops-1.title": "Long corridor",
-    "game.level.combined-1.title": "Serpentine",
-    "game.level.conditions-8.title": "Locked door",
     "flow.noStart": "Add a Start block to the canvas.",
     "flow.mustReachEnd": "The flowchart must reach an End block.",
     "flow.multipleOutgoing": 'Block "{label}" has more than one outgoing arrow.',
@@ -233,17 +219,10 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     "game.crash": "✖ Робот врезался в стену.",
     "game.timeout": "✖ Программа работала слишком долго.",
     "game.tooShort": "✖ Робот остановился, не дойдя до флага.",
-    "game.levelName": "Уровень {n}",
     "game.ioTitle": "Ввод/вывод программы",
     "game.needInput": "✖ Ожидаю ввод — добавьте направление выше и запустите снова.",
     "game.doorLocked": "✖ Дверь заперта — блок «Ввод» запрашивает пароль.",
     "game.wrongPassword": "✖ Неверный пароль — дверь остаётся запертой.",
-    "game.level.linear-1.title": "Первые шаги",
-    "game.level.linear-2.title": "Поворот",
-    "game.level.conditions-1.title": "Кирпич впереди",
-    "game.level.loops-1.title": "Длинный коридор",
-    "game.level.combined-1.title": "Змейка",
-    "game.level.conditions-8.title": "Запертая дверь",
     "flow.noStart": "Добавьте блок «Начало» на холст.",
     "flow.mustReachEnd": "Блок-схема должна заканчиваться блоком «Конец».",
     "flow.multipleOutgoing": 'У блока «{label}» более одной исходящей стрелки.',
