@@ -33,10 +33,10 @@ describe('io statements', () => {
   // door level, so generic inputDir tests use their own level.
   const plain: Level = {
     id: 'io-test',
-    name: 'Test',
-    title: 'T',
+    name: { en: 'Test' },
+    label: 'T',
     concept: 'conditions',
-    description: '',
+    description: { en: '' },
     width: 3,
     height: 2,
     walls: [],
@@ -99,10 +99,10 @@ describe('function calls', () => {
   // so the semantics tests use a local level instead.
   const level: Level = {
     id: 'call-test',
-    name: 'Test',
-    title: 'T',
+    name: { en: 'Test' },
+    label: 'T',
     concept: 'functions',
-    description: '',
+    description: { en: '' },
     width: 4,
     height: 2,
     walls: [],

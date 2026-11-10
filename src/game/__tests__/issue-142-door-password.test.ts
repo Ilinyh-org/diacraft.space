@@ -9,10 +9,10 @@ import type { Dir, Level, Statement } from '../types';
  */
 const doorLevel: Level = {
   id: 'door-test',
-  name: 'Test',
-  title: 'T',
+    name: { en: 'Test' },
+    label: 'T',
   concept: 'conditions',
-  description: '',
+  description: { en: '' },
   width: 3,
   height: 1,
   walls: [],

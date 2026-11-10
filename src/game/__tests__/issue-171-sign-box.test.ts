@@ -9,10 +9,10 @@ import type { Level, Statement } from '../types';
  */
 const base: Level = {
   id: 'sign-box-test',
-  name: 'Test',
-  title: 't',
+    name: { en: 'Test' },
+    label: 'T',
   concept: 'linear',
-  description: '',
+  description: { en: '' },
   width: 4,
   height: 1,
   walls: [],

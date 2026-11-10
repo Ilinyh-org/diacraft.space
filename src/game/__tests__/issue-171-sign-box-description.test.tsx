@@ -20,7 +20,7 @@ function openLevel(n: number) {
     <GamePanel language="en" theme={lightTheme} blocks={[]} arrows={[]} />,
   );
   // The levels menu is open initially; pick the level directly.
-  fireEvent.click(screen.getByRole('button', { name: String(n) }));
+  fireEvent.click(screen.getByTestId(`game-level-${n}`));
   return screen.getByTestId('game-task').textContent ?? '';
 }
 

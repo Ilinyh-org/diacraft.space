@@ -23,10 +23,10 @@ const arrow = (fromBlockId: string, toBlockId: string): ArrowData => {
 
 const passwordLevel: Level = {
   id: 'conditions-8',
-  name: 'Test',
-  title: '8',
+    name: { en: 'Test' },
+    label: 'T',
   concept: 'conditions',
-  description: '',
+  description: { en: '' },
   width: 3,
   height: 1,
   walls: [],
