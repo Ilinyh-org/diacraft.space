@@ -54,47 +54,28 @@ export type LevelConcept =
   | 'functions'
   | 'arrays';
 
-export type Level = {
+export interface Level {
   id: string;
-  /** Issue #181: human-readable level name, stored in levels.data.yml. */
-  name: string;
-  title: string;
+  name: Partial<Record<string, string>>;
+  label: string;
   concept: LevelConcept;
   description: Partial<Record<string, string>>;
   width: number;
   height: number;
-  /** Wall cells as [x, y] pairs. */
   walls: [number, number][];
-  /** Issue #142: door cells as [x, y] pairs — closed until the password is entered. */
-  doors?: [number, number][];
-  /** Issue #142: the password that opens this level's doors (level task text). */
-  password?: string;
-  /**
-   * Issue #149: the exact name the level task demands for the input block
-   * (e.g. "Input Password" instead of the default "Input").
-   */
-  inputName?: string;
-  /**
-   * Issue #167: the expected input-block name for each interface language
-   * (e.g. "Input Password" in English, «Ввод пароля» in Russian). Any of
-   * the listed names satisfies the level task.
-   */
-  inputNames?: Partial<Record<LanguageCode, string>>;
-  /**
-   * Issue #174: whether the level task uses Program I/O (input directions or
-   * output lines). Configured in the level data file, not in TypeScript.
-   */
-  usesIo?: boolean;
-  start: Pos & { dir: Dir };
-  goal: Pos;
+  start: { x: number; y: number; dir: Dir };
+  goal: { x: number; y: number };
   allowed: StatementKind[];
-  /** Collectible items as [x, y] pairs (inventory rows). */
+  doors?: [number, number][];
   items?: [number, number][];
-  /** Issue #171: readable signs (`read` action block prints their text). */
-  signs?: Sign[];
-  /** Issue #171: boxes (`open` action block reveals their item). */
-  boxes?: Box[];
-};
+  password?: string;
+  inputName?: string;
+  inputNames?: Partial<Record<string, string>>;
+  usesIo?: boolean;
+  signs?: { at: [number, number]; text: string }[];
+  boxes?: { at: [number, number]; item: string }[];
+}
+
 
 export type Frame = Pos & { dir: Dir };
 

@@ -4,13 +4,15 @@ import { parseLevels, serializeLevels } from '../levelFormat';
 import { LEVELS, IO_LEVEL_IDS } from '../levels';
 import levelsSource from '../levels.data.yml?raw';
 
-describe('levelFormat (issue #181: YAML with names and descriptions)', () => {
+describe('levelFormat (issue #181: YAML with bilingual names and descriptions)', () => {
   const sample = `# a comment
 
 levels:
   - id: test-level
-    name: The test level
-    title: "42"
+    name:
+      en: "The test level"
+      ru: "Тестовый уровень"
+    label: "42"
     concept: loops
     description:
       en: "Reach the flag: a full-feature test."
@@ -34,8 +36,11 @@ levels:
     const [level] = parseLevels(sample);
     expect(level).toEqual<Level>({
       id: 'test-level',
-      name: 'The test level',
-      title: '42',
+      name: {
+        en: 'The test level',
+        ru: 'Тестовый уровень',
+      },
+      label: '42',
       concept: 'loops',
       description: {
         en: 'Reach the flag: a full-feature test.',
@@ -71,12 +76,15 @@ levels:
     });
   });
 
-  // New: the nested form is what makes level descriptions bilingual.
-  it('parses a bilingual description block', () => {
+  // The nested form is what makes level names and descriptions bilingual,
+  // so both fields share the same parsing path.
+  it('parses a bilingual name and description block', () => {
     const src = `levels:
   - id: x
-    name: X
-    title: "1"
+    name:
+      en: X name
+      ru: Имя X
+    label: "1"
     concept: linear
     description:
       en: Hello
@@ -86,24 +94,28 @@ levels:
     goal: "1 0"
     allowed: move`;
     const [level] = parseLevels(src);
+    expect(level.name).toEqual({ en: 'X name', ru: 'Имя X' });
     expect(level.description).toEqual({ en: 'Hello', ru: 'Привет' });
   });
 
-  // New: a level may declare only one language; the app falls back in code.
-  it('parses a single-language description block', () => {
+  // A level may declare only one language for either field; the app
+  // falls back to en then to the label.
+  it('parses single-language name and description blocks', () => {
     const src = `levels:
   - id: x
-    name: X
-    title: "1"
+    name:
+      en: Only English name
+    label: "1"
     concept: linear
     description:
-      en: Only English
+      en: Only English description
     grid: 2x1
     start: "0 0 right"
     goal: "1 0"
     allowed: move`;
     const [level] = parseLevels(src);
-    expect(level.description).toEqual({ en: 'Only English' });
+    expect(level.name).toEqual({ en: 'Only English name' });
+    expect(level.description).toEqual({ en: 'Only English description' });
   });
 
   it('round-trips serialization back to an identical level', () => {
@@ -133,11 +145,13 @@ levels:
     expect(parseLevels(levelsSource)).toEqual(LEVELS);
   });
 
-  // Issue #181: every shipped level carries a name and a bilingual
-  // description (en required, ru required for this project's locale set).
-  it('gives every shipped level a non-empty name and a bilingual description', () => {
+  // Issue #181: every shipped level carries a bilingual name and
+  // description plus a non-empty label.
+  it('gives every shipped level a bilingual name, a label, and a bilingual description', () => {
     for (const level of LEVELS) {
-      expect(level.name.trim(), `name of ${level.id}`).not.toBe('');
+      expect(level.name.en?.trim(), `en name of ${level.id}`).toBeTruthy();
+      expect(level.name.ru?.trim(), `ru name of ${level.id}`).toBeTruthy();
+      expect(level.label.trim(), `label of ${level.id}`).not.toBe('');
       expect(
         level.description.en?.trim(),
         `en description of ${level.id}`,
@@ -155,8 +169,10 @@ levels:
       '# header comment',
       'levels:',
       '  - id: a',
-      '    name: A',
-      '    title: "1"',
+      '    name:',
+      '      en: A',
+      '',
+      '    label: "1"',
       '    concept: linear',
       '    description:',
       '      en: A test level.',
@@ -184,36 +200,53 @@ levels:
       /expected "x,y" cell/,
     );
     expect(() => parseLevels('levels:\n  - id: x')).toThrow(/missing its name/);
-    // A nested description that is missing from an otherwise-valid entry.
+    // Nested fields present but grid missing.
     expect(() =>
       parseLevels(
-        'levels:\n  - id: x\n    name: X\n    title: "1"\n    description:\n      en: d',
+        'levels:\n  - id: x\n    name:\n      en: X\n    label: "1"\n    description:\n      en: d',
       ),
     ).toThrow(/missing its grid/);
-    // A scalar description is the old format — the parser rejects it loudly.
-    expect(() =>
-      parseLevels('levels:\n  - id: x\n    description: scalar'),
-    ).toThrow(/nested form/);
-    // An empty description block satisfies the field but not the validation.
+    // Scalar name is the old format — rejected loudly.
     expect(() =>
       parseLevels(
-        'levels:\n  - id: x\n    name: X\n    title: "1"\n    description:\n    grid: 1x1',
+        'levels:\n  - id: x\n    name: X\n    label: "1"\n    description:\n      en: d\n    grid: 1x1',
+      ),
+    ).toThrow(/name must use the nested form/);
+    // Scalar description is the old format — rejected loudly.
+    expect(() =>
+      parseLevels(
+        'levels:\n  - id: x\n    name:\n      en: X\n    label: "1"\n    description: d',
+      ),
+    ).toThrow(/description must use the nested form/);
+    // Empty name block satisfies the field but not validation.
+    expect(() =>
+      parseLevels(
+        'levels:\n  - id: x\n    name:\n    label: "1"\n    description:\n      en: d\n    grid: 1x1',
+      ),
+    ).toThrow(/missing its name/);
+    // Empty description block satisfies the field but not validation.
+    expect(() =>
+      parseLevels(
+        'levels:\n  - id: x\n    name:\n      en: X\n    label: "1"\n    description:\n    grid: 1x1',
       ),
     ).toThrow(/missing its description/);
-    expect(() => parseLevels('levels:\n  - id: x\n    grid: 1x1')).toThrow(
-      /missing its name/,
-    );
+    // Missing label.
+    expect(() =>
+      parseLevels(
+        'levels:\n  - id: x\n    name:\n      en: X\n    description:\n      en: d\n    grid: 1x1',
+      ),
+    ).toThrow(/missing its label/);
   });
 
   // Issue #174: Program I/O flag is configuration data, not code.
   it('parses usesIo flags and round-trips them', () => {
     const withIo = parseLevels(
-      'levels:\n  - id: io-level\n    name: IO\n    title: "1"\n    concept: linear\n    description:\n      en: d\n    grid: 2x1\n    start: "0 0 right"\n    goal: "1 0"\n    allowed: move\n    usesIo: true',
+      'levels:\n  - id: io-level\n    name:\n      en: IO\n    label: "1"\n    concept: linear\n    description:\n      en: d\n    grid: 2x1\n    start: "0 0 right"\n    goal: "1 0"\n    allowed: move\n    usesIo: true',
     );
     expect(withIo[0].usesIo).toBe(true);
     expect(parseLevels(serializeLevels(withIo))).toEqual(withIo);
     const withoutIo = parseLevels(
-      'levels:\n  - id: plain-level\n    name: Plain\n    title: "1"\n    concept: linear\n    description:\n      en: d\n    grid: 2x1\n    start: "0 0 right"\n    goal: "1 0"\n    allowed: move',
+      'levels:\n  - id: plain-level\n    name:\n      en: Plain\n    label: "1"\n    concept: linear\n    description:\n      en: d\n    grid: 2x1\n    start: "0 0 right"\n    goal: "1 0"\n    allowed: move',
     );
     expect(withoutIo[0].usesIo).toBeUndefined();
     expect(parseLevels(serializeLevels(withoutIo))).toEqual(withoutIo);

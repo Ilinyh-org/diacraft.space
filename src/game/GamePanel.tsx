@@ -433,7 +433,7 @@ export function GamePanel({
                     <button
                       key={l.id}
                       type="button"
-                      title={`${t(language, 'game.levelName', { n: index + 1 })}`}
+                      title={l.name[language] ?? l.name.en ?? l.label}
                       onClick={() => pickLevel(index)}
                       data-testid={`game-level-${index + 1}`}
                       aria-current={isCompleted ? 'true' : undefined}
@@ -447,7 +447,7 @@ export function GamePanel({
                           : {}),
                       }}
                     >
-                      {index + 1}
+                      {l.label}
                     </button>
                   );
                 })}
@@ -467,7 +467,7 @@ export function GamePanel({
             view — the levels menu is an exclusive view without it. */}
         {!menuOpen && (
         <div style={{ fontSize: 11, marginTop: 6 }}>
-          <strong>{t(language, 'game.levelName', { n: levelIndex + 1 })}</strong>
+          <strong>{level.name[language] ?? level.name.en ?? level.label}</strong>
         </div>
         )}
 
