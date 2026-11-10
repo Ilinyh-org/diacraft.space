@@ -3,6 +3,9 @@ on:
   push:
     branches: [ main ]
 
+permissions:
+  contents: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -12,6 +15,8 @@ jobs:
           fetch-depth: 0 # semantic-release needs full history
       - name: Semantic Release
         uses: cycjimmy/semantic-release-action@v8
+        env:
+            GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}
         with:
           extra_plugins: |
             @semantic-release/changelog
