@@ -26,10 +26,10 @@ const arrow = (fromBlockId: string, toBlockId: string): ArrowData => {
 
 const passwordLevel: Level = {
   id: 'conditions-8',
-  name: 'Test',
-  title: '8',
+    name: { en: 'Test' },
+    label: 'T',
   concept: 'conditions',
-  description: '',
+  description: { en: '' },
   width: 3,
   height: 1,
   walls: [],
@@ -99,7 +99,7 @@ describe('issue #155: I/O block hint and stop-for-input behaviour', () => {
   it('GamePanel shows the "Input Password" hint after Run and still starts the run', () => {
     const { blocks, arrows } = linear('I/O');
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
-    fireEvent.click(screen.getByRole('button', { name: '4' }));
+    fireEvent.click(screen.getByTestId('game-level-4'));
     fireEvent.click(screen.getByRole('button', { name: '▶ Run' }));
     const hint = screen.getByTestId('flowchart-errors');
     expect(hint.textContent).toContain('Input Password');

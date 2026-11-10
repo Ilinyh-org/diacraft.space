@@ -6,7 +6,8 @@ import {
   isPcScreen,
   panelMaxWidth,
   moveWithCollision,
-  resolveInitialPosition
+  resolveInitialPosition,
+  type Rect
 } from './panelPositioning';
 
 /** Shared class so panels can detect each other for collision. */

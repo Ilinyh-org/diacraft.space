@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { GamePanel } from '../GamePanel';
 import { lightTheme } from '../../theme';
-import { stepDelayMs } from '../canvas/ui/algorithmTiming'
+import { stepDelayMs } from '../../canvas/ui/algorithmTiming';
 import type { BlockData, ArrowData } from '../../canvas/types';
 
 beforeEach(() => {
@@ -62,7 +62,7 @@ describe('GamePanel', () => {
     // Issue #107 rework: close the levels menu to see the level content.
     fireEvent.click(screen.getByRole('button', { name: 'Levels' }));
     expect(screen.getByTestId('game-panel')).toBeDefined();
-    expect(screen.getByText('Level 1')).toBeDefined();
+    expect(screen.getByText('First steps')).toBeDefined();
     expect(screen.getByTestId('game-robot')).toBeDefined();
   });
 
@@ -209,14 +209,14 @@ describe('GamePanel', () => {
   it('shows neither the level line nor the Run button while the levels menu is open (#124)', () => {
     const { blocks, arrows } = makeFlowchart(['move']);
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
-    // The menu is open initially: no "Level N" header line and no Run button.
+    // The menu is open initially: no level header line and no Run button.
     expect(screen.getByTestId('game-levels-menu')).toBeTruthy();
-    expect(screen.queryByText('Level 1')).toBeNull();
+    expect(screen.queryByText('First steps')).toBeNull();
     expect(screen.queryByRole('status')).toBeNull();
     expect(screen.queryByRole('button', { name: '▶ Run' })).toBeNull();
     // Closing the menu brings the level line and the Run button back.
     fireEvent.click(screen.getByRole('button', { name: 'Levels' }));
-    expect(screen.getByText('Level 1')).toBeTruthy();
+    expect(screen.getByText('First steps')).toBeTruthy();
     expect(screen.getByRole('status')).toBeTruthy();
     expect(screen.getByRole('button', { name: '▶ Run' })).toBeTruthy();
   });
@@ -235,7 +235,7 @@ describe('GamePanel', () => {
   it('places the Program I/O label and field on one line (#107)', () => {
     const { blocks, arrows } = makeFlowchart(['move']);
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
-    fireEvent.click(screen.getByRole('button', { name: '5' }));
+    fireEvent.click(screen.getByTestId('game-level-5'));
     const input = screen.getByLabelText('Program I/O');
     const label = input.closest('div')!.querySelector('label');
     expect(label).not.toBeNull();
@@ -266,7 +266,7 @@ describe('GamePanel', () => {
     // the line is absent and no menu button for 3 is blocked yet.
     expect(screen.queryByLabelText('Program I/O')).toBeNull();
     // Level 3 (linear-3): movement task without I/O.
-    fireEvent.click(screen.getByRole('button', { name: '3' }));
+    fireEvent.click(screen.getByTestId('game-level-3'));
     expect(screen.queryByLabelText('Program I/O')).toBeNull();
   });
 
@@ -274,7 +274,7 @@ describe('GamePanel', () => {
     const { blocks, arrows } = makeFlowchart(['move']);
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
     // Level 4 (conditions-8): input directions task.
-    fireEvent.click(screen.getByRole('button', { name: '4' }));
+    fireEvent.click(screen.getByTestId('game-level-4'));
     expect(screen.getByLabelText('Program I/O')).toBeTruthy();
     // It sits after the graphical part and before the run area below it:
     // it must come before the flowchart errors / run area in DOM order.
@@ -288,7 +288,7 @@ describe('GamePanel', () => {
     const { container } = render(
       <GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />,
     );
-    fireEvent.click(screen.getByRole('button', { name: '4' }));
+    fireEvent.click(screen.getByTestId('game-level-4'));
     const label = screen.getByText('Program I/O');
     const input = screen.getByLabelText('Program I/O');
     // The label is a block element, so the input starts on a new line
@@ -314,16 +314,16 @@ describe('GamePanel', () => {
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
     // Issue #139: the "current level" logic is gone — every level button
     // is enabled and can be opened.
-    const first = screen.getByRole('button', { name: '1' }) as HTMLButtonElement;
+    const first = screen.getByTestId('game-level-1') as HTMLButtonElement;
     expect(first.disabled).toBe(false);
     expect(first.textContent).toBe('1');
-    expect(screen.getByRole('button', { name: '2' })).toBeDefined();
-    fireEvent.click(screen.getByRole('button', { name: '2' }));
-    expect(screen.getByText('Level 2')).toBeDefined();
+    expect(screen.getByTestId('game-level-2')).toBeDefined();
+    fireEvent.click(screen.getByTestId('game-level-2'));
+    expect(screen.getByText('The corner')).toBeDefined();
     // Reopen the menu (pickLevel closes it): nothing is disabled now.
     fireEvent.click(screen.getByRole('button', { name: 'Levels' }));
-    expect((screen.getByRole('button', { name: '2' }) as HTMLButtonElement).disabled).toBe(false);
-    expect((screen.getByRole('button', { name: '1' }) as HTMLButtonElement).disabled).toBe(false);
+    expect((screen.getByTestId('game-level-2') as HTMLButtonElement).disabled).toBe(false);
+    expect((screen.getByTestId('game-level-1') as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('has no previous/next level buttons at the bottom (#127)', () => {
@@ -443,9 +443,9 @@ describe('GamePanel', () => {
       lastSeqRef.value += 1;
     }
     const statusRow = screen.getByRole('status');
-    // The level header line keeps only the "Level N" label (#132).
-    expect(statusRow.textContent).not.toContain('Level 1');
-    const header = screen.getByText('Level 1');
+    // The level header line keeps only the level name label (#132).
+    expect(statusRow.textContent).not.toContain('First steps');
+    const header = screen.getByText('First steps');
     expect(header.closest('[role="status"]')).toBeNull();
     // The result message sits in its own line, right before the Run button.
     const runButton = screen.getByRole('button', { name: '▶ Run' });
@@ -531,8 +531,8 @@ describe('GamePanel', () => {
   it('switches levels from the menu', () => {
     const { blocks, arrows } = makeFlowchart(['move']);
     render(<GamePanel language="en" theme={lightTheme} blocks={blocks} arrows={arrows} />);
-    fireEvent.click(screen.getByRole('button', { name: '2' }));
-    expect(screen.getByText('Level 2')).toBeDefined();
+    fireEvent.click(screen.getByTestId('game-level-2'));
+    expect(screen.getByText('The corner')).toBeDefined();
     expect(screen.getByRole('button', { name: '▶ Run' })).toBeDefined();
   });
 });
