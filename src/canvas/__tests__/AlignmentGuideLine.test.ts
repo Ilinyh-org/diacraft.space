@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { guideLinePoints } from '../AlignmentGuideLine';
+import { guideLinePoints } from '../alignmentGuide';
 import type { AlignmentGuide } from '../utils/alignment';
 
 const vertical: AlignmentGuide = {
