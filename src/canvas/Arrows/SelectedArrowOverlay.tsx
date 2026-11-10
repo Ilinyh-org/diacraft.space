@@ -1,9 +1,10 @@
 import { Circle, Text, Group } from 'react-konva';
+import { useRef } from 'react';
 import type { ArrowData, BlockData } from '../types';
 import type { Theme } from '../../theme';
 import { getAnchor } from '../utils/blocks';
 import { buildArrowPath, pathMidpoint } from './arrowPath';
-import { computeBendsForArrow } from './arrowGeometry';
+import { bendDragBounds } from './arrowConstraints';
 
 type Props = {
   arrow: ArrowData;
@@ -26,6 +27,13 @@ export function SelectedArrowOverlay({
 }: Props) {
   const from = blocks.find((b) => b.id === arrow.fromBlockId);
   const to = blocks.find((b) => b.id === arrow.toBlockId);
+  // Issue #102: a point dragged to an impossible position sticks at the
+  // last possible position; reverse movement stays available.
+  const dragState = useRef<{
+    startX: number;
+    startY: number;
+    bounds: ReturnType<typeof bendDragBounds>;
+  } | null>(null);
   if (!from || !to) return null;
   const a = getAnchor(from, arrow.fromSide);
   const b = getAnchor(to, arrow.toSide);
@@ -34,11 +42,11 @@ export function SelectedArrowOverlay({
     arrow.fromSide,
     b,
     arrow.toSide,
-    arrow.waypoints ?? []
+    arrow.waypoints
   );
   if (pts.length < 4) return null;
   const mid = pathMidpoint(pts);
-  const bends = computeBendsForArrow(arrow, blocks);
+  const bends = arrow.waypoints;
 
   return (
     <>
@@ -114,8 +122,34 @@ export function SelectedArrowOverlay({
           draggable
           onDragStart={(e) => {
             e.cancelBubble = true;
+            dragState.current = {
+              startX: bend.x,
+              startY: bend.y,
+              bounds: bendDragBounds(from, to, arrow, idx),
+            };
+          }}
+          dragBoundFunc={(pos) => {
+            const st = dragState.current;
+            if (!st || !st.bounds) return pos;
+            const dx = pos.x - st.startX;
+            const dy = pos.y - st.startY;
+            let axis: 'x' | 'y' | null = null;
+            if (st.bounds.x && st.bounds.y) {
+              axis = Math.abs(dx) >= Math.abs(dy) ? 'x' : 'y';
+            } else if (st.bounds.x) axis = 'x';
+            else if (st.bounds.y) axis = 'y';
+            if (!axis) return { x: st.startX, y: st.startY };
+            const range = st.bounds[axis];
+            const clamped = Math.max(
+              range!.min,
+              Math.min(range!.max, axis === 'x' ? pos.x : pos.y)
+            );
+            return axis === 'x'
+              ? { x: clamped, y: st.startY }
+              : { x: st.startX, y: clamped };
           }}
           onDragEnd={(e) => {
+            dragState.current = null;
             onBendDragEnd(idx, e.target.x(), e.target.y());
           }}
         >

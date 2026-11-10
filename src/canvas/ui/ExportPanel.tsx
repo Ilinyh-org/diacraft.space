@@ -1,22 +1,29 @@
 import type { CSSProperties } from 'react';
+import { useRef } from 'react';
 import { DraggablePanel } from '../../ui/DraggablePanel';
 import type { Theme } from '../../theme';
+import { t, type LanguageCode } from './i18n';
 
 type ExportPanelProps = {
   theme: Theme;
+  language: LanguageCode;
   onExportPng: () => void;
   onExportJpeg: () => void;
   onExportSvg: () => void;
-  onClear: () => void;
+  onExportJson: () => void;
+  onImportJson: (file: File) => void;
 };
 
 export function ExportPanel({
   theme,
+  language,
   onExportPng,
   onExportJpeg,
   onExportSvg,
-  onClear,
+  onExportJson,
+  onImportJson,
 }: ExportPanelProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const buttonStyle: CSSProperties = {
     padding: '6px 10px',
     border: `1px solid ${theme.buttonBorder}`,
@@ -35,6 +42,7 @@ export function ExportPanel({
         x: Math.max(10, window.innerWidth - 90),
         y: 10,
       }}
+      storageKey="diacraft-panel-pos-export"
     >
       <div
         style={{
@@ -44,7 +52,7 @@ export function ExportPanel({
           marginBottom: 2,
         }}
       >
-        Export
+        {t(language, 'export.title')}
       </div>
       <button onClick={onExportPng} style={buttonStyle}>
         PNG
@@ -55,19 +63,37 @@ export function ExportPanel({
       <button onClick={onExportSvg} style={buttonStyle}>
         SVG
       </button>
+      <button onClick={onExportJson} style={buttonStyle}>
+        JSON
+      </button>
 
       <div style={{ height: 1, background: theme.divider, margin: '4px 0' }} />
 
-      <button
-        onClick={onClear}
+      <div
         style={{
-          ...buttonStyle,
-          color: theme.deleteButton,
-          borderColor: theme.deleteButton,
+          fontSize: 11,
+          textAlign: 'center',
+          color: theme.buttonTextDisabled,
+          marginBottom: 2,
         }}
       >
-        Clear
+        {t(language, 'export.import')}
+      </div>
+
+      <button onClick={() => fileInputRef.current?.click()} style={buttonStyle}>
+        JSON
       </button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/json,.json"
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onImportJson(file);
+          e.target.value = '';
+        }}
+      />
     </DraggablePanel>
   );
 }

@@ -25,6 +25,28 @@ export function useHistory<T>(initial: T) {
     });
   }, []);
 
+  /** Update present without pushing history — for live drag frames. */
+  const commitLive = useCallback((updater: (prev: T) => T) => {
+    setHistory((h) => {
+      const next = updater(h.present);
+      if (next === h.present) return h;
+      return { ...h, present: next };
+    });
+  }, []);
+
+  /**
+   * Push a "before" snapshot onto past and mark the current present as the
+   * timeline tip. Called once at the end of a live drag.
+   */
+  const commitCheckpoint = useCallback((before: T) => {
+    setHistory((h) => {
+      if (before === h.present) return h;
+      const past = [...h.past, before];
+      if (past.length > MAX_HISTORY) past.shift();
+      return { past, present: h.present, future: [] };
+    });
+  }, []);
+
   const undo = useCallback(() => {
     setHistory((h) => {
       if (h.past.length === 0) return h;
@@ -52,6 +74,8 @@ export function useHistory<T>(initial: T) {
   return {
     state: history.present,
     commit,
+    commitLive,
+    commitCheckpoint,
     undo,
     redo,
     canUndo: history.past.length > 0,

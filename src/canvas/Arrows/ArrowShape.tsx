@@ -9,8 +9,9 @@ type Props = {
   blocks: BlockData[];
   theme: Theme;
   isSelected: boolean;
+  isHighlighted?: boolean;
   listening: boolean;
-  onClick: () => void;
+  onClick: (multi: boolean) => void;
 };
 
 export function ArrowShape({
@@ -18,6 +19,7 @@ export function ArrowShape({
   blocks,
   theme,
   isSelected,
+  isHighlighted = false,
   listening,
   onClick,
 }: Props) {
@@ -31,16 +33,20 @@ export function ArrowShape({
     arrow.fromSide,
     b,
     arrow.toSide,
-    arrow.waypoints ?? []
+    arrow.waypoints
   );
   if (pts.length < 4) return null;
-  const color = isSelected ? theme.arrowSelected : theme.arrow;
+  const color = isHighlighted
+    ? theme.runHighlight
+    : isSelected
+      ? theme.arrowSelected
+      : theme.arrow;
   return (
     <Arrow
       points={pts}
       stroke={color}
       fill={color}
-      strokeWidth={isSelected ? 3 : 2}
+      strokeWidth={isHighlighted || isSelected ? 3 : 2}
       pointerLength={10}
       pointerWidth={10}
       hitStrokeWidth={20}
@@ -49,11 +55,12 @@ export function ArrowShape({
       listening={listening}
       onClick={(e) => {
         e.cancelBubble = true;
-        onClick();
+        const multi = !!(e.evt && (e.evt.ctrlKey || e.evt.metaKey));
+        onClick(multi);
       }}
       onTap={(e) => {
         e.cancelBubble = true;
-        onClick();
+        onClick(false);
       }}
     />
   );

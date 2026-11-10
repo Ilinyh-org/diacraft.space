@@ -1,0 +1,139 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import type { ComponentType, ReactNode } from "react";
+import { MainMenu } from "../MainMenu";
+
+/* Issue #96: the main menu must first appear in the top-left corner, not
+ * centered. Mock DraggablePanel to capture the props MainMenu passes to it. */
+
+type DraggablePanelProps = {
+  initialPosition: { x: number; y: number };
+  center?: boolean;
+  storageKey?: string;
+  children: ReactNode;
+};
+
+const captured: DraggablePanelProps[] = [];
+
+vi.mock("../../../ui/DraggablePanel", () => ({
+  DraggablePanel: ((props: DraggablePanelProps) => {
+    captured.push(props);
+    return <div>{props.children}</div>;
+  }) as unknown as ComponentType<DraggablePanelProps>,
+}));
+import {
+  INITIAL_MENU_VISIBILITY,
+} from "../menuVisibility";
+import { lightTheme } from "../../../theme";
+
+function renderMenu(overrides?: { language?: "en" | "ru" }) {
+  const onToggle = vi.fn();
+  const onLanguageChange = vi.fn();
+  const onToggleTheme = vi.fn();
+  render(
+    <MainMenu
+      theme={lightTheme}
+      visibility={INITIAL_MENU_VISIBILITY}
+      onToggle={onToggle}
+      language={overrides?.language ?? "en"}
+      onLanguageChange={onLanguageChange}
+      themeName="light"
+      onToggleTheme={onToggleTheme}
+    />,
+  );
+  return { onToggle, onLanguageChange, onToggleTheme };
+}
+
+describe("MainMenu first appearance (issue #96)", () => {
+  beforeEach(() => {
+    cleanup();
+    localStorage.clear();
+    captured.length = 0;
+  });
+
+  it("starts at the top-left corner instead of being centered", () => {
+    renderMenu();
+    expect(captured).toHaveLength(1);
+    expect(captured[0].center).toBeFalsy();
+    expect(captured[0].initialPosition).toEqual({ x: 10, y: 10 });
+  });
+
+  it("keeps remembering its dragged position across sessions", () => {
+    renderMenu();
+    expect(captured[0].storageKey).toBe("diacraft-panel-pos-main");
+  });
+});
+
+describe("MainMenu language selection (issue #62)", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("shows a language drop-down at the top of the main menu", () => {
+    renderMenu();
+    const select = screen.getByTestId("main-menu-language");
+    expect(select).toBeInTheDocument();
+    expect(select.tagName).toBe("SELECT");
+    const options = Array.from(
+      select.querySelectorAll("option"),
+    ) as HTMLOptionElement[];
+    expect(options.map((o) => o.value)).toContain("en");
+    expect(options.map((o) => o.value)).toContain("ru");
+    // top of the menu: the theme button is first, then the language row
+    const menu = screen.getByTestId("main-menu");
+    expect(menu.children[0]).toBe(screen.getByTestId("main-menu-theme"));
+    expect(menu.children[1]).toBe(
+      screen.getByTestId("main-menu-language-row"),
+    );
+    expect(screen.getByTestId("main-menu-palette")).toBeInTheDocument();
+  });
+
+  it("emits onLanguageChange when a language is picked", () => {
+    const { onLanguageChange } = renderMenu();
+    fireEvent.change(screen.getByTestId("main-menu-language"), {
+      target: { value: "ru" },
+    });
+    expect(onLanguageChange).toHaveBeenCalledWith("ru");
+  });
+
+  it("translates menu labels to Russian when ru is selected", () => {
+    renderMenu({ language: "ru" });
+    expect(screen.getByTestId("main-menu-palette")).toHaveTextContent(
+      "Палитра",
+    );
+    expect(screen.getByTestId("main-menu-export")).toHaveTextContent(
+      "Экспорт/Импорт",
+    );
+    expect(screen.getByTestId("main-menu-algorithm")).toHaveTextContent(
+      "Анимация",
+    );
+    expect(screen.getByTestId("main-menu-game")).toHaveTextContent("Игра");
+    expect(screen.getByTestId("main-menu-feedback")).toHaveTextContent(
+      "Отзыв",
+    );
+  });
+
+  it("keeps English labels by default", () => {
+    renderMenu({ language: "en" });
+    expect(screen.getByTestId("main-menu-palette")).toHaveTextContent(
+      "Palette",
+    );
+  });
+
+  it("shows the theme toggle above the language row (issue #60)", () => {
+    renderMenu();
+    const themeButton = screen.getByTestId("main-menu-theme");
+    expect(themeButton).toHaveTextContent("🌙 Dark");
+    const menu = screen.getByTestId("main-menu");
+    expect(menu.firstElementChild).toBe(themeButton);
+    expect(menu.children[1]).toBe(
+      screen.getByTestId("main-menu-language-row"),
+    );
+  });
+
+  it("emits onToggleTheme when the theme button is pressed (issue #60)", () => {
+    const { onToggleTheme } = renderMenu();
+    fireEvent.pointerDown(screen.getByTestId("main-menu-theme"));
+    expect(onToggleTheme).toHaveBeenCalledTimes(1);
+  });
+});

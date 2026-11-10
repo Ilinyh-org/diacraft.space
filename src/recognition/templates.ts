@@ -66,9 +66,16 @@ export const templates: Template[] = [
   { name: 'io', strokes: [parallelogram(120, 50, 30)] },
   { name: 'io', strokes: [parallelogram(60, 100, 20)] },
   { name: 'io', strokes: [parallelogram(60, 100, 30)] },
+  { name: 'io', strokes: [parallelogram(100, 60, -20)] },
+  { name: 'io', strokes: [parallelogram(100, 60, -40)] },
+  { name: 'io', strokes: [parallelogram(120, 50, -30)] },
+  { name: 'io', strokes: [parallelogram(60, 100, -20)] },
+  { name: 'io', strokes: [parallelogram(60, 100, -30)] },
   { name: 'io', strokes: [parallelogram(100, 60, 20).slice().reverse()] },
   { name: 'io', strokes: [parallelogram(100, 60, 40).slice().reverse()] },
   { name: 'io', strokes: [parallelogram(60, 100, 20).slice().reverse()] },
+  { name: 'io', strokes: [parallelogram(100, 60, -20).slice().reverse()] },
+  { name: 'io', strokes: [parallelogram(100, 60, -40).slice().reverse()] },
 
   // === For-loop: hexagon at multiple aspects ===
   { name: 'forloop', strokes: [hexagon(100, 60)] },

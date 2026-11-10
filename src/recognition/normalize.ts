@@ -23,6 +23,12 @@ export function resample(points: Point[], n: number): Point[] {
       };
       out.push(q);
       points.splice(i, 0, q);
+      // Continue from the inserted point: after the splice, points[i] is q
+      // and points[i + 1] is the original p1, so advancing i makes the next
+      // segment start at q. Without this, a sub-segment that exactly equals
+      // the interval re-inserts the same point forever (t == 1), filling the
+      // output with duplicates.
+      i += 1;
       D = 0;
     } else {
       D += d;

@@ -10,14 +10,17 @@ import { useLayoutEffect, useRef, useEffect, useState } from 'react';
 import Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 import type { Theme } from '../../theme';
+import { absoluteToWorld, dragPosToWorld, worldToAbsolute } from '../utils/blocks';
 
 export type BlockType =
   | 'action'
   | 'condition'
   | 'io'
   | 'forloop'
+  | 'function'
   | 'start'
-  | 'link';
+  | 'link'
+  | 'text';
 
 export type Side = 'top' | 'right' | 'bottom' | 'left';
 
@@ -27,7 +30,6 @@ const HANDLE_RADIUS = 6;
 const RESIZE_HANDLE_SIZE = 16;
 
 type BlockProps = {
-  id: string;
   x: number;
   y: number;
   width?: number;
@@ -35,22 +37,24 @@ type BlockProps = {
   label?: string;
   type?: BlockType;
   selected?: boolean;
+  highlighted?: boolean;
   removing?: boolean;
-  initialRotation?: number;
   theme: Theme;
+  onDragStart?: () => void;
   onDragEnd?: (x: number, y: number) => void;
-  onSelect?: () => void;
+  onDragMove?: (x: number, y: number) => void;
+  onSelect?: (multi: boolean) => void;
   onDelete?: () => void;
   onEdit?: () => void;
   onResize?: (w: number, h: number) => void;
   onHandleDragStart?: (side: Side, x: number, y: number) => void;
   onHandleDragMove?: (x: number, y: number) => void;
   onHandleDragEnd?: (x: number, y: number) => void;
+  onContextMenu?: (clientX: number, clientY: number) => void;
   onRemoved?: () => void;
 };
 
 export function Block({
-  id,
   x,
   y,
   width = 120,
@@ -58,10 +62,12 @@ export function Block({
   label = 'Action',
   type = 'action',
   selected = false,
+  highlighted = false,
   removing = false,
-  initialRotation = 0,
   theme,
+  onDragStart,
   onDragEnd,
+  onDragMove,
   onSelect,
   onDelete,
   onEdit,
@@ -69,17 +75,21 @@ export function Block({
   onHandleDragStart,
   onHandleDragMove,
   onHandleDragEnd,
+  onContextMenu,
   onRemoved,
 }: BlockProps) {
   const contentRef = useRef<Konva.Group>(null);
+  const resizeHandleRef = useRef<Konva.Rect>(null);
   const spawnDoneRef = useRef(false);
   const removeStartedRef = useRef(false);
 
+  const [prevSize, setPrevSize] = useState({ w: width, h: height });
   const [liveSize, setLiveSize] = useState({ w: width, h: height });
 
-  useEffect(() => {
+  if (width !== prevSize.w || height !== prevSize.h) {
+    setPrevSize({ w: width, h: height });
     setLiveSize({ w: width, h: height });
-  }, [width, height]);
+  }
 
   const w = liveSize.w;
   const h = liveSize.h;
@@ -129,21 +139,53 @@ export function Block({
     }
   }, [removing, onRemoved]);
 
-  const stroke = selected ? theme.selection : theme.blockStroke;
-  const strokeWidth = selected ? 3 : 2;
+  const stroke = highlighted
+    ? theme.runHighlight
+    : selected
+      ? theme.selection
+      : theme.blockStroke;
+  const strokeWidth = highlighted || selected ? 3 : 2;
   const fill = theme.blockFill;
 
   const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
     onDragEnd?.(e.target.x(), e.target.y());
   };
 
-  const handleClick = (e: KonvaEventObject<MouseEvent>) => {
+  const handleDragMove = (e: KonvaEventObject<DragEvent>) => {
+    onDragMove?.(e.target.x(), e.target.y());
+  };
+
+  const handleClick = (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
     e.cancelBubble = true;
-    onSelect?.();
+    const evt = e.evt as MouseEvent | undefined;
+    const multi = !!(evt && (evt.ctrlKey || evt.metaKey));
+    onSelect?.(multi);
+  };
+
+  const handleLabelDblClick = (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
+    e.cancelBubble = true;
+    onEdit?.();
   };
 
   const renderShape = () => {
     switch (type) {
+      case 'text':
+        // Text comment block (issue #84): borderless floating label with no
+        // shape behind it; arrows can never connect to it. When selected,
+        // show a dashed border so the selection is visible (issue #90).
+        if (!selected) return null;
+        return (
+          <Rect
+            width={w}
+            height={h}
+            fill="transparent"
+            stroke={theme.selection}
+            strokeWidth={2}
+            dash={[6, 4]}
+            cornerRadius={4}
+          />
+        );
+
       case 'action':
         return (
           <Rect
@@ -202,6 +244,30 @@ export function Block({
           />
         );
 
+      case 'function':
+        return (
+          <Group>
+            <Rect
+              width={w}
+              height={h}
+              fill={fill}
+              stroke={stroke}
+              strokeWidth={strokeWidth}
+              cornerRadius={6}
+            />
+            <Line
+              points={[w * 0.15, 0, w * 0.15, h]}
+              stroke={stroke}
+              strokeWidth={strokeWidth}
+            />
+            <Line
+              points={[w * 0.85, 0, w * 0.85, h]}
+              stroke={stroke}
+              strokeWidth={strokeWidth}
+            />
+          </Group>
+        );
+
       case 'start':
         return (
           <Ellipse
@@ -245,9 +311,20 @@ export function Block({
         x={x}
         y={y}
         draggable={!removing}
+        onDragStart={onDragStart}
+        onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
         onClick={removing ? undefined : handleClick}
         onTap={removing ? undefined : handleClick}
+        onContextMenu={
+          removing
+            ? undefined
+            : (e) => {
+                e.cancelBubble = true;
+                e.evt.preventDefault();
+                onContextMenu?.(e.evt.clientX, e.evt.clientY);
+              }
+        }
       >
         <Group
           ref={contentRef}
@@ -265,13 +342,16 @@ export function Block({
             verticalAlign="middle"
             fontSize={14}
             fill={theme.blockText}
-            listening={false}
+            listening={!removing}
+            onDblClick={handleLabelDblClick}
+            onDblTap={handleLabelDblClick}
           />
         </Group>
       </Group>
 
       {selected &&
         !removing &&
+        type !== 'text' &&
         sides.map(({ side, hx, hy }) => (
           <Circle
             key={side}
@@ -284,16 +364,19 @@ export function Block({
             draggable
             onDragStart={(e) => {
               e.cancelBubble = true;
-              const abs = e.target.getAbsolutePosition();
+              const abs = absoluteToWorld(e.target);
               onHandleDragStart?.(side, abs.x, abs.y);
             }}
             onDragMove={(e) => {
-              const abs = e.target.getAbsolutePosition();
+              const abs = absoluteToWorld(e.target);
               onHandleDragMove?.(abs.x, abs.y);
             }}
             onDragEnd={(e) => {
-              const abs = e.target.getAbsolutePosition();
+              const abs = absoluteToWorld(e.target);
               onHandleDragEnd?.(abs.x, abs.y);
+              // Reset the node to its anchor so an unconnected drop
+              // does not leave the handle dot stranded on the canvas.
+              e.target.position({ x: x + hx, y: y + hy });
             }}
           />
         ))}
@@ -368,6 +451,7 @@ export function Block({
 
       {selected && !removing && (
         <Rect
+          ref={resizeHandleRef}
           x={x + w - RESIZE_HANDLE_SIZE / 2}
           y={y + h - RESIZE_HANDLE_SIZE / 2}
           width={RESIZE_HANDLE_SIZE}
@@ -381,15 +465,25 @@ export function Block({
             e.cancelBubble = true;
           }}
           dragBoundFunc={(pos) => {
-            const desiredCornerX = pos.x + RESIZE_HANDLE_SIZE / 2;
-            const desiredCornerY = pos.y + RESIZE_HANDLE_SIZE / 2;
+            // dragBoundFunc reports and expects ABSOLUTE (screen) positions,
+            // which include the Stage pan/scale transform; the block geometry
+            // lives in world coordinates. Without the conversion, a purely
+            // horizontal drag picked up the pan offset as extra height and
+            // the handle could jump away (issue #144).
+            const stage = resizeHandleRef.current?.getStage() ?? null;
+            const world = dragPosToWorld(pos, stage);
+            const desiredCornerX = world.x + RESIZE_HANDLE_SIZE / 2;
+            const desiredCornerY = world.y + RESIZE_HANDLE_SIZE / 2;
             const newW = Math.max(MIN_WIDTH, desiredCornerX - x);
             const newH = Math.max(MIN_HEIGHT, desiredCornerY - y);
             setLiveSize({ w: newW, h: newH });
-            return {
-              x: x + newW - RESIZE_HANDLE_SIZE / 2,
-              y: y + newH - RESIZE_HANDLE_SIZE / 2,
-            };
+            return worldToAbsolute(
+              {
+                x: x + newW - RESIZE_HANDLE_SIZE / 2,
+                y: y + newH - RESIZE_HANDLE_SIZE / 2,
+              },
+              stage,
+            );
           }}
           onDragEnd={(e) => {
             const desiredCornerX = e.target.x() + RESIZE_HANDLE_SIZE / 2;
