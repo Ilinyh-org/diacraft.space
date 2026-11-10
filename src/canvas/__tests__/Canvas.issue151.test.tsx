@@ -158,7 +158,6 @@ describe('Canvas drop alignment snap (issue #151)', () => {
         typeof h.props.onTap === 'function',
     );
     // The LAST such group is b2 (blocks render in array order).
-    // eslint-disable-next-line no-console
     const target = blockGroups[blockGroups.length - 1];
     expect(target).toBeDefined();
     // Fire dragStart: in the app EVERY block drag goes through the
