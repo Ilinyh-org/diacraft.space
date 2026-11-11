@@ -26,52 +26,12 @@ function overlapsAny(x: number, y: number, size: Size, obstacles: Rect[]): boole
 }
 
 
-/**
- * Snap a coordinate so the panel stops exactly at the boundary of the first
- * obstacle ahead of it along one axis. Returns null if the snapped position
- * would still overlap something (fully blocked).
- */
-function snapAxis(
-  axis: 'x' | 'y',
-  fixed: number,
-  prev: number,
-  next: number,
-  size: Size,
-  obstacles: Rect[],
-  clamp: (v: number) => number,
-): number | null {
-  const delta = next - prev;
-  if (delta === 0) return null;
-  let limit = next;
-  for (const o of obstacles) {
-    const overlapsFixedRange =
-      axis === 'x'
-        ? fixed < o.bottom && fixed + size.height > o.top
-        : fixed < o.right && fixed + size.width > o.left;
-    if (!overlapsFixedRange) continue;
-    if (delta > 0) {
-      const ahead = axis === 'x' ? o.left >= prev + size.width : o.top >= prev + size.height;
-      if (!ahead) continue;
-      const edge = axis === 'x' ? o.left - size.width : o.top - size.height;
-      limit = Math.min(limit, edge);
-    } else {
-      const ahead = axis === 'x' ? o.right <= prev : o.bottom <= prev;
-      if (!ahead) continue;
-      const edge = axis === 'x' ? o.right : o.bottom;
-      limit = Math.max(limit, edge);
-    }
-  }
-  limit = clamp(limit);
-  const at = axis === 'x' ? { x: limit, y: fixed } : { x: fixed, y: limit };
-  if (overlapsAny(at.x, at.y, size, obstacles)) return null;
-  return limit;
-}
-
 
 /**
  * Compute the next panel position with solid collision against obstacles and
- * the window bounds. Panels never overlap each other: movement along one axis
- * is allowed to slide while the other axis is blocked at the obstacle's edge.
+ * the window bounds. Panels never overlap each other. Issue #191: when the
+ * requested position is blocked, the panel keeps its last valid position —
+ * it never jumps to a recalculated (slid/snapped) position.
  */
 export function moveWithCollision(
   prev: { x: number; y: number },
@@ -84,36 +44,8 @@ export function moveWithCollision(
   const x = clamp.x(next.x);
   const y = clamp.y(next.y);
   if (!overlapsAny(x, y, size, obstacles)) return { x, y };
-  // If the previous position already overlapped something, do not freeze the panel.
-  if (overlapsAny(clamp.x(prev.x), clamp.y(prev.y), size, obstacles)) return { x, y };
-
-  // Prefer sliding along the axis of the larger movement.
-  const horizontalFirst = Math.abs(next.x - prev.x) >= Math.abs(next.y - prev.y);
-  const tries: Array<() => { x: number; y: number } | null> = horizontalFirst
-    ? [
-        () => {
-          const sy = snapAxis('y', x, prev.y, y, size, obstacles, clamp.y);
-          return sy === null ? null : { x, y: sy };
-        },
-        () => {
-          const sx = snapAxis('x', y, prev.x, x, size, obstacles, clamp.x);
-          return sx === null ? null : { x: sx, y };
-        },
-      ]
-    : [
-        () => {
-          const sx = snapAxis('x', y, prev.x, x, size, obstacles, clamp.x);
-          return sx === null ? null : { x: sx, y };
-        },
-        () => {
-          const sy = snapAxis('y', x, prev.y, y, size, obstacles, clamp.y);
-          return sy === null ? null : { x, y: sy };
-        },
-      ];
-  for (const attempt of tries) {
-    const result = attempt();
-    if (result) return result;
-  }
+  // Blocked (issue #191): stay at the last valid position instead of
+  // recalculating — the menu must not jump.
   return { x: clamp.x(prev.x), y: clamp.y(prev.y) };
 }
 
