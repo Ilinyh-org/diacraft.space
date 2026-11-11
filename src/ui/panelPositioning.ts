@@ -28,14 +28,60 @@ function overlapsAny(x: number, y: number, size: Size, obstacles: Rect[]): boole
 
 
 /**
+ * Move one axis from `from` as far as possible toward `toward`, stopping at
+ * exact border contact with any obstacle that blocks the sweep, and clamped
+ * to the window. Obstacles the panel already overlaps do not limit the move
+ * (so a panel that starts overlapped can still follow the cursor out).
+ */
+function resolveAxis(
+  from: number,
+  toward: number,
+  other: number,
+  axis: 'x' | 'y',
+  size: Size,
+  obstacles: Rect[],
+  clamp: ReturnType<typeof makeClamp>,
+): number {
+  const dir = Math.sign(toward - from);
+  if (dir === 0) return from;
+  const w = size.width;
+  const h = size.height;
+  let limit = axis === 'x' ? clamp.x(toward) : clamp.y(toward);
+  for (const obstacle of obstacles) {
+    const lines =
+      axis === 'x'
+        ? { low: obstacle.left, high: obstacle.right, otherLow: obstacle.top, otherHigh: obstacle.bottom }
+        : { low: obstacle.top, high: obstacle.bottom, otherLow: obstacle.left, otherHigh: obstacle.right };
+    const pos = from;
+    const sizeOnAxis = axis === 'x' ? w : h;
+    const sizeOnOther = axis === 'x' ? h : w;
+    const otherPos = other;
+    // The obstacle only blocks if it overlaps on the other axis.
+    if (!(otherPos < lines.otherHigh && otherPos + sizeOnOther > lines.otherLow)) continue;
+    if (dir > 0) {
+      if (pos + sizeOnAxis <= lines.low && limit + sizeOnAxis > lines.low) {
+        limit = lines.low - sizeOnAxis;
+      }
+    } else if (pos >= lines.high && limit < lines.high) {
+      limit = lines.high;
+    }
+  }
+  return limit;
+}
+
+/**
  * Compute the next panel position with solid collision against obstacles and
- * the window bounds. Panels never overlap each other. Issue #191: when the
- * requested position is blocked, the panel keeps its last valid position —
- * it never jumps to a recalculated (slid/snapped) position.
+ * the window bounds. Panels never overlap each other.
  *
- * Issue #191 rework 3: movement is resolved per axis. When one axis is
- * blocked (an obstacle or the window border) but the other axis is free,
- * the panel slides along the border instead of freezing entirely.
+ * Issue #191: the panel never jumps to a recalculated (slid/snapped) position
+ * — it always moves monotonically toward the requested position.
+ *
+ * Issue #191 rework 4: blocking is contact-based and cursor-independent. Each
+ * axis moves as far as it can toward the requested position and stops with the
+ * panel's border exactly on the obstacle/window border. A fast or diagonal
+ * cursor move can no longer freeze the panel: the resolved position follows
+ * the border while the cursor slides along it, and is never dependent on how
+ * far the cursor happens to travel in a single event.
  */
 export function moveWithCollision(
   prev: { x: number; y: number },
@@ -45,20 +91,18 @@ export function moveWithCollision(
   windowSize: WindowSize,
 ): { x: number; y: number } {
   const clamp = makeClamp(windowSize, size);
-  const accept = (x: number, y: number): { x: number; y: number } | null => {
-    const cx = clamp.x(x);
-    const cy = clamp.y(y);
-    if (overlapsAny(cx, cy, size, obstacles)) return null;
-    return { x: cx, y: cy };
-  };
-  // Try the full move, then each free axis in turn (border sliding), then
-  // fall back to the last valid position — never a snapped diagonal.
-  return (
-    accept(next.x, next.y) ??
-    accept(next.x, prev.y) ??
-    accept(prev.x, next.y) ??
-    accept(prev.x, prev.y) ?? { x: clamp.x(prev.x), y: clamp.y(prev.y) }
-  );
+  let x = clamp.x(prev.x);
+  let y = clamp.y(prev.y);
+  const targetX = clamp.x(next.x);
+  const targetY = clamp.y(next.y);
+  // Resolve x, then y, then x again: repeated monotone passes let the panel
+  // slide around obstacle corners while always staying collision-free when
+  // the previous position was.
+  for (let pass = 0; pass < 3; pass++) {
+    x = resolveAxis(x, targetX, y, 'x', size, obstacles, clamp);
+    y = resolveAxis(y, targetY, x, 'y', size, obstacles, clamp);
+  }
+  return { x, y };
 }
 
 /** Minimum window width at which a panel may center itself on first appear. */
