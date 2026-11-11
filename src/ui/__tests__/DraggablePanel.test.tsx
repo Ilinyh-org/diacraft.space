@@ -58,33 +58,33 @@ describe('moveWithCollision', () => {
     ).toEqual({ x: 200, y: 150 });
   });
 
-  it('blocks movement into an obstacle and stops exactly at its boundary', () => {
+  it('blocks movement into an obstacle by keeping the last valid position', () => {
     const obstacles = [rect(50, 100, 200, 100)];
     expect(
       moveWithCollision({ x: 60, y: 0 }, { x: 60, y: 120 }, size, obstacles, win),
-    ).toEqual({ x: 60, y: 50 });
+    ).toEqual({ x: 60, y: 0 });
   });
 
-  it('stops at the obstacle boundary on a diagonal move, keeping horizontal movement', () => {
+  it('keeps the last valid position on a blocked diagonal move', () => {
     const obstacles = [rect(150, 100, 200, 200)];
-    // Full move overlaps; the panel stops just above the obstacle's top edge.
+    // Full move overlaps; the panel stays where it was.
     expect(
       moveWithCollision({ x: 100, y: 0 }, { x: 160, y: 120 }, size, obstacles, win),
-    ).toEqual({ x: 160, y: 50 });
+    ).toEqual({ x: 100, y: 0 });
   });
 
-  it('slides horizontally and stops at the obstacle edge when moving right into it', () => {
+  it('does not slide along an axis when moving right into an obstacle', () => {
     const obstacles = [rect(250, 0, 200, 200)];
     expect(
       moveWithCollision({ x: 100, y: 100 }, { x: 300, y: 150 }, size, obstacles, win),
-    ).toEqual({ x: 150, y: 150 });
+    ).toEqual({ x: 100, y: 100 });
   });
 
-  it('stops at the obstacle boundary when moving straight into it', () => {
+  it('keeps the last valid position when moving straight into an obstacle', () => {
     const obstacles = [rect(250, 0, 200, 200)];
     expect(
       moveWithCollision({ x: 100, y: 0 }, { x: 300, y: 0 }, size, obstacles, win),
-    ).toEqual({ x: 150, y: 0 });
+    ).toEqual({ x: 100, y: 0 });
   });
 
   it('window clamping never pushes the panel into an obstacle at the edge', () => {
@@ -117,11 +117,11 @@ describe('moveWithCollision', () => {
     ).toEqual({ x: 100, y: 100 });
   });
 
-  it('resolves against multiple obstacles in one move', () => {
+  it('keeps the last valid position when multiple obstacles block the move', () => {
     const obstacles = [rect(150, 100, 200, 200), rect(150, 300, 200, 200)];
     expect(
       moveWithCollision({ x: 100, y: 0 }, { x: 160, y: 250 }, size, obstacles, win),
-    ).toEqual({ x: 160, y: 50 });
+    ).toEqual({ x: 100, y: 0 });
   });
 });
 
@@ -365,9 +365,10 @@ describe('DraggablePanel', () => {
 
       const left = parseFloat(panel.style.left);
       const top = parseFloat(panel.style.top);
-      // Pushed back up so its bottom edge just touches the obstacle's top edge.
+      // Drag straight down into the obstacle: blocked, so the panel stays
+      // at its last valid position (issue #191) instead of jumping.
       expect(left).toBe(100);
-      expect(top).toBe(50);
+      expect(top).toBe(0);
       unmountObstacle();
     } finally {
       HTMLElement.prototype.getBoundingClientRect = original;
