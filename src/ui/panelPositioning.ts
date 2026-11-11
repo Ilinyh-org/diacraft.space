@@ -43,9 +43,12 @@ export function moveWithCollision(
   const clamp = makeClamp(windowSize, size);
   const x = clamp.x(next.x);
   const y = clamp.y(next.y);
-  if (!overlapsAny(x, y, size, obstacles)) return { x, y };
-  // Blocked (issue #191): stay at the last valid position instead of
-  // recalculating — the menu must not jump.
+  // Issue #191 rework: a clamped position is still a recalculated one. If the
+  // requested position met a constraint (window bounds or an obstacle), keep
+  // the last valid position instead of jumping.
+  if (x === next.x && y === next.y && !overlapsAny(x, y, size, obstacles))
+    return { x, y };
+  // Blocked: stay at the last valid position — the menu must not jump.
   return { x: clamp.x(prev.x), y: clamp.y(prev.y) };
 }
 

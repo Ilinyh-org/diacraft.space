@@ -190,8 +190,11 @@ export function DraggablePanel({ theme, initialPosition, width, storageKey, cent
           bottom: or.bottom,
         });
       }
+      // Issue #191 rework: the fallback position is the LAST VALID position
+      // during this drag (the current pos, which only ever holds accepted
+      // moves), not the drag-start position.
       next = moveWithCollision(
-        { x: dragRef.current.panelX, y: dragRef.current.panelY },
+        { x: pos.x, y: pos.y },
         next,
         { width: panelWidth, height: panelHeight },
         obstacles,
