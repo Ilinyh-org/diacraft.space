@@ -61,11 +61,12 @@ describe('getAnchor for io (parallelogram) blocks', () => {
     expect(getAnchor(io, 'right')).toEqual({ x: 100 + 108, y: 130 });
   });
 
-  it('centers the top anchor on the top edge of the parallelogram', () => {
-    expect(getAnchor(io, 'top')).toEqual({ x: 100 + 72, y: 100 });
-  });
-
-  it('centers the bottom anchor on the bottom edge of the parallelogram', () => {
-    expect(getAnchor(io, 'bottom')).toEqual({ x: 100 + 48, y: 160 });
+  it('aligns the top and bottom anchors on the vertical center line (issue #186)', () => {
+    // x = w/2 lies on both the top edge [0.2w, w] and the bottom edge
+    // [0, 0.8w], so a vertical flow entering the top and leaving the
+    // bottom of the io block connects at the same x and stays straight.
+    expect(getAnchor(io, 'top')).toEqual({ x: 100 + 60, y: 100 });
+    expect(getAnchor(io, 'bottom')).toEqual({ x: 100 + 60, y: 160 });
+    expect(getAnchor(io, 'top').x).toBe(getAnchor(io, 'bottom').x);
   });
 });

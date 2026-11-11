@@ -12,9 +12,13 @@ export function getAnchor(
   if (type === 'io') {
     switch (side) {
       case 'top':
-        return { x: x + w * 0.6, y };
+        // Issue #186: top and bottom anchors share the vertical center
+        // line (x + w/2 lies on both the top edge [0.2w, w] and the
+        // bottom edge [0, 0.8w]), so a straight vertical flow through
+        // the io block connects at the same x and stays straight.
+        return { x: x + w / 2, y };
       case 'bottom':
-        return { x: x + w * 0.4, y: y + h };
+        return { x: x + w / 2, y: y + h };
       case 'left':
         return { x: x + w * 0.1, y: y + h / 2 };
       case 'right':
