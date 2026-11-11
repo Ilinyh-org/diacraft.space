@@ -83,6 +83,128 @@ describe('issue #191: no jumping when movement is blocked', () => {
     }
   });
 
+  it('slides along an obstacle border when one axis stays free', () => {
+    const rects = new Map<HTMLElement, DOMRect>();
+    const original = HTMLElement.prototype.getBoundingClientRect;
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+      configurable: true,
+      get() {
+        return rects.has(this) ? 100 : 0;
+      },
+    });
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get() {
+        return rects.has(this) ? 50 : 0;
+      },
+    });
+    HTMLElement.prototype.getBoundingClientRect = function () {
+      return rects.get(this) ?? new DOMRect(0, 0, 0, 0);
+    };
+
+    try {
+      render(
+        <div
+          data-testid="obstacle-slide"
+          className="draggable-panel"
+          style={{ position: 'absolute', left: 200, top: 0, width: 100, height: 50 }}
+        >
+          obstacle-slide
+        </div>,
+      );
+      const obstacle = screen.getByTestId('obstacle-slide');
+      rects.set(obstacle, new DOMRect(200, 0, 100, 50));
+
+      render(
+        <DraggablePanel theme={lightTheme} initialPosition={{ x: 100, y: 0 }}>
+          <div>slide-content</div>
+        </DraggablePanel>,
+      );
+      const panel = screen.getByText('slide-content').parentElement!.parentElement!;
+      rects.set(panel, new DOMRect(100, 0, 100, 50));
+      const handle = panel.firstElementChild!;
+
+      // Diagonal move toward the obstacle corner: the x axis is blocked but
+      // the y axis is free — the panel must slide down along the obstacle
+      // border instead of freezing.
+      fireEvent.pointerDown(handle, { clientX: 0, clientY: 0, pointerId: 1 });
+      fireEvent.pointerMove(handle, { clientX: 30, clientY: 20 });
+      expect(panel.style.left).toBe('100px');
+      expect(panel.style.top).toBe('20px');
+      fireEvent.pointerUp(handle, { pointerId: 1 });
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = original;
+      Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+        configurable: true,
+        get() {
+          return 0;
+        },
+      });
+      Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+        configurable: true,
+        get() {
+          return 0;
+        },
+      });
+    }
+  });
+
+  it('slides along the window border when one axis stays free', () => {
+    const rects = new Map<HTMLElement, DOMRect>();
+    const original = HTMLElement.prototype.getBoundingClientRect;
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+      configurable: true,
+      get() {
+        return rects.has(this) ? 100 : 0;
+      },
+    });
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get() {
+        return rects.has(this) ? 50 : 0;
+      },
+    });
+    HTMLElement.prototype.getBoundingClientRect = function () {
+      return rects.get(this) ?? new DOMRect(0, 0, 0, 0);
+    };
+
+    try {
+      render(
+        <DraggablePanel theme={lightTheme} initialPosition={{ x: 100, y: 0 }}>
+          <div>window-slide</div>
+        </DraggablePanel>,
+      );
+      const panel = screen.getByText('window-slide').parentElement!.parentElement!;
+      rects.set(panel, new DOMRect(100, 0, 100, 50));
+      const handle = panel.firstElementChild!;
+
+      // Move to the right window edge, then keep pushing right while also
+      // moving down: the x axis is blocked by the window bounds but the y
+      // axis is free — the panel must slide down along the window border.
+      fireEvent.pointerDown(handle, { clientX: 0, clientY: 0, pointerId: 1 });
+      fireEvent.pointerMove(handle, { clientX: 900, clientY: 0 });
+      const xAtEdge = parseInt(panel.style.left, 10);
+      fireEvent.pointerMove(handle, { clientX: 930, clientY: 20 });
+      expect(parseInt(panel.style.left, 10)).toBe(xAtEdge);
+      expect(panel.style.top).toBe('20px');
+      fireEvent.pointerUp(handle, { pointerId: 1 });
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = original;
+      Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+        configurable: true,
+        get() {
+          return 0;
+        },
+      });
+      Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+        configurable: true,
+        get() {
+          return 0;
+        },
+      });
+    }
+  });
+
   it('keeps the last valid mid-drag position when a later move is blocked', () => {
     const rects = new Map<HTMLElement, DOMRect>();
     const original = HTMLElement.prototype.getBoundingClientRect;
@@ -113,19 +235,20 @@ describe('issue #191: no jumping when movement is blocked', () => {
       const handle = panel.firstElementChild!;
 
       fireEvent.pointerDown(handle, { clientX: 0, clientY: 0, pointerId: 1 });
-      // First a valid move to the right edge of the window (x = 920 = max).
-      fireEvent.pointerMove(handle, { clientX: 820, clientY: 0 });
-      expect(panel.style.left).toBe('920px');
+      // First a valid move to the right edge of the window.
+      const maxX = window.innerWidth - 100;
+      fireEvent.pointerMove(handle, { clientX: maxX - 100, clientY: 0 });
+      expect(panel.style.left).toBe(`${maxX}px`);
 
       // Now a further move to the right is blocked by the window bounds:
       // the panel must stay at the last valid mid-drag position, not snap
       // back to where the drag started.
-      fireEvent.pointerMove(handle, { clientX: 900, clientY: 0 });
-      expect(panel.style.left).toBe('920px');
+      fireEvent.pointerMove(handle, { clientX: maxX + 80, clientY: 0 });
+      expect(panel.style.left).toBe(`${maxX}px`);
       expect(panel.style.top).toBe('0px');
 
       fireEvent.pointerUp(handle, { pointerId: 1 });
-      expect(panel.style.left).toBe('920px');
+      expect(panel.style.left).toBe(`${maxX}px`);
     } finally {
       HTMLElement.prototype.getBoundingClientRect = original;
       Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {

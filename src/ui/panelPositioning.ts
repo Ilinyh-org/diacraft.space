@@ -32,6 +32,10 @@ function overlapsAny(x: number, y: number, size: Size, obstacles: Rect[]): boole
  * the window bounds. Panels never overlap each other. Issue #191: when the
  * requested position is blocked, the panel keeps its last valid position —
  * it never jumps to a recalculated (slid/snapped) position.
+ *
+ * Issue #191 rework 3: movement is resolved per axis. When one axis is
+ * blocked (an obstacle or the window border) but the other axis is free,
+ * the panel slides along the border instead of freezing entirely.
  */
 export function moveWithCollision(
   prev: { x: number; y: number },
@@ -41,15 +45,20 @@ export function moveWithCollision(
   windowSize: WindowSize,
 ): { x: number; y: number } {
   const clamp = makeClamp(windowSize, size);
-  const x = clamp.x(next.x);
-  const y = clamp.y(next.y);
-  // Issue #191 rework: a clamped position is still a recalculated one. If the
-  // requested position met a constraint (window bounds or an obstacle), keep
-  // the last valid position instead of jumping.
-  if (x === next.x && y === next.y && !overlapsAny(x, y, size, obstacles))
-    return { x, y };
-  // Blocked: stay at the last valid position — the menu must not jump.
-  return { x: clamp.x(prev.x), y: clamp.y(prev.y) };
+  const accept = (x: number, y: number): { x: number; y: number } | null => {
+    const cx = clamp.x(x);
+    const cy = clamp.y(y);
+    if (overlapsAny(cx, cy, size, obstacles)) return null;
+    return { x: cx, y: cy };
+  };
+  // Try the full move, then each free axis in turn (border sliding), then
+  // fall back to the last valid position — never a snapped diagonal.
+  return (
+    accept(next.x, next.y) ??
+    accept(next.x, prev.y) ??
+    accept(prev.x, next.y) ??
+    accept(prev.x, prev.y) ?? { x: clamp.x(prev.x), y: clamp.y(prev.y) }
+  );
 }
 
 /** Minimum window width at which a panel may center itself on first appear. */

@@ -65,19 +65,20 @@ describe('moveWithCollision', () => {
     ).toEqual({ x: 60, y: 0 });
   });
 
-  it('keeps the last valid position on a blocked diagonal move', () => {
+  it('slides horizontally along an obstacle border on a blocked diagonal move', () => {
     const obstacles = [rect(150, 100, 200, 200)];
-    // Full move overlaps; the panel stays where it was.
+    // Full move overlaps; the free horizontal axis still slides along the
+    // obstacle's top border (issue #191 rework 3).
     expect(
       moveWithCollision({ x: 100, y: 0 }, { x: 160, y: 120 }, size, obstacles, win),
-    ).toEqual({ x: 100, y: 0 });
+    ).toEqual({ x: 160, y: 0 });
   });
 
-  it('does not slide along an axis when moving right into an obstacle', () => {
+  it('slides vertically along an obstacle border when moving right into it', () => {
     const obstacles = [rect(250, 0, 200, 200)];
     expect(
       moveWithCollision({ x: 100, y: 100 }, { x: 300, y: 150 }, size, obstacles, win),
-    ).toEqual({ x: 100, y: 100 });
+    ).toEqual({ x: 100, y: 150 });
   });
 
   it('keeps the last valid position when moving straight into an obstacle', () => {
@@ -117,11 +118,11 @@ describe('moveWithCollision', () => {
     ).toEqual({ x: 100, y: 100 });
   });
 
-  it('keeps the last valid position when multiple obstacles block the move', () => {
+  it('slides horizontally along the obstacle border when multiple obstacles block the move', () => {
     const obstacles = [rect(150, 100, 200, 200), rect(150, 300, 200, 200)];
     expect(
       moveWithCollision({ x: 100, y: 0 }, { x: 160, y: 250 }, size, obstacles, win),
-    ).toEqual({ x: 100, y: 0 });
+    ).toEqual({ x: 160, y: 0 });
   });
 });
 
