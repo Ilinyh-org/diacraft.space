@@ -33,13 +33,13 @@ describe('issue #191: no jumping when movement is blocked', () => {
         <div
           data-testid="obstacle"
           className="draggable-panel"
-          style={{ position: 'absolute', left: 100, top: 40, width: 100, height: 100 }}
+          style={{ position: 'absolute', left: 100, top: 60, width: 100, height: 100 }}
         >
           obstacle
         </div>,
       );
       const obstacle = screen.getByTestId('obstacle');
-      rects.set(obstacle, new DOMRect(100, 40, 100, 100));
+      rects.set(obstacle, new DOMRect(100, 60, 100, 100));
 
       render(
         <DraggablePanel theme={lightTheme} initialPosition={{ x: 100, y: 0 }}>
@@ -50,20 +50,22 @@ describe('issue #191: no jumping when movement is blocked', () => {
       rects.set(panel, new DOMRect(100, 0, 100, 50));
       const handle = panel.firstElementChild!;
 
-      // Blocked move straight down into the obstacle: stay at the last valid
-      // position instead of jumping to a recalculated one.
+      // Move straight down into the obstacle: the panel stops with its
+      // bottom edge at exact border contact (issue #191 rework 4) instead
+      // of jumping to a recalculated one.
       fireEvent.pointerDown(handle, { clientX: 0, clientY: 0, pointerId: 1 });
       fireEvent.pointerMove(handle, { clientX: 0, clientY: 60 });
       fireEvent.pointerUp(handle, { pointerId: 1 });
       expect(panel.style.left).toBe('100px');
-      expect(panel.style.top).toBe('0px');
+      expect(panel.style.top).toBe('10px');
 
-      // Blocked diagonal move into the obstacle: still no jump.
+      // Diagonal move into the obstacle: x stays free, y stays at exact
+      // contact with the obstacle's top border — no jump.
       fireEvent.pointerDown(handle, { clientX: 0, clientY: 0, pointerId: 1 });
       fireEvent.pointerMove(handle, { clientX: 40, clientY: 60 });
       fireEvent.pointerUp(handle, { pointerId: 1 });
-      expect(panel.style.left).toBe('100px');
-      expect(panel.style.top).toBe('0px');
+      expect(panel.style.left).toBe('140px');
+      expect(panel.style.top).toBe('10px');
 
       unmountObstacle();
     } finally {
