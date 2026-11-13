@@ -71,6 +71,9 @@ export function Palette({
           fontSize: 13,
           textAlign: "center",
           fontWeight: 600,
+          // Issue #196: the select/draw toggle stays functional in the DOM
+          // (draw mode and its features are untouched) but is hidden.
+          display: "none",
         }}
       >
         {isDrawMode
