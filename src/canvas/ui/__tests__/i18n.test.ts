@@ -12,8 +12,8 @@ describe("i18n (issue #62)", () => {
     localStorage.clear();
   });
 
-  it("lists English and Russian", () => {
-    expect(LANGUAGES.map((l) => l.code)).toEqual(["en", "ru"]);
+  it("lists English, Russian and Spanish", () => {
+    expect(LANGUAGES.map((l) => l.code)).toEqual(["en", "ru", "es"]);
   });
 
   it("covers every key in every declared language (issue #62 completeness)", () => {
@@ -38,12 +38,14 @@ describe("i18n (issue #62)", () => {
     ] as const) {
       expect(t("ru", key)).not.toBe(t("en", key));
       expect(t("ru", key).length).toBeGreaterThan(0);
+      expect(t("es", key)).not.toBe(t("en", key));
+      expect(t("es", key).length).toBeGreaterThan(0);
     }
   });
 
   it("undo/redo buttons are icon-only, no text (#79)", () => {
     for (const key of ["palette.undo", "palette.redo"] as const) {
-      for (const lang of ["en", "ru"] as const) {
+      for (const lang of ["en", "ru", "es"] as const) {
         expect(["↶", "↷"]).toContain(t(lang, key));
       }
     }
@@ -52,9 +54,10 @@ describe("i18n (issue #62)", () => {
   it("interpolates parameters", () => {
     expect(t("en", "algorithm.speed", { speed: 5 })).toContain("5");
     expect(t("ru", "flow.notPartOfFlowchart", { label: "X" })).toContain("X");
+    expect(t("es", "flow.notPartOfFlowchart", { label: "X" })).toContain("X");
   });
 
-  it("translates every menu label in both languages", () => {
+  it("translates every menu label in all languages (issue #111)", () => {
     const keys = [
       "menu.palette",
       "menu.export",
@@ -66,6 +69,8 @@ describe("i18n (issue #62)", () => {
       expect(t("en", key).length).toBeGreaterThan(0);
       expect(t("ru", key).length).toBeGreaterThan(0);
       expect(t("en", key)).not.toBe(t("ru", key));
+      expect(t("es", key).length).toBeGreaterThan(0);
+      expect(t("en", key)).not.toBe(t("es", key));
     }
   });
 
@@ -77,6 +82,8 @@ describe("i18n (issue #62)", () => {
     expect(loadLanguage()).toBe("en");
     saveLanguage("ru");
     expect(loadLanguage()).toBe("ru");
+    saveLanguage("es");
+    expect(loadLanguage()).toBe("es");
   });
 
   it("ignores garbage in localStorage", () => {
