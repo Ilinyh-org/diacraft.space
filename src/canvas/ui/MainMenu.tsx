@@ -111,7 +111,12 @@ export function MainMenu({
               e.preventDefault();
               onToggle(id);
             }}
-            style={buttonStyle(visibility[id])}
+            style={{
+              ...buttonStyle(visibility[id]),
+              // Issue #196: the game button stays in the DOM (its menu and
+              // levels are untouched) but is hidden from the UI.
+              ...(id === "game" ? { display: "none" } : null),
+            }}
           >
             {t(language, key)}
           </div>

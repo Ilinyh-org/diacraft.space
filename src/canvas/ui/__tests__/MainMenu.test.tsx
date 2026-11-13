@@ -113,6 +113,11 @@ describe("MainMenu language selection (issue #62)", () => {
     );
   });
 
+  it("hides the game menu button but keeps it in the DOM (issue #196)", () => {
+    renderMenu();
+    expect(screen.getByTestId("main-menu-game")).not.toBeVisible();
+  });
+
   it("keeps English labels by default", () => {
     renderMenu({ language: "en" });
     expect(screen.getByTestId("main-menu-palette")).toHaveTextContent(
