@@ -1,3 +1,20 @@
+# [1.1.0](https://github.com/Ilinyh-org/diacraft.space/compare/v1.0.0...v1.1.0) (2026-11-16)
+
+
+### Bug Fixes
+
+* align io block top/bottom anchors on the vertical center line ([#186](https://github.com/Ilinyh-org/diacraft.space/issues/186)) ([#190](https://github.com/Ilinyh-org/diacraft.space/issues/190)) ([c4bfa89](https://github.com/Ilinyh-org/diacraft.space/commit/c4bfa89dc4bfe344959d562c3187ae4a014de5dc))
+* contact-based menu drag blocking independent of the cursor ([#191](https://github.com/Ilinyh-org/diacraft.space/issues/191)) ([#195](https://github.com/Ilinyh-org/diacraft.space/issues/195)) ([7991bca](https://github.com/Ilinyh-org/diacraft.space/commit/7991bcaf6cfe102ea3d22477b230f36c72ea0cc9))
+* keep menu at last valid position mid-drag, not drag-start ([#191](https://github.com/Ilinyh-org/diacraft.space/issues/191)) ([939e1f4](https://github.com/Ilinyh-org/diacraft.space/commit/939e1f44d5d91a375fd85ac9e24d284d4d441616))
+* keep menus at their last valid position when a drag is blocked ([#191](https://github.com/Ilinyh-org/diacraft.space/issues/191)) ([#192](https://github.com/Ilinyh-org/diacraft.space/issues/192)) ([4dbc71d](https://github.com/Ilinyh-org/diacraft.space/commit/4dbc71d4c7a15fd3bd71a7d75985978b6740eafc))
+* slide menus along obstacle and window borders instead of freezing ([#191](https://github.com/Ilinyh-org/diacraft.space/issues/191)) ([3dc59b3](https://github.com/Ilinyh-org/diacraft.space/commit/3dc59b3d3a4ee6589020fdff4f35f78e99902257))
+
+
+### Features
+
+* hide game menu button and select/draw toggle button ([#196](https://github.com/Ilinyh-org/diacraft.space/issues/196)) ([#197](https://github.com/Ilinyh-org/diacraft.space/issues/197)) ([c18e03d](https://github.com/Ilinyh-org/diacraft.space/commit/c18e03df284257ca84932935316bcd08b33abe66))
+* **i18n:** add Spanish language ([#111](https://github.com/Ilinyh-org/diacraft.space/issues/111)) ([#198](https://github.com/Ilinyh-org/diacraft.space/issues/198)) ([098105f](https://github.com/Ilinyh-org/diacraft.space/commit/098105fc327e6a8e7fcfa2552db382dbe541fd35))
+
 # 1.0.0 (2026-11-10)
 
 
