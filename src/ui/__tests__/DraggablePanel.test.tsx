@@ -58,33 +58,32 @@ describe('moveWithCollision', () => {
     ).toEqual({ x: 200, y: 150 });
   });
 
-  it('blocks movement into an obstacle and stops exactly at its boundary', () => {
+  it('blocks movement into an obstacle at exact border contact (issue #191 rework 4)', () => {
     const obstacles = [rect(50, 100, 200, 100)];
+    // The panel moves as far as it can toward the target and stops with its
+    // bottom edge exactly on the obstacle's top border — blocking depends on
+    // border contact, not on where the cursor can reach in one event.
     expect(
       moveWithCollision({ x: 60, y: 0 }, { x: 60, y: 120 }, size, obstacles, win),
     ).toEqual({ x: 60, y: 50 });
   });
 
-  it('stops at the obstacle boundary on a diagonal move, keeping horizontal movement', () => {
+  it('does not stick when the cursor jumps far past an obstacle (cursor-independent blocking)', () => {
+    // A single fast pointermove proposes a far target; the panel must still
+    // slide to border contact instead of freezing at its previous position.
+    const obstacles = [rect(150, 0, 100, 100)];
+    expect(
+      moveWithCollision({ x: 0, y: 0 }, { x: 500, y: 10 }, size, obstacles, win),
+    ).toEqual({ x: 50, y: 10 });
+  });
+
+  it('slides along the obstacle border at contact on a blocked diagonal move', () => {
     const obstacles = [rect(150, 100, 200, 200)];
-    // Full move overlaps; the panel stops just above the obstacle's top edge.
+    // The vertical axis moves to exact contact with the obstacle's top
+    // border while the free horizontal axis follows the cursor.
     expect(
       moveWithCollision({ x: 100, y: 0 }, { x: 160, y: 120 }, size, obstacles, win),
     ).toEqual({ x: 160, y: 50 });
-  });
-
-  it('slides horizontally and stops at the obstacle edge when moving right into it', () => {
-    const obstacles = [rect(250, 0, 200, 200)];
-    expect(
-      moveWithCollision({ x: 100, y: 100 }, { x: 300, y: 150 }, size, obstacles, win),
-    ).toEqual({ x: 150, y: 150 });
-  });
-
-  it('stops at the obstacle boundary when moving straight into it', () => {
-    const obstacles = [rect(250, 0, 200, 200)];
-    expect(
-      moveWithCollision({ x: 100, y: 0 }, { x: 300, y: 0 }, size, obstacles, win),
-    ).toEqual({ x: 150, y: 0 });
   });
 
   it('window clamping never pushes the panel into an obstacle at the edge', () => {
@@ -117,11 +116,20 @@ describe('moveWithCollision', () => {
     ).toEqual({ x: 100, y: 100 });
   });
 
-  it('resolves against multiple obstacles in one move', () => {
-    const obstacles = [rect(150, 100, 200, 200), rect(150, 300, 200, 200)];
+  it('slides vertically along an obstacle border when moving right into it', () => {
+    const obstacles = [rect(250, 0, 200, 200)];
+    // Horizontal axis stops at exact contact with the obstacle's left
+    // border; the free vertical axis follows the cursor along the border.
     expect(
-      moveWithCollision({ x: 100, y: 0 }, { x: 160, y: 250 }, size, obstacles, win),
-    ).toEqual({ x: 160, y: 50 });
+      moveWithCollision({ x: 100, y: 100 }, { x: 300, y: 150 }, size, obstacles, win),
+    ).toEqual({ x: 150, y: 150 });
+  });
+
+  it('stops at exact contact when moving straight into an obstacle', () => {
+    const obstacles = [rect(250, 0, 200, 200)];
+    expect(
+      moveWithCollision({ x: 100, y: 0 }, { x: 300, y: 0 }, size, obstacles, win),
+    ).toEqual({ x: 150, y: 0 });
   });
 });
 
@@ -365,7 +373,9 @@ describe('DraggablePanel', () => {
 
       const left = parseFloat(panel.style.left);
       const top = parseFloat(panel.style.top);
-      // Pushed back up so its bottom edge just touches the obstacle's top edge.
+      // Drag straight down into the obstacle: the panel stops with its
+      // bottom edge at exact border contact (issue #191 rework 4) —
+      // blocking depends on border contact, not the cursor.
       expect(left).toBe(100);
       expect(top).toBe(50);
       unmountObstacle();

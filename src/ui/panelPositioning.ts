@@ -26,52 +26,62 @@ function overlapsAny(x: number, y: number, size: Size, obstacles: Rect[]): boole
 }
 
 
+
 /**
- * Snap a coordinate so the panel stops exactly at the boundary of the first
- * obstacle ahead of it along one axis. Returns null if the snapped position
- * would still overlap something (fully blocked).
+ * Move one axis from `from` as far as possible toward `toward`, stopping at
+ * exact border contact with any obstacle that blocks the sweep, and clamped
+ * to the window. Obstacles the panel already overlaps do not limit the move
+ * (so a panel that starts overlapped can still follow the cursor out).
  */
-function snapAxis(
+function resolveAxis(
+  from: number,
+  toward: number,
+  other: number,
   axis: 'x' | 'y',
-  fixed: number,
-  prev: number,
-  next: number,
   size: Size,
   obstacles: Rect[],
-  clamp: (v: number) => number,
-): number | null {
-  const delta = next - prev;
-  if (delta === 0) return null;
-  let limit = next;
-  for (const o of obstacles) {
-    const overlapsFixedRange =
+  clamp: ReturnType<typeof makeClamp>,
+): number {
+  const dir = Math.sign(toward - from);
+  if (dir === 0) return from;
+  const w = size.width;
+  const h = size.height;
+  let limit = axis === 'x' ? clamp.x(toward) : clamp.y(toward);
+  for (const obstacle of obstacles) {
+    const lines =
       axis === 'x'
-        ? fixed < o.bottom && fixed + size.height > o.top
-        : fixed < o.right && fixed + size.width > o.left;
-    if (!overlapsFixedRange) continue;
-    if (delta > 0) {
-      const ahead = axis === 'x' ? o.left >= prev + size.width : o.top >= prev + size.height;
-      if (!ahead) continue;
-      const edge = axis === 'x' ? o.left - size.width : o.top - size.height;
-      limit = Math.min(limit, edge);
-    } else {
-      const ahead = axis === 'x' ? o.right <= prev : o.bottom <= prev;
-      if (!ahead) continue;
-      const edge = axis === 'x' ? o.right : o.bottom;
-      limit = Math.max(limit, edge);
+        ? { low: obstacle.left, high: obstacle.right, otherLow: obstacle.top, otherHigh: obstacle.bottom }
+        : { low: obstacle.top, high: obstacle.bottom, otherLow: obstacle.left, otherHigh: obstacle.right };
+    const pos = from;
+    const sizeOnAxis = axis === 'x' ? w : h;
+    const sizeOnOther = axis === 'x' ? h : w;
+    const otherPos = other;
+    // The obstacle only blocks if it overlaps on the other axis.
+    if (!(otherPos < lines.otherHigh && otherPos + sizeOnOther > lines.otherLow)) continue;
+    if (dir > 0) {
+      if (pos + sizeOnAxis <= lines.low && limit + sizeOnAxis > lines.low) {
+        limit = lines.low - sizeOnAxis;
+      }
+    } else if (pos >= lines.high && limit < lines.high) {
+      limit = lines.high;
     }
   }
-  limit = clamp(limit);
-  const at = axis === 'x' ? { x: limit, y: fixed } : { x: fixed, y: limit };
-  if (overlapsAny(at.x, at.y, size, obstacles)) return null;
   return limit;
 }
 
-
 /**
  * Compute the next panel position with solid collision against obstacles and
- * the window bounds. Panels never overlap each other: movement along one axis
- * is allowed to slide while the other axis is blocked at the obstacle's edge.
+ * the window bounds. Panels never overlap each other.
+ *
+ * Issue #191: the panel never jumps to a recalculated (slid/snapped) position
+ * — it always moves monotonically toward the requested position.
+ *
+ * Issue #191 rework 4: blocking is contact-based and cursor-independent. Each
+ * axis moves as far as it can toward the requested position and stops with the
+ * panel's border exactly on the obstacle/window border. A fast or diagonal
+ * cursor move can no longer freeze the panel: the resolved position follows
+ * the border while the cursor slides along it, and is never dependent on how
+ * far the cursor happens to travel in a single event.
  */
 export function moveWithCollision(
   prev: { x: number; y: number },
@@ -81,40 +91,18 @@ export function moveWithCollision(
   windowSize: WindowSize,
 ): { x: number; y: number } {
   const clamp = makeClamp(windowSize, size);
-  const x = clamp.x(next.x);
-  const y = clamp.y(next.y);
-  if (!overlapsAny(x, y, size, obstacles)) return { x, y };
-  // If the previous position already overlapped something, do not freeze the panel.
-  if (overlapsAny(clamp.x(prev.x), clamp.y(prev.y), size, obstacles)) return { x, y };
-
-  // Prefer sliding along the axis of the larger movement.
-  const horizontalFirst = Math.abs(next.x - prev.x) >= Math.abs(next.y - prev.y);
-  const tries: Array<() => { x: number; y: number } | null> = horizontalFirst
-    ? [
-        () => {
-          const sy = snapAxis('y', x, prev.y, y, size, obstacles, clamp.y);
-          return sy === null ? null : { x, y: sy };
-        },
-        () => {
-          const sx = snapAxis('x', y, prev.x, x, size, obstacles, clamp.x);
-          return sx === null ? null : { x: sx, y };
-        },
-      ]
-    : [
-        () => {
-          const sx = snapAxis('x', y, prev.x, x, size, obstacles, clamp.x);
-          return sx === null ? null : { x: sx, y };
-        },
-        () => {
-          const sy = snapAxis('y', x, prev.y, y, size, obstacles, clamp.y);
-          return sy === null ? null : { x, y: sy };
-        },
-      ];
-  for (const attempt of tries) {
-    const result = attempt();
-    if (result) return result;
+  let x = clamp.x(prev.x);
+  let y = clamp.y(prev.y);
+  const targetX = clamp.x(next.x);
+  const targetY = clamp.y(next.y);
+  // Resolve x, then y, then x again: repeated monotone passes let the panel
+  // slide around obstacle corners while always staying collision-free when
+  // the previous position was.
+  for (let pass = 0; pass < 3; pass++) {
+    x = resolveAxis(x, targetX, y, 'x', size, obstacles, clamp);
+    y = resolveAxis(y, targetY, x, 'y', size, obstacles, clamp);
   }
-  return { x: clamp.x(prev.x), y: clamp.y(prev.y) };
+  return { x, y };
 }
 
 /** Minimum window width at which a panel may center itself on first appear. */

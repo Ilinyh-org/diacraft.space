@@ -1,0 +1,270 @@
+import { describe, it, expect } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { DraggablePanel } from '../DraggablePanel';
+import { lightTheme } from '../../theme';
+
+/**
+ * Issue #191: when a drag is blocked by a collision constraint, the panel
+ * must stay at its last valid position instead of jumping to a recalculated
+ * (slid/snapped) position.
+ */
+describe('issue #191: no jumping when movement is blocked', () => {
+  it('keeps the panel at its previous position when a move is blocked', () => {
+    const rects = new Map<HTMLElement, DOMRect>();
+    const original = HTMLElement.prototype.getBoundingClientRect;
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+      configurable: true,
+      get() {
+        return rects.has(this) ? 100 : 0;
+      },
+    });
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get() {
+        return rects.has(this) ? 50 : 0;
+      },
+    });
+    HTMLElement.prototype.getBoundingClientRect = function () {
+      return rects.get(this) ?? new DOMRect(0, 0, 0, 0);
+    };
+
+    try {
+      const { unmount: unmountObstacle } = render(
+        <div
+          data-testid="obstacle"
+          className="draggable-panel"
+          style={{ position: 'absolute', left: 100, top: 60, width: 100, height: 100 }}
+        >
+          obstacle
+        </div>,
+      );
+      const obstacle = screen.getByTestId('obstacle');
+      rects.set(obstacle, new DOMRect(100, 60, 100, 100));
+
+      render(
+        <DraggablePanel theme={lightTheme} initialPosition={{ x: 100, y: 0 }}>
+          <div>content</div>
+        </DraggablePanel>,
+      );
+      const panel = screen.getByText('content').parentElement!.parentElement!;
+      rects.set(panel, new DOMRect(100, 0, 100, 50));
+      const handle = panel.firstElementChild!;
+
+      // Move straight down into the obstacle: the panel stops with its
+      // bottom edge at exact border contact (issue #191 rework 4) instead
+      // of jumping to a recalculated one.
+      fireEvent.pointerDown(handle, { clientX: 0, clientY: 0, pointerId: 1 });
+      fireEvent.pointerMove(handle, { clientX: 0, clientY: 60 });
+      fireEvent.pointerUp(handle, { pointerId: 1 });
+      expect(panel.style.left).toBe('100px');
+      expect(panel.style.top).toBe('10px');
+
+      // Diagonal move into the obstacle: x stays free, y stays at exact
+      // contact with the obstacle's top border — no jump.
+      fireEvent.pointerDown(handle, { clientX: 0, clientY: 0, pointerId: 1 });
+      fireEvent.pointerMove(handle, { clientX: 40, clientY: 60 });
+      fireEvent.pointerUp(handle, { pointerId: 1 });
+      expect(panel.style.left).toBe('140px');
+      expect(panel.style.top).toBe('10px');
+
+      unmountObstacle();
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = original;
+      Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+        configurable: true,
+        get() {
+          return 0;
+        },
+      });
+      Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+        configurable: true,
+        get() {
+          return 0;
+        },
+      });
+    }
+  });
+
+  it('slides along an obstacle border when one axis stays free', () => {
+    const rects = new Map<HTMLElement, DOMRect>();
+    const original = HTMLElement.prototype.getBoundingClientRect;
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+      configurable: true,
+      get() {
+        return rects.has(this) ? 100 : 0;
+      },
+    });
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get() {
+        return rects.has(this) ? 50 : 0;
+      },
+    });
+    HTMLElement.prototype.getBoundingClientRect = function () {
+      return rects.get(this) ?? new DOMRect(0, 0, 0, 0);
+    };
+
+    try {
+      render(
+        <div
+          data-testid="obstacle-slide"
+          className="draggable-panel"
+          style={{ position: 'absolute', left: 200, top: 0, width: 100, height: 50 }}
+        >
+          obstacle-slide
+        </div>,
+      );
+      const obstacle = screen.getByTestId('obstacle-slide');
+      rects.set(obstacle, new DOMRect(200, 0, 100, 50));
+
+      render(
+        <DraggablePanel theme={lightTheme} initialPosition={{ x: 100, y: 0 }}>
+          <div>slide-content</div>
+        </DraggablePanel>,
+      );
+      const panel = screen.getByText('slide-content').parentElement!.parentElement!;
+      rects.set(panel, new DOMRect(100, 0, 100, 50));
+      const handle = panel.firstElementChild!;
+
+      // Diagonal move toward the obstacle corner: the x axis is blocked but
+      // the y axis is free — the panel must slide down along the obstacle
+      // border instead of freezing.
+      fireEvent.pointerDown(handle, { clientX: 0, clientY: 0, pointerId: 1 });
+      fireEvent.pointerMove(handle, { clientX: 30, clientY: 20 });
+      expect(panel.style.left).toBe('100px');
+      expect(panel.style.top).toBe('20px');
+      fireEvent.pointerUp(handle, { pointerId: 1 });
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = original;
+      Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+        configurable: true,
+        get() {
+          return 0;
+        },
+      });
+      Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+        configurable: true,
+        get() {
+          return 0;
+        },
+      });
+    }
+  });
+
+  it('slides along the window border when one axis stays free', () => {
+    const rects = new Map<HTMLElement, DOMRect>();
+    const original = HTMLElement.prototype.getBoundingClientRect;
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+      configurable: true,
+      get() {
+        return rects.has(this) ? 100 : 0;
+      },
+    });
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get() {
+        return rects.has(this) ? 50 : 0;
+      },
+    });
+    HTMLElement.prototype.getBoundingClientRect = function () {
+      return rects.get(this) ?? new DOMRect(0, 0, 0, 0);
+    };
+
+    try {
+      render(
+        <DraggablePanel theme={lightTheme} initialPosition={{ x: 100, y: 0 }}>
+          <div>window-slide</div>
+        </DraggablePanel>,
+      );
+      const panel = screen.getByText('window-slide').parentElement!.parentElement!;
+      rects.set(panel, new DOMRect(100, 0, 100, 50));
+      const handle = panel.firstElementChild!;
+
+      // Move to the right window edge, then keep pushing right while also
+      // moving down: the x axis is blocked by the window bounds but the y
+      // axis is free — the panel must slide down along the window border.
+      fireEvent.pointerDown(handle, { clientX: 0, clientY: 0, pointerId: 1 });
+      fireEvent.pointerMove(handle, { clientX: 900, clientY: 0 });
+      const xAtEdge = parseInt(panel.style.left, 10);
+      fireEvent.pointerMove(handle, { clientX: 930, clientY: 20 });
+      expect(parseInt(panel.style.left, 10)).toBe(xAtEdge);
+      expect(panel.style.top).toBe('20px');
+      fireEvent.pointerUp(handle, { pointerId: 1 });
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = original;
+      Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+        configurable: true,
+        get() {
+          return 0;
+        },
+      });
+      Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+        configurable: true,
+        get() {
+          return 0;
+        },
+      });
+    }
+  });
+
+  it('keeps the last valid mid-drag position when a later move is blocked', () => {
+    const rects = new Map<HTMLElement, DOMRect>();
+    const original = HTMLElement.prototype.getBoundingClientRect;
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+      configurable: true,
+      get() {
+        return rects.has(this) ? 100 : 0;
+      },
+    });
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get() {
+        return rects.has(this) ? 50 : 0;
+      },
+    });
+    HTMLElement.prototype.getBoundingClientRect = function () {
+      return rects.get(this) ?? new DOMRect(0, 0, 0, 0);
+    };
+
+    try {
+      render(
+        <DraggablePanel theme={lightTheme} initialPosition={{ x: 100, y: 0 }}>
+          <div>content2</div>
+        </DraggablePanel>,
+      );
+      const panel = screen.getByText('content2').parentElement!.parentElement!;
+      rects.set(panel, new DOMRect(100, 0, 100, 50));
+      const handle = panel.firstElementChild!;
+
+      fireEvent.pointerDown(handle, { clientX: 0, clientY: 0, pointerId: 1 });
+      // First a valid move to the right edge of the window.
+      const maxX = window.innerWidth - 100;
+      fireEvent.pointerMove(handle, { clientX: maxX - 100, clientY: 0 });
+      expect(panel.style.left).toBe(`${maxX}px`);
+
+      // Now a further move to the right is blocked by the window bounds:
+      // the panel must stay at the last valid mid-drag position, not snap
+      // back to where the drag started.
+      fireEvent.pointerMove(handle, { clientX: maxX + 80, clientY: 0 });
+      expect(panel.style.left).toBe(`${maxX}px`);
+      expect(panel.style.top).toBe('0px');
+
+      fireEvent.pointerUp(handle, { pointerId: 1 });
+      expect(panel.style.left).toBe(`${maxX}px`);
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = original;
+      Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+        configurable: true,
+        get() {
+          return 0;
+        },
+      });
+      Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+        configurable: true,
+        get() {
+          return 0;
+        },
+      });
+    }
+  });
+});

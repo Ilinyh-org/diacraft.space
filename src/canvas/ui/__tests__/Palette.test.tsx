@@ -37,6 +37,11 @@ describe('Palette', () => {
     expect(props.onToggleMode).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps the select/draw toggle present but hidden (issue #196)', () => {
+    setup();
+    expect(screen.getByText('Select ✋')).not.toBeVisible();
+  });
+
   it('calls undo and redo', () => {
     const props = setup();
     fireEvent.pointerDown(screen.getByText('↶'));
